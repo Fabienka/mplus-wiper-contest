@@ -327,3 +327,48 @@ pre.json {
   font-size: 0.82rem;
   margin: 0;
 }
+
+/* ---------- Veřejná lišta ---------- */
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-brand {
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.site-nav a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: var(--accent);
+}
+
+.site-user {
+  color: var(--muted);
+}
+
+.site-main {
+  padding: 3rem 1.5rem;
+  max-width: 720px;
+  margin: 0 auto;
+}

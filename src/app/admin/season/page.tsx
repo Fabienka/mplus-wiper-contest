@@ -128,6 +128,7 @@ export default async function SeasonPage() {
                     </td>
                     <td>
                       <ConfirmButton
+                        form="delete-dungeon"
                         className="btn btn-danger"
                         message={`Opravdu smazat dungeon "${dungeon.dungeonName}"?`}
                         formAction={deleteDungeon.bind(null, dungeon.id)}
@@ -149,6 +150,10 @@ export default async function SeasonPage() {
             </button>
           </form>
         )}
+
+        {/* Mazání má vlastní formulář, aby submit nezahodil rozeditované
+            časy a koeficienty v tabulce výše. */}
+        <form id="delete-dungeon" />
       </div>
 
       <div className="card">
