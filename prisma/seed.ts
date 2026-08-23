@@ -9,6 +9,7 @@ const prisma = new PrismaClient();
 const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME ?? "admin";
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "admin1234";
 const SEASON_NAME = process.env.SEED_SEASON_NAME ?? "Testovací sezóna";
+const SEASON_SLUG = process.env.SEED_SEASON_SLUG ?? "season-mn-2";
 
 // timeLimitSeconds zatím není známý (TBD) - doplní se, až budou časy klíčů potvrzené.
 const DUNGEONS = [
@@ -33,15 +34,23 @@ async function main() {
     },
   });
 
-  const season =
-    (await prisma.season.findFirst({ where: { name: SEASON_NAME } })) ??
-    (await prisma.season.create({
+  let season = await prisma.season.findFirst({ where: { name: SEASON_NAME } });
+
+  if (!season) {
+    season = await prisma.season.create({
       data: {
         name: SEASON_NAME,
         status: "REGISTRATION_OPEN",
         registrationOpenedAt: new Date(),
+        raiderioSeasonSlug: SEASON_SLUG,
       },
-    }));
+    });
+  } else if (!season.raiderioSeasonSlug) {
+    season = await prisma.season.update({
+      where: { id: season.id },
+      data: { raiderioSeasonSlug: SEASON_SLUG },
+    });
+  }
 
   // Dungeony se synchronizují i do už existující sezóny, ať se seed dá pustit
   // znovu po úpravě seznamu. Ruční změny koeficientů zůstávají zachované.
@@ -60,7 +69,7 @@ async function main() {
 
   console.log(`Admin: ${admin.username} / ${ADMIN_PASSWORD}`);
   console.log(`Sezóna: ${season.name} (${season.status}), id=${season.id}`);
-  console.log(`Dungeonů: ${DUNGEONS.length}`);
+  console.log(`Dungeonů: ${DUNGEONS.length}, Raider.io sezóna: ${season.raiderioSeasonSlug}`);
 }
 
 main()

@@ -5,13 +5,18 @@ import { ConfirmButton } from "../confirm-button";
 import {
   addDungeon,
   deleteDungeon,
+  syncDungeonTimes,
   updateDungeons,
   updateSeason,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function SeasonPage() {
+export default async function SeasonPage({
+  searchParams,
+}: {
+  searchParams: { synced?: string; missing?: string; error?: string };
+}) {
   const season = await getCurrentSeason();
 
   if (!season) {
@@ -31,10 +36,32 @@ export default async function SeasonPage() {
     orderBy: { dungeonName: "asc" },
   });
 
+  const synced = Number(searchParams.synced);
+
   return (
     <>
       <h1>Sezóna a dungeony</h1>
       <p className="admin-subtitle">{season.name}</p>
+
+      {searchParams.error && (
+        <div className="card">
+          <p className="error-text" style={{ margin: 0 }}>
+            {searchParams.error}
+          </p>
+        </div>
+      )}
+
+      {searchParams.synced !== undefined && !searchParams.error && (
+        <div className="card">
+          <p className="success-text" style={{ margin: 0 }}>
+            {synced === 0
+              ? "Časy dungeonů už odpovídaly Raider.io, nic se neměnilo."
+              : `Doplněno časů z Raider.io: ${synced}.`}
+            {searchParams.missing &&
+              ` Na Raider.io se nepodařilo najít: ${searchParams.missing}.`}
+          </p>
+        </div>
+      )}
 
       <div className="card">
         <h2>Nastavení sezóny</h2>
@@ -57,6 +84,20 @@ export default async function SeasonPage() {
             </select>
           </div>
 
+          <div className="field">
+            <label htmlFor="raiderioSeasonSlug">Slug sezóny na Raider.io</label>
+            <input
+              id="raiderioSeasonSlug"
+              name="raiderioSeasonSlug"
+              defaultValue={season.raiderioSeasonSlug ?? ""}
+              placeholder="season-mn-2"
+            />
+            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+              Najdeš ho v adrese běhu na Raider.io:
+              raider.io/mythic-plus-runs/<b>season-mn-2</b>/...
+            </span>
+          </div>
+
           <button className="btn btn-accent" type="submit">
             Uložit sezónu
           </button>
@@ -65,6 +106,24 @@ export default async function SeasonPage() {
 
       <div className="card">
         <h2>Dungeony</h2>
+
+        {/* Vlastní formulář, aby stažení časů nezáviselo na validaci tabulky. */}
+        <form action={syncDungeonTimes} style={{ marginBottom: "1.25rem" }}>
+          <input type="hidden" name="seasonId" value={season.id} />
+          <button className="btn" type="submit">
+            Doplnit časy z Raider.io
+          </button>
+          <span
+            style={{
+              color: "var(--muted)",
+              fontSize: "0.82rem",
+              marginLeft: "0.75rem",
+            }}
+          >
+            Páruje se podle zkratky, ostatní sloupce zůstanou beze změny.
+          </span>
+        </form>
+
         {dungeons.length === 0 ? (
           <p className="empty-state">Sezóna zatím nemá žádné dungeony.</p>
         ) : (

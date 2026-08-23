@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { Prisma, SeasonStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, writeAuditLog } from "@/lib/admin";
 import { parseTimeLimit } from "@/lib/labels";
+import { RaiderioLookupError, fetchSeasonDungeons } from "@/lib/raiderio";
 
 function revalidateSeason() {
   revalidatePath("/admin");
@@ -16,6 +18,8 @@ export async function updateSeason(formData: FormData) {
   const id = String(formData.get("seasonId"));
   const name = String(formData.get("name") ?? "").trim();
   const status = String(formData.get("status")) as SeasonStatus;
+  const raiderioSeasonSlug =
+    String(formData.get("raiderioSeasonSlug") ?? "").trim() || null;
 
   if (!name) {
     throw new Error("Název sezóny nesmí být prázdný.");
@@ -25,7 +29,7 @@ export async function updateSeason(formData: FormData) {
 
   // Časy otevření/uzavření registrace se odvozují od přechodu stavu,
   // ať je admin nemusí hlídat ručně.
-  const data: Prisma.SeasonUpdateInput = { name, status };
+  const data: Prisma.SeasonUpdateInput = { name, status, raiderioSeasonSlug };
 
   if (status === "REGISTRATION_OPEN" && !season.registrationOpenedAt) {
     data.registrationOpenedAt = new Date();
@@ -43,8 +47,12 @@ export async function updateSeason(formData: FormData) {
       actionType: "SEASON_UPDATED",
       entityType: "Season",
       entityId: id,
-      oldValue: { name: season.name, status: season.status },
-      newValue: { name, status },
+      oldValue: {
+        name: season.name,
+        status: season.status,
+        raiderioSeasonSlug: season.raiderioSeasonSlug,
+      },
+      newValue: { name, status, raiderioSeasonSlug },
     });
   });
 
@@ -164,4 +172,87 @@ export async function deleteDungeon(id: string) {
   });
 
   revalidateSeason();
+}
+
+/**
+ * Doplní časové limity dungeonů podle Raider.io. Páruje se přes zkratku -
+ * názvy se mezi Raider.io a naší evidencí liší (Kings' Rest vs King's Rest).
+ */
+export async function syncDungeonTimes(formData: FormData) {
+  const admin = await requireAdmin();
+  const seasonId = String(formData.get("seasonId"));
+
+  const season = await prisma.season.findUniqueOrThrow({
+    where: { id: seasonId },
+  });
+
+  if (!season.raiderioSeasonSlug) {
+    redirect(
+      "/admin/season?error=" +
+        encodeURIComponent(
+          "Sezóna nemá vyplněný slug Raider.io sezóny (např. season-mn-2)."
+        )
+    );
+  }
+
+  let fromRaiderio;
+  try {
+    fromRaiderio = await fetchSeasonDungeons(season.raiderioSeasonSlug);
+  } catch (err) {
+    redirect(
+      "/admin/season?error=" +
+        encodeURIComponent(
+          err instanceof RaiderioLookupError
+            ? err.message
+            : "Stažení dungeonů z Raider.io se nezdařilo."
+        )
+    );
+  }
+
+  const timesByAbbreviation = new Map(
+    fromRaiderio.map((d) => [d.abbreviation.toUpperCase(), d.timeLimitSeconds])
+  );
+
+  const dungeons = await prisma.seasonDungeon.findMany({ where: { seasonId } });
+  const missing: string[] = [];
+  let updated = 0;
+
+  await prisma.$transaction(async (tx) => {
+    for (const dungeon of dungeons) {
+      const timeLimitSeconds = timesByAbbreviation.get(
+        dungeon.abbreviation.toUpperCase()
+      );
+
+      if (timeLimitSeconds === undefined) {
+        missing.push(dungeon.abbreviation);
+        continue;
+      }
+
+      if (timeLimitSeconds === dungeon.timeLimitSeconds) continue;
+
+      await tx.seasonDungeon.update({
+        where: { id: dungeon.id },
+        data: { timeLimitSeconds },
+      });
+
+      await writeAuditLog(tx, {
+        actorId: admin.id,
+        actionType: "DUNGEON_TIME_SYNCED",
+        entityType: "SeasonDungeon",
+        entityId: dungeon.id,
+        oldValue: { timeLimitSeconds: dungeon.timeLimitSeconds },
+        newValue: { timeLimitSeconds },
+      });
+
+      updated++;
+    }
+  });
+
+  revalidateSeason();
+
+  const params = new URLSearchParams({ synced: String(updated) });
+  if (missing.length > 0) {
+    params.set("missing", missing.join(", "));
+  }
+  redirect("/admin/season?" + params);
 }

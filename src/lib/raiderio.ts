@@ -1,6 +1,6 @@
 /**
- * Raider.io veřejné API - čtení profilu postavy.
- * Dokumentace: https://raider.io/api#/characters
+ * Raider.io veřejné API - čtení profilu postavy a dat o sezóně.
+ * Dokumentace: https://raider.io/api
  *
  * Očekávaný formát URL zadávaného uživatelem:
  * https://raider.io/characters/<region>/<realm>/<jméno>
@@ -16,9 +16,59 @@ export interface RaiderioCharacterData {
   rioScore: number;
 }
 
+/** Jeden odehraný klíč tak, jak ho vrací profil postavy. */
+export interface RaiderioRun {
+  dungeonName: string;
+  abbreviation: string;
+  keyLevel: number;
+  clearTimeSeconds: number;
+  parTimeSeconds: number;
+  completedAt: Date;
+  /** 0 = klíč se nestihl v limitu, 1-3 = o kolik úrovní se povýšil. */
+  keystoneUpgrades: number;
+  keystoneRunId: number;
+  url: string;
+  /** Původní odpověď - ukládá se do MatchResult.rawRaiderioData. */
+  raw: unknown;
+}
+
+export interface RaiderioSeasonDungeon {
+  dungeonName: string;
+  abbreviation: string;
+  timeLimitSeconds: number;
+}
+
 export class RaiderioLookupError extends Error {}
 
-function parseCharacterUrl(url: string) {
+function apiBase() {
+  return process.env.RAIDERIO_API_BASE ?? "https://raider.io/api/v1";
+}
+
+async function callRaiderio(
+  path: string,
+  params: Record<string, string>
+): Promise<unknown> {
+  const query = new URLSearchParams(params);
+  let response: Response;
+
+  try {
+    response = await fetch(`${apiBase()}${path}?${query}`);
+  } catch (err) {
+    throw new RaiderioLookupError(
+      `Raider.io je nedostupné (${err instanceof Error ? err.message : "chyba sítě"}).`
+    );
+  }
+
+  if (!response.ok) {
+    throw new RaiderioLookupError(
+      `Raider.io odpovědělo chybou (status ${response.status}).`
+    );
+  }
+
+  return response.json();
+}
+
+export function parseCharacterUrl(url: string) {
   // Příklad: https://raider.io/characters/eu/silvermoon/Priklad
   const match = url.match(
     /raider\.io\/characters\/([a-z]+)\/([a-z0-9-]+)\/([^/?#]+)/i
@@ -39,23 +89,20 @@ export async function fetchCharacterFromRaiderio(
 ): Promise<RaiderioCharacterData> {
   const { region, realm, name } = parseCharacterUrl(raiderioUrl);
 
-  const apiBase = process.env.RAIDERIO_API_BASE ?? "https://raider.io/api/v1";
-  const params = new URLSearchParams({
+  const data = (await callRaiderio("/characters/profile", {
     region,
     realm,
     name,
     fields: "guild,mythic_plus_scores_by_season:current",
-  });
-
-  const response = await fetch(`${apiBase}/characters/profile?${params}`);
-
-  if (!response.ok) {
-    throw new RaiderioLookupError(
-      `Nepodařilo se najít postavu na Raider.io (status ${response.status}).`
-    );
-  }
-
-  const data = await response.json();
+  })) as {
+    name: string;
+    realm: string;
+    region: string;
+    faction: string;
+    class: string;
+    guild?: { name: string } | null;
+    mythic_plus_scores_by_season?: { scores?: { all?: number } }[];
+  };
 
   return {
     characterName: data.name,
@@ -64,7 +111,127 @@ export async function fetchCharacterFromRaiderio(
     faction: data.faction,
     guildName: data.guild?.name ?? null,
     class: data.class,
-    rioScore:
-      data.mythic_plus_scores_by_season?.[0]?.scores?.all ?? 0,
+    rioScore: data.mythic_plus_scores_by_season?.[0]?.scores?.all ?? 0,
   };
+}
+
+interface RawRecentRun {
+  dungeon: string;
+  short_name: string;
+  mythic_level: number;
+  completed_at: string;
+  clear_time_ms: number;
+  par_time_ms: number;
+  num_keystone_upgrades: number;
+  keystone_run_id: number;
+  url: string;
+}
+
+/**
+ * Poslední odehrané klíče postavy, volitelně jen ty spadající do okna.
+ *
+ * POZOR: Raider.io vrací jen 10 posledních běhů. Pokud hráč po zápase
+ * odehraje další klíče, soutěžní běh z tohoto seznamu vypadne - výsledky
+ * je proto potřeba stahovat brzy po odehrání.
+ */
+export async function fetchRecentRuns(
+  raiderioUrl: string,
+  window?: { from?: Date; to?: Date }
+): Promise<RaiderioRun[]> {
+  const { region, realm, name } = parseCharacterUrl(raiderioUrl);
+
+  const data = (await callRaiderio("/characters/profile", {
+    region,
+    realm,
+    name,
+    fields: "mythic_plus_recent_runs",
+  })) as { mythic_plus_recent_runs?: RawRecentRun[] };
+
+  const runs = (data.mythic_plus_recent_runs ?? []).map((run) => ({
+    dungeonName: run.dungeon,
+    abbreviation: run.short_name,
+    keyLevel: run.mythic_level,
+    clearTimeSeconds: Math.round(run.clear_time_ms / 1000),
+    parTimeSeconds: Math.floor(run.par_time_ms / 1000),
+    completedAt: new Date(run.completed_at),
+    keystoneUpgrades: run.num_keystone_upgrades,
+    keystoneRunId: run.keystone_run_id,
+    url: run.url,
+    raw: run,
+  }));
+
+  if (!window?.from && !window?.to) {
+    return runs;
+  }
+
+  return runs.filter(
+    (run) =>
+      (!window.from || run.completedAt >= window.from) &&
+      (!window.to || run.completedAt <= window.to)
+  );
+}
+
+interface RawRanking {
+  run: {
+    dungeon: {
+      name: string;
+      short_name: string;
+      keystone_timer_ms: number;
+    };
+  };
+}
+
+/**
+ * Dungeony sezóny i s časovými limity.
+ *
+ * Raider.io nemá endpoint, který by dungeony sezóny vracel přímo, takže se
+ * skládají z žebříčku běhů - jedna stránka nemusí obsahovat všechny dungeony.
+ */
+export async function fetchSeasonDungeons(
+  seasonSlug: string,
+  pages = 3
+): Promise<RaiderioSeasonDungeon[]> {
+  const found = new Map<string, RaiderioSeasonDungeon>();
+
+  for (let page = 0; page < pages; page++) {
+    let data: { rankings?: RawRanking[] };
+
+    try {
+      data = (await callRaiderio("/mythic-plus/runs", {
+        season: seasonSlug,
+        region: "world",
+        dungeon: "all",
+        page: String(page),
+      })) as { rankings?: RawRanking[] };
+    } catch (err) {
+      // Na neznámý slug sezóny odpovídá API pětistovkou, ze které uživatel
+      // nepozná, co je špatně.
+      throw new RaiderioLookupError(
+        `Nepodařilo se načíst dungeony pro sezónu "${seasonSlug}". Sedí slug sezóny? (${
+          err instanceof Error ? err.message : "neznámá chyba"
+        })`
+      );
+    }
+
+    for (const ranking of data.rankings ?? []) {
+      const dungeon = ranking.run.dungeon;
+
+      if (!found.has(dungeon.short_name)) {
+        found.set(dungeon.short_name, {
+          dungeonName: dungeon.name,
+          abbreviation: dungeon.short_name,
+          // API vrací limit o milisekundu delší (2040999 = 34:00), proto floor.
+          timeLimitSeconds: Math.floor(dungeon.keystone_timer_ms / 1000),
+        });
+      }
+    }
+  }
+
+  if (found.size === 0) {
+    throw new RaiderioLookupError(
+      `Pro sezónu "${seasonSlug}" se nepodařilo načíst žádné dungeony. Sedí slug sezóny?`
+    );
+  }
+
+  return [...found.values()];
 }

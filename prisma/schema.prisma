@@ -78,6 +78,9 @@ model Season {
   status                SeasonStatus @default(DRAFT)
   registrationOpenedAt  DateTime?
   registrationClosedAt  DateTime?
+  // Slug sezóny na Raider.io (např. "season-mn-2") - podle něj se stahují
+  // časové limity dungeonů a výsledky běhů.
+  raiderioSeasonSlug    String?
   scoringConfig         Json         @default("{}")
   createdAt             DateTime     @default(now())
 
