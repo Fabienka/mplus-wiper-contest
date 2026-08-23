@@ -13,6 +13,11 @@ export default withAuth(
     return NextResponse.next();
   },
   {
+    // Bez tohohle by nepřihlášený uživatel skončil na výchozí přihlašovací
+    // stránce NextAuth místo na vlastní /login.
+    pages: {
+      signIn: "/login",
+    },
     callbacks: {
       authorized: ({ token }) => !!token,
     },
