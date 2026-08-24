@@ -13,6 +13,8 @@ export interface RaiderioCharacterData {
   faction: string;
   guildName: string | null;
   class: string;
+  /** Aktivní specializace (např. "Beast Mastery"). Null, když ji API nevrátí. */
+  wowSpec: string | null;
   rioScore: number;
 }
 
@@ -100,6 +102,7 @@ export async function fetchCharacterFromRaiderio(
     region: string;
     faction: string;
     class: string;
+    active_spec_name?: string | null;
     guild?: { name: string } | null;
     mythic_plus_scores_by_season?: { scores?: { all?: number } }[];
   };
@@ -111,6 +114,10 @@ export async function fetchCharacterFromRaiderio(
     faction: data.faction,
     guildName: data.guild?.name ?? null,
     class: data.class,
+    // Raider.io vrací spec, se kterým byla postava naposledy viděná - nemusí
+    // odpovídat tomu, co hráč plánuje hrát v soutěži, proto jde v registraci
+    // přepsat ručně.
+    wowSpec: data.active_spec_name ?? null,
     rioScore: data.mythic_plus_scores_by_season?.[0]?.scores?.all ?? 0,
   };
 }

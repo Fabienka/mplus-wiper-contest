@@ -10,7 +10,15 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "prisma:seed": "prisma db seed"
+    "prisma:seed": "prisma db seed",
+    "backup:db": "powershell -ExecutionPolicy Bypass -File scripts/backup-db.ps1",
+    "dev:test": "dotenv -e .env.test -- next dev",
+    "prisma:migrate:test": "dotenv -e .env.test -- prisma migrate dev",
+    "prisma:studio:test": "dotenv -e .env.test -- prisma studio",
+    "prisma:seed:test": "dotenv -e .env.test -- prisma db seed",
+    "db:test:reset": "dotenv -e .env.test -- prisma migrate reset --force",
+    "seed:players:test": "dotenv -e .env.test -- tsx scripts/seed-test-players.ts",
+    "check:shuffle": "tsx scripts/check-shuffle.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
@@ -26,6 +34,7 @@
     "@types/node": "^20.14.15",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
+    "dotenv-cli": "^11.0.0",
     "prisma": "^5.18.0",
     "tsx": "^4.23.12",
     "typescript": "^5.5.4"

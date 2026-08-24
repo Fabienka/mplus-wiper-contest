@@ -132,6 +132,11 @@ model Character {
   faction        String?
   guildName      String?
   class          String?
+  // Konkrétní specializace (např. "Beast Mastery") - podle ní se v shuffle
+  // určuje ranged/melee, battle rez a bloodlust (viz src/lib/wow-specs.ts).
+  // Nullable kvůli postavám založeným před zavedením pole a kvůli specům,
+  // které Raider.io nevrátí.
+  wowSpec        String?
   specRole       SpecRole
   rioScore       Float?
   lastSyncedAt   DateTime?
@@ -206,6 +211,9 @@ model ShuffleRun {
   executedBy  User              @relation(fields: [executedById], references: [id])
   executedAt  DateTime          @default(now())
   status      ShuffleRunStatus  @default(PROPOSED)
+  // Seed generátoru náhodných čísel - se stejným seedem a stejným vstupem
+  // vrátí shuffle stejné varianty (kvůli dohledání, proč vyšlo, co vyšlo).
+  seed        Int?
 
   proposals ShuffleProposal[]
 

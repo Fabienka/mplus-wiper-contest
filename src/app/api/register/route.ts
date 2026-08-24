@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { fetchCharacterFromRaiderio, RaiderioLookupError } from "@/lib/raiderio";
+import { findSpec } from "@/lib/wow-specs";
 
 // Formulář je verzovaný natvrdo v kódu pro danou sezónu - toto je
 // zjednodušená verze pokrývající pole z aktuálního formuláře.
@@ -13,6 +14,8 @@ const registerSchema = z.object({
   discordNick: z.string().min(2),
   raiderioUrl: z.string().url(),
   specRole: z.enum(["TANK", "HEALER", "DPS"]),
+  // Prázdné = použije se aktivní spec z Raider.io.
+  wowSpec: z.string().optional(),
   seasonId: z.string(),
   formAnswers: z.record(z.any()),
 });
@@ -35,6 +38,7 @@ export async function POST(request: NextRequest) {
     discordNick,
     raiderioUrl,
     specRole,
+    wowSpec,
     seasonId,
     formAnswers,
   } = parsed.data;
@@ -65,6 +69,32 @@ export async function POST(request: NextRequest) {
     throw err;
   }
 
+  // Spec se ve formuláři vybírá jen podle role, takže do něj může přijít spec
+  // jiné classy ("Frost" má Death Knight i Mage). Class z Raider.io je
+  // závazná - nesedící kombinaci radši odmítneme, než aby ji shuffle později
+  // vyhodnotil jako neznámý spec.
+  if (wowSpec) {
+    const spec = findSpec(raiderioData.class, wowSpec);
+
+    if (!spec) {
+      return NextResponse.json(
+        {
+          error: `Spec "${wowSpec}" neodpovídá class ${raiderioData.class}, kterou má postava na Raider.io.`,
+        },
+        { status: 400 }
+      );
+    }
+
+    if (spec.role !== specRole) {
+      return NextResponse.json(
+        {
+          error: `Spec "${wowSpec}" je ${spec.role}, ale registrace je na roli ${specRole}.`,
+        },
+        { status: 400 }
+      );
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
 
   const result = await prisma.$transaction(async (tx) => {
@@ -86,6 +116,9 @@ export async function POST(request: NextRequest) {
         faction: raiderioData.faction,
         guildName: raiderioData.guildName,
         class: raiderioData.class,
+        // Ručně zvolený spec má přednost - hráč se může hlásit se specem,
+        // se kterým ho Raider.io naposledy nevidělo (typicky tank/heal switch).
+        wowSpec: wowSpec || raiderioData.wowSpec,
         specRole,
         rioScore: raiderioData.rioScore,
         lastSyncedAt: new Date(),
