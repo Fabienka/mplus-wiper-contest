@@ -26,6 +26,16 @@ export const SPEC_ROLE_LABELS: Record<SpecRole, string> = {
   DPS: "DPS",
 };
 
+/**
+ * České skloňování podle počtu: 1 zápas / 2-4 zápasy / 5+ zápasů.
+ * Vrací jen tvar slova, číslo si volající předřadí sám.
+ */
+export function plural(count: number, one: string, few: string, many: string) {
+  if (count === 1) return one;
+  if (count >= 2 && count <= 4) return few;
+  return many;
+}
+
 export function formatDateTime(value: Date | null) {
   if (!value) return "-";
   return value.toLocaleString("cs-CZ", { dateStyle: "medium", timeStyle: "short" });

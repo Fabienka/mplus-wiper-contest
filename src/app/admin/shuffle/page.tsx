@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { SPEC_ROLE_LABELS, formatDateTime } from "@/lib/labels";
@@ -135,12 +136,14 @@ export default async function ShufflePage({
       {existingMemberships > 0 && (
         <div className="card">
           <h2>Týmy už jsou rozdělené</h2>
-          <p style={{ margin: 0, fontSize: "0.9rem" }}>
-            Sezóna má {existingMemberships} členství. Novou variantu půjde
-            použít až po smazání stávajících týmů (zatím jen ručně přes{" "}
-            <code>npx prisma studio</code>) - přepsání by zahodilo i navázané
-            zápasy.
+          <p style={{ margin: "0 0 1rem", fontSize: "0.9rem" }}>
+            Sezóna má {existingMemberships} členství. Rozdělení jde ručně
+            doladit nebo celé smazat na stránce Týmy - teprve pak půjde použít
+            jiná varianta. Přepsat ho rovnou by zahodilo i navázané zápasy.
           </p>
+          <Link className="btn" href="/admin/teams">
+            Přejít na týmy
+          </Link>
         </div>
       )}
 
@@ -279,7 +282,9 @@ export default async function ShufflePage({
                   </div>
                 )}
 
-                {latestRun.status !== "APPLIED" && existingMemberships === 0 && (
+                {/* Rozhoduje skutečný stav, ne stav běhu - po smazání týmů jde
+                    použít i variantu z běhu, který už jednou použitý byl. */}
+                {existingMemberships === 0 && (
                   <form>
                     <input type="hidden" name="proposalId" value={proposal.id} />
                     <ConfirmButton

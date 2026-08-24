@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin, writeAuditLog } from "@/lib/admin";
+import { plural } from "@/lib/labels";
 import {
   runShuffle,
   type ShufflePlayer,
@@ -162,7 +163,7 @@ export async function applyVariant(formData: FormData) {
 
   if (missing.length > 0) {
     fail(
-      `Od spuštění shuffle se změnily registrace (${missing.length} postav už není schválených). Spusť shuffle znovu.`
+      `Od spuštění shuffle se změnily registrace (${missing.length} ${plural(missing.length, "postava už není schválená", "postavy už nejsou schválené", "postav už není schválených")}). Spusť shuffle znovu.`
     );
   }
 

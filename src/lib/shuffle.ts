@@ -1,4 +1,5 @@
 import type { SpecRole } from "@prisma/client";
+import { plural } from "./labels";
 import { findSpec, type WowSpec } from "./wow-specs";
 
 /**
@@ -201,39 +202,86 @@ function splitDpsIntoBuckets(dps: PoolPlayer[]): Record<DpsBucket, PoolPlayer[]>
 
 // ---------- Hodnocení ----------
 
+/**
+ * Člen týmu pro vyhodnocení pravidel. Používá ho shuffle i ruční úpravy týmů,
+ * aby se hodnocení nerozešlo - ruční úprava musí hlásit stejné problémy, jaké
+ * algoritmus penalizuje.
+ */
+export interface TeamCompositionMember {
+  characterName: string;
+  className: string | null;
+  wowSpec: string | null;
+  roleInTeam: SpecRole;
+}
+
+interface RatedMember {
+  characterName: string;
+  className: string | null;
+  roleInTeam: SpecRole;
+  spec: WowSpec | null;
+}
+
+/**
+ * Nevyváženost melee/ranged v půlbodech. Tank a healer se počítají poloviční
+ * vahou - melee tank vadí míň než melee DPS. Postavy s neznámým specem se
+ * nepočítají do žádné strany.
+ */
+function rangeImbalance(members: RatedMember[]): number {
+  let melee = 0;
+  let ranged = 0;
+
+  for (const member of members) {
+    if (!member.spec) continue;
+    const weight =
+      member.roleInTeam === "DPS" ? RANGE_WEIGHT_DPS : RANGE_WEIGHT_SUPPORT;
+    if (member.spec.range === "MELEE") melee += weight;
+    else ranged += weight;
+  }
+
+  return Math.abs(melee - ranged);
+}
+
+/** Počet dvojic DPS se stejnou class (tank a healer jsou z pravidla vyjmuti). */
+function duplicateDpsPairs(members: RatedMember[]): number {
+  const dps = members.filter((m) => m.roleInTeam === "DPS");
+  let pairs = 0;
+
+  for (let i = 0; i < dps.length; i++) {
+    for (let j = i + 1; j < dps.length; j++) {
+      if (dps[i].className && dps[i].className === dps[j].className) pairs++;
+    }
+  }
+
+  return pairs;
+}
+
+function toRated(player: PoolPlayer): RatedMember {
+  return {
+    characterName: player.characterName,
+    className: player.className,
+    roleInTeam: player.specRole,
+    spec: player.spec,
+  };
+}
+
 function evaluateTeam(slots: TeamSlots): TeamPenalty {
   const { tank, healer, dps } = slots;
+  const rated = [tank, healer, ...dps].map(toRated);
 
   // Pravidlo 1 - pokrytí košů A/B/C
   const buckets = new Set(dps.map((p) => p.bucket).filter(Boolean));
   const r1 = 3 - buckets.size;
 
-  // Pravidlo 2 - poměr melee/ranged (postavy s neznámým specem se nepočítají)
-  let melee = 0;
-  let ranged = 0;
-  const weigh = (player: PoolPlayer, weight: number) => {
-    if (!player.spec) return;
-    if (player.spec.range === "MELEE") melee += weight;
-    else ranged += weight;
-  };
-  weigh(tank, RANGE_WEIGHT_SUPPORT);
-  weigh(healer, RANGE_WEIGHT_SUPPORT);
-  for (const player of dps) weigh(player, RANGE_WEIGHT_DPS);
-  const r2 = Math.abs(melee - ranged);
+  // Pravidlo 2 - poměr melee/ranged
+  const r2 = rangeImbalance(rated);
 
   // Pravidlo 3 - battle rez a bloodlust
-  const all = [tank, healer, ...dps];
-  const hasBattleRez = all.some((p) => p.spec?.battleRez);
-  const hasBloodlust = all.some((p) => p.spec?.bloodlust);
+  const hasBattleRez = rated.some((m) => m.spec?.battleRez);
+  const hasBloodlust = rated.some((m) => m.spec?.bloodlust);
   const r3 = (hasBattleRez ? 0 : 1) + (hasBloodlust ? 0 : 1);
 
-  // Pravidlo 4 - opakující se class mezi DPS (tank a healer jsou vyjmuti)
-  let r4 = 0;
-  for (let i = 0; i < dps.length; i++) {
-    for (let j = i + 1; j < dps.length; j++) {
-      if (dps[i].className && dps[i].className === dps[j].className) r4++;
-    }
-  }
+  // Pravidlo 4 - opakující se class mezi DPS
+  const r4 = duplicateDpsPairs(rated);
 
   return { r1, r2, r3, r4 };
 }
@@ -406,37 +454,34 @@ function isDistinctEnough(a: string[], b: string[], teamCount: number): boolean 
 
 // ---------- Popisy porušených pravidel ----------
 
-function describeViolations(slots: TeamSlots, penalty: TeamPenalty): string[] {
+/**
+ * Popisy porušených pravidel, která nezávisí na koších - platí stejně pro
+ * navrženou variantu i pro ručně upravený tým.
+ */
+function describeSharedViolations(members: RatedMember[]): string[] {
   const violations: string[] = [];
-  const { tank, healer, dps } = slots;
-  const all = [tank, healer, ...dps];
 
-  if (penalty.r1 > 0) {
-    const buckets = dps.map((p) => p.bucket ?? "?").join(", ");
-    violations.push(`DPS nepokrývají všechny tři koše (${buckets})`);
-  }
-
-  if (penalty.r2 >= IMBALANCE_REPORT_THRESHOLD) {
-    const melee = all.filter((p) => p.spec?.range === "MELEE").length;
-    const ranged = all.filter((p) => p.spec?.range === "RANGED").length;
+  if (rangeImbalance(members) >= IMBALANCE_REPORT_THRESHOLD) {
+    const melee = members.filter((m) => m.spec?.range === "MELEE").length;
+    const ranged = members.filter((m) => m.spec?.range === "RANGED").length;
     violations.push(
       `Nevyvážený poměr melee/ranged (${melee} melee / ${ranged} ranged včetně tanka a healera)`
     );
   }
 
-  if (!all.some((p) => p.spec?.battleRez)) {
+  if (!members.some((m) => m.spec?.battleRez)) {
     violations.push("Chybí battle rez");
   }
 
-  if (!all.some((p) => p.spec?.bloodlust)) {
+  if (!members.some((m) => m.spec?.bloodlust)) {
     violations.push("Chybí bloodlust/heroism (pokud tým nepoužije drums)");
   }
 
-  if (penalty.r4 > 0) {
+  if (duplicateDpsPairs(members) > 0) {
     const counts = new Map<string, number>();
-    for (const player of dps) {
-      if (player.className) {
-        counts.set(player.className, (counts.get(player.className) ?? 0) + 1);
+    for (const member of members) {
+      if (member.roleInTeam === "DPS" && member.className) {
+        counts.set(member.className, (counts.get(member.className) ?? 0) + 1);
       }
     }
     const duplicates = [...counts.entries()]
@@ -446,14 +491,54 @@ function describeViolations(slots: TeamSlots, penalty: TeamPenalty): string[] {
     violations.push(`Stejná class u DPS: ${duplicates}`);
   }
 
-  const unknown = all.filter((p) => !p.spec);
+  const unknown = members.filter((m) => !m.spec);
   if (unknown.length > 0) {
     violations.push(
-      `Neznámý spec u: ${unknown.map((p) => p.characterName).join(", ")} - pravidla o poměru a schopnostech je nezapočítala`
+      `Neznámý spec u: ${unknown.map((m) => m.characterName).join(", ")} - pravidla o poměru a schopnostech je nezapočítala`
     );
   }
 
   return violations;
+}
+
+function describeViolations(slots: TeamSlots, penalty: TeamPenalty): string[] {
+  const violations: string[] = [];
+  const { dps } = slots;
+  const rated = [slots.tank, slots.healer, ...dps].map(toRated);
+
+  if (penalty.r1 > 0) {
+    const buckets = dps.map((p) => p.bucket ?? "?").join(", ");
+    violations.push(`DPS nepokrývají všechny tři koše (${buckets})`);
+  }
+
+  return [...violations, ...describeSharedViolations(rated)];
+}
+
+/**
+ * Porušená pravidla ručně sestaveného týmu. Oproti shuffle nekontroluje pokrytí
+ * košů - koše jsou jen pomůcka losování a po rozdělení do týmů se nedrží.
+ * Navíc hlídá složení rolí, které si admin ruční úpravou může rozbít.
+ */
+export function describeTeamComposition(members: TeamCompositionMember[]): string[] {
+  const rated: RatedMember[] = members.map((member) => ({
+    characterName: member.characterName,
+    className: member.className,
+    roleInTeam: member.roleInTeam,
+    spec: findSpec(member.className, member.wowSpec),
+  }));
+
+  const violations: string[] = [];
+  const tanks = rated.filter((m) => m.roleInTeam === "TANK").length;
+  const healers = rated.filter((m) => m.roleInTeam === "HEALER").length;
+  const dps = rated.filter((m) => m.roleInTeam === "DPS").length;
+
+  if (tanks !== 1 || healers !== 1 || dps !== 3) {
+    violations.push(
+      `Nestandardní složení: ${tanks}× tank, ${healers}× healer, ${dps}× DPS (má být 1/1/3)`
+    );
+  }
+
+  return [...violations, ...describeSharedViolations(rated)];
 }
 
 // ---------- Převod na výstup ----------
@@ -570,7 +655,7 @@ export function runShuffle(
   const unknownSpecs = pool.filter((p) => !p.spec);
   if (unknownSpecs.length > 0) {
     warnings.push(
-      `${unknownSpecs.length} postav nemá rozpoznaný spec (${unknownSpecs
+      `${unknownSpecs.length} ${plural(unknownSpecs.length, "postava nemá", "postavy nemají", "postav nemá")} rozpoznaný spec (${unknownSpecs
         .map((p) => p.characterName)
         .join(", ")}). Nezapočítaly se do poměru melee/ranged ani do battle rezu a bloodlustu.`
     );
@@ -579,7 +664,7 @@ export function runShuffle(
   const roleMismatches = pool.filter((p) => p.spec && p.spec.role !== p.specRole);
   if (roleMismatches.length > 0) {
     warnings.push(
-      `U ${roleMismatches.length} postav nesedí zvolená role se specem: ${roleMismatches
+      `U ${roleMismatches.length} ${plural(roleMismatches.length, "postavy", "postav", "postav")} nesedí zvolená role se specem: ${roleMismatches
         .map((p) => `${p.characterName} (${p.wowSpec} = ${p.spec!.role}, přihlášen jako ${p.specRole})`)
         .join(", ")}.`
     );
@@ -638,7 +723,7 @@ export function runShuffle(
 
   if (picked.length < VARIANTS_WANTED) {
     warnings.push(
-      `Podařilo se najít jen ${picked.length} dostatečně odlišných variant. Při malém počtu týmů je kombinací málo.`
+      `Podařilo se najít jen ${picked.length} ${plural(picked.length, "dostatečně odlišnou variantu", "dostatečně odlišné varianty", "dostatečně odlišných variant")}. Při malém počtu týmů je kombinací málo.`
     );
   }
 

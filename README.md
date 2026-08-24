@@ -11,13 +11,12 @@ Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webh
 - Middleware chránící `/admin` podle role
 - Admin rozhraní – schvalování registrací, správa sezóny a dungeonů, audit log
 - Shuffle algoritmus (`src/lib/shuffle.ts`) + admin stránka `/admin/shuffle` se 3 variantami
+- Ruční úprava týmů a smazání rozdělení (`/admin/teams`)
 - Seed skript (`prisma/seed.ts`) – admin účet + otevřená sezóna pro lokální vývoj
 - Oddělená testovací databáze a zálohování ostré databáze (viz níže)
 
 ## Co chybí (další kroky)
 
-- Ruční úprava navržené varianty před potvrzením (teď jde varianta jen přijmout celá)
-- Smazání rozdělených týmů z admin rozhraní (zatím jen ručně přes Prisma Studio)
 - Zápasy, návrhy termínů, stahování výsledků z Raider.io v časovém okně
 - Žebříček
 - Discord webhook
@@ -105,6 +104,13 @@ databáze – proti selhání disku tedy nechrání.
   Dvě odchylky od původního zadání jsou okomentované přímo v kódu: počet týmů omezuje i
   nejvzácnější role (ne jen `floor(hráčů/5)`) a váhy pravidel se odvozují z počtu týmů,
   aby se vyšší pravidlo nikdy neobětovalo kvůli součtu porušení nižšího.
+- **Ruční úprava týmů** (`/admin/teams`) hlídá stejná pravidla jako shuffle - obojí volá
+  `describeSharedViolations` v `src/lib/shuffle.ts`, aby se hodnocení nerozešlo. Rozbité složení
+  týmu se schválně nezakazuje (admin může potřebovat mezikrok), jen se označí. Nekontroluje se
+  pokrytí košů - koše jsou pomůcka losování a po rozdělení se nedrží.
+- **Smazání rozdělení** vrátí použitý `ShuffleRun` zpět na `PROPOSED`, takže jde použít jiná
+  varianta. Neprojde, pokud na týmech visí zápasy - to se kontroluje dopředu, aby admin dostal
+  srozumitelnou hlášku místo chyby cizího klíče.
 - **Tabulka speců** (`src/lib/wow-specs.ts`) drží ranged/melee, battle rez a bloodlust pro
   každou class/spec. Neodvozuje se automaticky – **při každém větším patchi je potřeba ji projít**
   a aktualizovat `LAST_VERIFIED`. Drums se do ní zanést nedají (nezávisí na class), takže shuffle

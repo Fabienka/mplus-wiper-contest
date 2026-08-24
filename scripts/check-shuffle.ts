@@ -306,7 +306,8 @@ section("7. Postava s nerozpoznaným specem");
 
   check(result.teamCount === 4, "shuffle proběhne i s neznámými specy");
   check(
-    result.warnings.some((w) => w.includes("nemá rozpoznaný spec")),
+    // Bez tvaru slovesa - to se mění skloňováním podle počtu postav.
+    result.warnings.some((w) => w.includes("rozpoznaný spec")),
     "varování o neznámém specu",
     result.warnings.join(" | ")
   );

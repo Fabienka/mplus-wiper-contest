@@ -7,6 +7,7 @@ const LINKS = [
   { href: "/admin", label: "Přehled" },
   { href: "/admin/registrations", label: "Registrace" },
   { href: "/admin/shuffle", label: "Shuffle" },
+  { href: "/admin/teams", label: "Týmy" },
   { href: "/admin/season", label: "Sezóna a dungeony" },
 ];
 
