@@ -15,6 +15,7 @@ Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webh
 - Shuffle algoritmus (`src/lib/shuffle.ts`) + admin stránka `/admin/shuffle` se 3 variantami
 - Uživatelská část - profil s přihláškou a stavem zápisného (`/profile`), lišta s navigací
 - Ruční úprava týmů a smazání rozdělení (`/admin/teams`)
+- Bodování běhů (`src/lib/scoring.ts`) + nastavení v sezóně
 - Kalendář dostupností a termíny zápasů - hráči na `/team`, schvalování moderátorem na `/admin/matches`
 - Měsíční kalendář s událostmi (`src/app/month-calendar.tsx`) na obou stránkách
 - Seed skript (`prisma/seed.ts`) – admin účet + otevřená sezóna pro lokální vývoj
@@ -117,6 +118,34 @@ jdou vyvolat i mimo stránku, takže schované tlačítko samo o sobě nic nechr
 
 Matici hlídá `npm run check:permissions`, aby budoucí úprava nemohla moderátorovi
 tiše přidat práva.
+
+## Bodování
+
+```
+skóre = (výška klíče − minScoredKeyLevel) × pointsPerKeyLevel
+        + 100 × (1 − čas běhu / časový limit klíče)
+```
+
+Druhý člen je procento limitu, které tým nevyčerpal - tím se srovnají různě
+dlouhé dungeony, protože 20 % ušetřeného času znamená všude totéž.
+
+Pravidla, která z toho plynou:
+
+- **Nestihnutý klíč se neboduje vůbec**, nedostane ani nulu. Platnost se bere
+  z verdiktu hry (`num_keystone_upgrades`), ne z porovnání s naším uloženým
+  časem - odpadá tím dohadování o doběhu přesně na limitu.
+- **Klíče pod `minScoredKeyLevel` se nebodují** ani když je tým stihne; berou se
+  jen jako rozběh na vytažení klíče.
+- **Vyšší klíč porazí nižší vždycky.** Časový bonus je vždy menší než 100 a
+  jedna úroveň má aspoň 100 bodů - proto `parseScoringConfig` nižší hodnotu
+  odmítne.
+- Týmu se počítá **jen nejlepší bodovaný běh**; neúspěšný pokus ho nepřipraví
+  o dřív dosažený výsledek.
+- Procenta se počítají proti limitu **konkrétního běhu** z Raider.io, ne proti
+  ručně udržovanému času u dungeonu. Ten slouží jen jako záloha pro výsledky
+  ze screenshotů. Uložený `SeasonDungeon.coefficient` se do bodování nepoužívá.
+
+Kontroluje se `npm run check:scoring`.
 
 ## Dev server a kontrolní build
 

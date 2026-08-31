@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { requirePermission, writeAuditLog } from "@/lib/admin";
 import { parseTimeLimit } from "@/lib/labels";
 import { RaiderioLookupError, fetchSeasonDungeons } from "@/lib/raiderio";
+import { ScoringConfigError, parseScoringConfig } from "@/lib/scoring";
 
 function revalidateSeason() {
   revalidatePath("/admin");
@@ -25,11 +26,33 @@ export async function updateSeason(formData: FormData) {
     throw new Error("Název sezóny nesmí být prázdný.");
   }
 
+  // Nastavení bodování se ověřuje tady, ne až při počítání skóre - špatná
+  // hodnota by se jinak projevila až rozbitým žebříčkem.
+  let scoringConfig;
+  try {
+    scoringConfig = parseScoringConfig({
+      minScoredKeyLevel: Number(formData.get("minScoredKeyLevel")),
+      pointsPerKeyLevel: Number(formData.get("pointsPerKeyLevel")),
+    });
+  } catch (err) {
+    redirect(
+      "/admin/season?error=" +
+        encodeURIComponent(
+          err instanceof ScoringConfigError ? err.message : "Neplatné nastavení bodování."
+        )
+    );
+  }
+
   const season = await prisma.season.findUniqueOrThrow({ where: { id } });
 
   // Časy otevření/uzavření registrace se odvozují od přechodu stavu,
   // ať je admin nemusí hlídat ručně.
-  const data: Prisma.SeasonUpdateInput = { name, status, raiderioSeasonSlug };
+  const data: Prisma.SeasonUpdateInput = {
+    name,
+    status,
+    raiderioSeasonSlug,
+    scoringConfig: scoringConfig as unknown as Prisma.InputJsonValue,
+  };
 
   if (status === "REGISTRATION_OPEN" && !season.registrationOpenedAt) {
     data.registrationOpenedAt = new Date();
@@ -51,8 +74,14 @@ export async function updateSeason(formData: FormData) {
         name: season.name,
         status: season.status,
         raiderioSeasonSlug: season.raiderioSeasonSlug,
+        scoringConfig: season.scoringConfig,
       },
-      newValue: { name, status, raiderioSeasonSlug },
+      newValue: {
+        name,
+        status,
+        raiderioSeasonSlug,
+        scoringConfig: { ...scoringConfig },
+      },
     });
   });
 

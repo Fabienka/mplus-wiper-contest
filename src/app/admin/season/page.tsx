@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { SEASON_STATUS_LABELS, formatTimeLimit } from "@/lib/labels";
+import { DEFAULT_SCORING_CONFIG, parseScoringConfig } from "@/lib/scoring";
 import { ConfirmButton } from "../confirm-button";
 import {
   addDungeon,
@@ -37,6 +38,15 @@ export default async function SeasonPage({
   });
 
   const synced = Number(searchParams.synced);
+
+  // Rozbité nastavení nesmí shodit celou stránku - formulář se pak otevře
+  // s výchozími hodnotami a admin ho může opravit.
+  let scoring = DEFAULT_SCORING_CONFIG;
+  try {
+    scoring = parseScoringConfig(season.scoringConfig);
+  } catch {
+    scoring = DEFAULT_SCORING_CONFIG;
+  }
 
   return (
     <>
@@ -95,6 +105,42 @@ export default async function SeasonPage({
             <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
               Najdeš ho v adrese běhu na Raider.io:
               raider.io/mythic-plus-runs/<b>season-mn-2</b>/...
+            </span>
+          </div>
+
+          <div className="field">
+            <label htmlFor="minScoredKeyLevel">Nejnižší bodovaný klíč</label>
+            <input
+              id="minScoredKeyLevel"
+              name="minScoredKeyLevel"
+              type="number"
+              min="2"
+              max="30"
+              step="1"
+              defaultValue={scoring.minScoredKeyLevel}
+              required
+            />
+            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+              Nižší klíče se nebodují vůbec, i když je tým stihne v limitu.
+              Zároveň se od téhle výšky počítá skóre, takže nejnižší bodovaný
+              klíč začíná na nule.
+            </span>
+          </div>
+
+          <div className="field">
+            <label htmlFor="pointsPerKeyLevel">Body za úroveň klíče</label>
+            <input
+              id="pointsPerKeyLevel"
+              name="pointsPerKeyLevel"
+              type="number"
+              min="100"
+              step="10"
+              defaultValue={scoring.pointsPerKeyLevel}
+              required
+            />
+            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+              Nesmí být pod 100 - časový bonus je až 100 bodů a vyšší klíč musí
+              porazit nižší i při horším čase.
             </span>
           </div>
 
