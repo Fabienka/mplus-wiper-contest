@@ -23,11 +23,9 @@ Podrobná pravidla jsou v sekcích [Role a oprávnění](#role-a-oprávnění),
 
 ## Stav projektu
 
-Rozpracované na větvi **`shuffle-algoritmus`**, nic nepushnuto. Sloučení:
-
-```bash
-git checkout main && git merge shuffle-algoritmus
-```
+Použitelné, ale zatím jen lokálně - na veřejné adrese to ještě neběželo.
+Před nasazením si projdi [Nasazení na server](#nasazení-na-server), hlavně
+část o časové zóně a o tom, co ještě chybí.
 
 ### Hotové
 
@@ -49,13 +47,18 @@ git checkout main && git merge shuffle-algoritmus
 
 ### Chybí
 
+- **Reset a změna hesla.** Když člen zapomene heslo, musí mu ho admin přepsat
+  přímo v databázi - `email` je navíc při registraci nepovinný.
+- **Upgrade Next.js na 15/16.** Na řadě 14.x zůstávají dvě `high`
+  zranitelnosti, které v ní opravit nejdou (`npm audit` je vypíše).
 - Discord webhook (`DiscordEvent` je zatím model bez kódu)
 - Zamítnutí termínu s důvodem, oprava specu postavy z administrace
-- Administrace není použitelná na mobilu, ESLint není nakonfigurovaný
+- ESLint není nakonfigurovaný, takže `next build` reálně nelintuje
 
 ## Spuštění
 
-Potřebuješ **Node.js** a **PostgreSQL** běžící lokálně na `localhost:5432`.
+Potřebuješ **Node.js 18.17+** (vyvíjeno na 24) a **PostgreSQL** běžící
+lokálně na `localhost:5432`.
 
 ```bash
 npm install
@@ -68,6 +71,89 @@ npm run dev                   # http://localhost:3000
 Seed založí **`admin` / `admin1234`** a **`moderator` / `moderator1234`**
 (jde přepsat proměnnými `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD` a
 obdobně pro moderátora). Na prohlížení dat slouží `npx prisma studio`.
+
+S `NODE_ENV=production` se výchozí hesla **nepoužijí** - `SEED_ADMIN_PASSWORD`
+i `SEED_MODERATOR_PASSWORD` musí přijít z prostředí a mít aspoň 12 znaků,
+jinak seed skončí chybou. Hesla se v tom režimu ani nevypisují do logu.
+
+## Časová zóna
+
+Aplikace formátuje i parsuje všechny termíny v **systémové zóně serveru** -
+nikde se zóna nepředává explicitně. Hosting proto musí mít proměnnou prostředí:
+
+```
+TZ=Europe/Prague
+```
+
+Musí to být skutečná proměnná prostředí, ne řádek v `.env` - Node si zónu čte
+při startu procesu, dřív než se `.env` vůbec načte. Bez ní běží server v UTC
+a všechny časy se ukazují o hodinu (v létě o dvě) posunuté, aniž by cokoliv
+spadlo.
+
+Aby to nešlo přehlédnout, `src/instrumentation.ts` zónu při startu kontroluje:
+na produkci server rovnou spadne s vysvětlením, v dev jen napíše varování.
+
+## Nasazení na server
+
+Aplikace je běžná Next.js appka - `npm run build` a `npm start`, žádný speciální
+runtime. Potřebuje **Node 18.17+**, **PostgreSQL** a před sebou **reverse proxy
+s HTTPS** (nginx, Caddy, Traefik). Bez HTTPS nenastaví NextAuth secure cookies.
+
+### Proměnné prostředí
+
+Musí to být skutečné proměnné prostředí serveru, ne jen soubor `.env`.
+
+| Proměnná | Nutná | Poznámka |
+|---|---|---|
+| `DATABASE_URL` | ano | připojení k produkčnímu PostgreSQL |
+| `NEXTAUTH_SECRET` | ano | **vygeneruj nový**, ne ten z vývoje: `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | ano | veřejná adresa včetně `https://` |
+| `TZ` | ano | `Europe/Prague`, viz [Časová zóna](#časová-zóna) |
+| `NODE_ENV` | ano | `production` |
+| `SEED_ADMIN_PASSWORD` | jen při seedu | aspoň 12 znaků |
+| `SEED_MODERATOR_PASSWORD` | jen při seedu | aspoň 12 znaků |
+| `RAIDERIO_API_BASE` | ne | výchozí `https://raider.io/api/v1` |
+| `DISCORD_WEBHOOK_URL` | ne | zatím nikde nečtená, zásoba na notifikace |
+
+### Postup
+
+```bash
+git clone <repo> && cd wow-mplus-app
+npm ci                        # ne npm install - drží se package-lock.json
+npx prisma migrate deploy     # NE migrate dev, ten umí nabídnout reset databáze
+npm run build
+npm start                     # naslouchá na portu 3000, PORT ho přepíše
+```
+
+Účty založíš buď seedem (`npm run prisma:seed` s nastavenými `SEED_*` hesly),
+nebo si admina vytvoříš ručně a seed vůbec nepouštíš. Seed je idempotentní
+a **existujícím účtům heslo nepřepisuje** - mění jen roli.
+
+Proces je potřeba držet naživu a restartovat po pádu (systemd unit, pm2, Docker
+- podle toho, co na serveru máš).
+
+### Při každé další aktualizaci
+
+```bash
+git pull
+npm ci
+npx prisma migrate deploy
+npm run build
+# restart procesu
+```
+
+### Na co si dát pozor
+
+- **Zálohy nepojedou.** `scripts/backup-db.ps1` a `register-backup-task.ps1`
+  jsou PowerShell pro Windows a čtou `.env` ze souboru. Na Linuxu použij zálohy
+  svého poskytovatele databáze nebo vlastní `pg_dump` v cronu.
+- **Časová zóna.** Když ji nenastavíš, server při startu spadne s vysvětlením.
+  Je to schválně - tiše posunuté časy termínů by si nikdo nevšiml.
+- **Raider.io se volá bez timeoutu.** Když jejich API nereaguje, registrace visí,
+  dokud request nespadne na timeoutu proxy.
+- **Omezení pokusů** o přihlášení i registraci se počítá podle IP z hlavičky
+  `X-Forwarded-For`. Nastav proxy tak, aby ji posílala pravdivě, jinak budou
+  všechny požadavky vypadat jako jedna adresa.
 
 ## Kontrolní skripty
 

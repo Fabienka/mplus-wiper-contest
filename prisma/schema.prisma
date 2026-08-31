@@ -317,6 +317,29 @@ model MatchResult {
 
 // ---------- Audit & Discord ----------
 
+/// Neúspěšná přihlášení pro omezení počtu pokusů. Úspěšná se nezaznamenávají -
+/// po přihlášení se záznamy toho jména mažou.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  /// Vždycky malými písmeny, ať limit neobejde jiná velikost písmen.
+  username  String
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([username, createdAt])
+  @@index([ipAddress, createdAt])
+}
+
+/// Pokusy o registraci pro omezení jejich počtu. Zapisují se všechny, i
+/// neúspěšné - limit chrání i volání Raider.io, které registrace dělá.
+model RegistrationAttempt {
+  id        String   @id @default(cuid())
+  ipAddress String
+  createdAt DateTime @default(now())
+
+  @@index([ipAddress, createdAt])
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   actorId    String

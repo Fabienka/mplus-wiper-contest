@@ -4,6 +4,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { fetchCharacterFromRaiderio, RaiderioLookupError } from "@/lib/raiderio";
 import { findSpec } from "@/lib/wow-specs";
+import {
+  checkRegistrationAllowed,
+  recordRegistrationAttempt,
+} from "@/lib/registration-attempts";
+import { clientIpFromHeaders, retryAfterLabel } from "@/lib/rate-limit";
 
 // Formulář je verzovaný natvrdo v kódu pro danou sezónu - toto je
 // zjednodušená verze pokrývající pole z aktuálního formuláře.
@@ -21,6 +26,28 @@ const registerSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const ip = clientIpFromHeaders((name) => request.headers.get(name));
+
+  // Limit se kontroluje jako první, ještě před rozborem těla - i vadný
+  // požadavek stojí práci a hlavně by šel použít k obcházení limitu.
+  const verdict = await checkRegistrationAllowed(ip);
+
+  if (verdict.blocked) {
+    return NextResponse.json(
+      {
+        error: `Příliš mnoho pokusů o registraci. Zkus to znovu ${retryAfterLabel(
+          verdict.retryAfterSeconds
+        )}.`,
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(verdict.retryAfterSeconds) },
+      }
+    );
+  }
+
+  await recordRegistrationAttempt(ip);
+
   const body = await request.json();
   const parsed = registerSchema.safeParse(body);
 

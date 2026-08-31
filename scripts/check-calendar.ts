@@ -7,8 +7,10 @@
 import {
   buildMonthGrid,
   eventsForDay,
+  formatDayParam,
   formatMonthParam,
   mondayFirstIndex,
+  parseDayParam,
   parseMonthParam,
   shiftMonth,
   type CalendarEvent,
@@ -175,6 +177,41 @@ console.log("6. Události na dnech");
   check(
     eventsForDay(midnight, new Date(2026, 8, 11)).length === 0,
     "konec přesně o půlnoci nepatří do 11."
+  );
+}
+
+console.log("7. Parametr dne v URL");
+{
+  check(formatDayParam(new Date(2026, 8, 14)) === "2026-09-14", "formát dne");
+  check(formatDayParam(new Date(2026, 0, 5)) === "2026-01-05", "doplní nuly");
+
+  // Ranní hodina by přes toISOString v záporném posunu spadla o den zpět.
+  check(
+    formatDayParam(new Date(2026, 8, 14, 1, 30)) === "2026-09-14",
+    "bere místní čas, ne UTC"
+  );
+
+  const parsed = parseDayParam("2026-09-14");
+  check(parsed !== null, "platný den se přečte");
+  check(
+    parsed?.getFullYear() === 2026 && parsed?.getMonth() === 8 && parsed?.getDate() === 14,
+    "a je to správné datum"
+  );
+  check(parsed?.getHours() === 0 && parsed?.getMinutes() === 0, "vrací půlnoc");
+
+  check(parseDayParam(undefined) === null, "chybějící hodnota je null");
+  check(parseDayParam("") === null, "prázdný řetězec je null");
+  check(parseDayParam("2026-09") === null, "samotný měsíc je null");
+  check(parseDayParam("nesmysl") === null, "nesmysl je null");
+  check(parseDayParam("2026-02-31") === null, "31. února neexistuje");
+  check(parseDayParam("2026-13-01") === null, "třináctý měsíc neexistuje");
+  check(parseDayParam("2024-02-29") !== null, "přestupný den 2024 existuje");
+  check(parseDayParam("2026-02-29") === null, "ale v roce 2026 ne");
+
+  const roundTrip = parseDayParam(formatDayParam(new Date(2026, 11, 31)));
+  check(
+    roundTrip?.getMonth() === 11 && roundTrip?.getDate() === 31,
+    "formát a zpět dá stejný den"
   );
 }
 

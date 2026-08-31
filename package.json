@@ -2,6 +2,9 @@
   "name": "wow-mplus-app",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.17"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -28,12 +31,13 @@
     "seed:run-team:test": "dotenv -e .env.test -- tsx scripts/seed-run-team.ts",
     "check:match-result": "tsx scripts/check-match-result.ts",
     "check:result-flow:test": "dotenv -e .env.test -- tsx scripts/check-result-flow.ts",
-    "check:leaderboard": "tsx scripts/check-leaderboard.ts"
+    "check:leaderboard": "tsx scripts/check-leaderboard.ts",
+    "check:rate-limit": "tsx scripts/check-rate-limit.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
     "bcryptjs": "^2.4.3",
-    "next": "14.2.5",
+    "next": "14.2.35",
     "next-auth": "^4.24.7",
     "react": "18.3.1",
     "react-dom": "18.3.1",

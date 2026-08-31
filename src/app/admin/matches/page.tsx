@@ -33,7 +33,13 @@ const FILTERS: { value: string; label: string }[] = [
 export default async function MatchesPage({
   searchParams,
 }: {
-  searchParams: { error?: string; saved?: string; status?: string; month?: string };
+  searchParams: {
+    error?: string;
+    saved?: string;
+    status?: string;
+    month?: string;
+    day?: string;
+  };
 }) {
   const season = await getCurrentSeason();
 
@@ -125,18 +131,17 @@ export default async function MatchesPage({
 
       <div className="card">
         <h2>Kalendář termínů</h2>
-        <div className="cal-scroll">
-          <MonthCalendar
-            month={month}
-            events={calendarEvents}
-            basePath="/admin/matches"
-            keepParams={{ status: searchParams.status }}
-            legend={[
-              { kind: "MATCH_CONFIRMED", label: "schválený" },
-              { kind: "MATCH_PROPOSED", label: "čeká na schválení" },
-            ]}
-          />
-        </div>
+        <MonthCalendar
+          month={month}
+          events={calendarEvents}
+          basePath="/admin/matches"
+          keepParams={{ status: searchParams.status }}
+          selectedDay={searchParams.day}
+          legend={[
+            { kind: "MATCH_CONFIRMED", label: "schválený" },
+            { kind: "MATCH_PROPOSED", label: "čeká na schválení" },
+          ]}
+        />
       </div>
 
       <div className="row-actions" style={{ marginBottom: "1.25rem" }}>
@@ -144,7 +149,9 @@ export default async function MatchesPage({
           <Link
             key={filter.value}
             className={`btn${filter.value === activeFilter ? " btn-accent" : ""}`}
-            href={`/admin/matches?status=${filter.value}&month=${searchParams.month ?? ""}`}
+            href={`/admin/matches?status=${filter.value}&month=${
+              searchParams.month ?? ""
+            }&day=${searchParams.day ?? ""}`}
           >
             {filter.label}
           </Link>

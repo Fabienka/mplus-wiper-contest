@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { can } from "@/lib/permissions";
+import { SiteHeader } from "../site-header";
 import { AdminNav } from "./nav";
 
 export default async function AdminLayout({
@@ -16,12 +17,18 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="admin-shell">
-      <aside className="admin-sidebar">
-        <h2>Administrace</h2>
-        <AdminNav role={session!.user.role} />
-      </aside>
-      <main className="admin-main">{children}</main>
+    // Lišta zůstává i v administraci, aby byla cesta zpátky na veřejnou část
+    // pořád po ruce. Obal drží lištu nahoře a zbytek výšky nechává shellu.
+    <div className="admin-page">
+      <SiteHeader />
+
+      <div className="admin-shell">
+        <aside className="admin-sidebar">
+          <h2>Administrace</h2>
+          <AdminNav role={session!.user.role} />
+        </aside>
+        <main className="admin-main">{children}</main>
+      </div>
     </div>
   );
 }
