@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { can } from "@/lib/permissions";
 import { AdminNav } from "./nav";
 
 export default async function AdminLayout({
@@ -10,7 +11,7 @@ export default async function AdminLayout({
 }) {
   const session = await getServerSession(authOptions);
 
-  if (session?.user?.role !== "ADMIN") {
+  if (!can(session?.user?.role, "accessAdmin")) {
     redirect("/");
   }
 
@@ -18,7 +19,7 @@ export default async function AdminLayout({
     <div className="admin-shell">
       <aside className="admin-sidebar">
         <h2>Administrace</h2>
-        <AdminNav />
+        <AdminNav role={session!.user.role} />
       </aside>
       <main className="admin-main">{children}</main>
     </div>

@@ -15,8 +15,16 @@ const FILTERS: { value: string; label: string }[] = [
   { value: "PENDING", label: "Čekající" },
   { value: "APPROVED", label: "Schválené" },
   { value: "REJECTED", label: "Zamítnuté" },
+  { value: "UNPAID", label: "Nezaplacené" },
   { value: "ALL", label: "Vše" },
 ];
+
+/** Filtr "UNPAID" nefiltruje podle stavu, ale podle chybějícího zápisného. */
+function filterToWhere(filter: string) {
+  if (filter === "ALL") return {};
+  if (filter === "UNPAID") return { entryFeePaidAt: null };
+  return { status: filter as RegistrationStatus };
+}
 
 export default async function RegistrationsPage({
   searchParams,
@@ -41,9 +49,7 @@ export default async function RegistrationsPage({
   const registrations = await prisma.seasonRegistration.findMany({
     where: {
       seasonId: season.id,
-      ...(activeFilter === "ALL"
-        ? {}
-        : { status: activeFilter as RegistrationStatus }),
+      ...filterToWhere(activeFilter),
     },
     orderBy: { createdAt: "asc" },
     include: {
@@ -90,6 +96,7 @@ export default async function RegistrationsPage({
                 <th>Discord</th>
                 <th>Přihlášeno</th>
                 <th>Stav</th>
+                <th>Zápisné</th>
                 <th />
               </tr>
             </thead>
@@ -112,6 +119,17 @@ export default async function RegistrationsPage({
                   <td>
                     <span className={REGISTRATION_STATUS_BADGES[registration.status]}>
                       {REGISTRATION_STATUS_LABELS[registration.status]}
+                    </span>
+                  </td>
+                  <td>
+                    <span
+                      className={
+                        registration.entryFeePaidAt
+                          ? "badge badge-approved"
+                          : "badge badge-pending"
+                      }
+                    >
+                      {registration.entryFeePaidAt ? "Zaplaceno" : "Nezaplaceno"}
                     </span>
                   </td>
                   <td>

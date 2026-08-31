@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { specsForRole } from "@/lib/wow-specs";
 
 type SpecRole = "TANK" | "HEALER" | "DPS";
 
@@ -16,6 +17,9 @@ export default function RegisterPage() {
   const [discordNick, setDiscordNick] = useState("");
   const [raiderioUrl, setRaiderioUrl] = useState("");
   const [specRole, setSpecRole] = useState<SpecRole>("DPS");
+  // Prázdné = spec se vezme z Raider.io. Shuffle podle něj počítá ranged/melee,
+  // battle rez a bloodlust, takže se vyplatí ho mít správně.
+  const [wowSpec, setWowSpec] = useState("");
   // Zjednodušená verze doplňujících otázek formuláře - v reálné sezóně
   // odpovídá aktuálně platné podobě registračního formuláře (viz use case
   // s alt postavou pro tank/heal switch).
@@ -61,6 +65,7 @@ export default function RegisterPage() {
           discordNick,
           raiderioUrl,
           specRole,
+          wowSpec: wowSpec || undefined,
           seasonId: season.id,
           formAnswers: {
             altCharacter: altCharacter || null,
@@ -173,12 +178,36 @@ export default function RegisterPage() {
           <select
             id="specRole"
             value={specRole}
-            onChange={(e) => setSpecRole(e.target.value as SpecRole)}
+            onChange={(e) => {
+              setSpecRole(e.target.value as SpecRole);
+              // Spec patřící k předchozí roli by po přepnutí neseděl.
+              setWowSpec("");
+            }}
           >
             <option value="TANK">Tank</option>
             <option value="HEALER">Healer</option>
             <option value="DPS">DPS</option>
           </select>
+        </div>
+
+        <div className="field">
+          <label htmlFor="wowSpec">Specializace</label>
+          <select
+            id="wowSpec"
+            value={wowSpec}
+            onChange={(e) => setWowSpec(e.target.value)}
+          >
+            <option value="">Vzít automaticky z Raider.io</option>
+            {specsForRole(specRole).map((spec) => (
+              <option key={`${spec.className}-${spec.specName}`} value={spec.specName}>
+                {spec.className} - {spec.specName}
+              </option>
+            ))}
+          </select>
+          <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+            Vyplň, pokud budeš hrát jiný spec, než se kterým tě naposledy vidělo
+            Raider.io. Podle specu se skládají týmy.
+          </span>
         </div>
 
         <div className="field">

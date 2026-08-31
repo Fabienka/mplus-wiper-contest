@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ConfirmButton } from "../../confirm-button";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/admin";
+import { can } from "@/lib/permissions";
 import {
   REGISTRATION_STATUS_BADGES,
   REGISTRATION_STATUS_LABELS,
@@ -9,8 +12,10 @@ import {
 } from "@/lib/labels";
 import {
   approveRegistration,
+  confirmEntryFee,
   rejectRegistration,
   reopenRegistration,
+  revokeEntryFee,
 } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -28,11 +33,14 @@ export default async function RegistrationDetailPage({
 }: {
   params: { id: string };
 }) {
+  const user = await getCurrentUser();
+
   const registration = await prisma.seasonRegistration.findUnique({
     where: { id: params.id },
     include: {
       season: { select: { name: true } },
       reviewedBy: { select: { username: true } },
+      entryFeeConfirmedBy: { select: { username: true } },
       character: {
         include: {
           user: { select: { username: true, email: true, discordNick: true } },
@@ -48,6 +56,8 @@ export default async function RegistrationDetailPage({
   const { character } = registration;
   const answers = (registration.formAnswers ?? {}) as Record<string, unknown>;
   const isPending = registration.status === "PENDING";
+  const canReview = can(user?.role, "reviewRegistrations");
+  const canConfirmFee = can(user?.role, "confirmEntryFee");
 
   return (
     <>
@@ -141,6 +151,72 @@ export default async function RegistrationDetailPage({
       )}
 
       <div className="card">
+        <h2>Zápisné</h2>
+
+        {registration.entryFeePaidAt ? (
+          <>
+            <dl className="detail">
+              <dt>Stav</dt>
+              <dd>
+                <span className="badge badge-approved">Zaplaceno</span>
+              </dd>
+              <dt>Potvrdil</dt>
+              <dd>{registration.entryFeeConfirmedBy?.username ?? "-"}</dd>
+              <dt>Kdy</dt>
+              <dd>{formatDateTime(registration.entryFeePaidAt)}</dd>
+              {registration.entryFeeNote && (
+                <>
+                  <dt>Poznámka</dt>
+                  <dd>{registration.entryFeeNote}</dd>
+                </>
+              )}
+            </dl>
+
+            {canConfirmFee && (
+              <form action={revokeEntryFee}>
+                <input type="hidden" name="registrationId" value={registration.id} />
+                <ConfirmButton
+                  className="btn btn-danger"
+                  message="Opravdu zrušit potvrzení zápisného?"
+                >
+                  Zrušit potvrzení
+                </ConfirmButton>
+              </form>
+            )}
+          </>
+        ) : (
+          <>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Zápisné se posílá ve hře, aplikace ho neumí ověřit sama. Potvrď ho,
+              až zlato dorazí.
+            </p>
+
+            {canConfirmFee ? (
+              <form action={confirmEntryFee}>
+                <input type="hidden" name="registrationId" value={registration.id} />
+                <div className="field">
+                  <label htmlFor="entryFeeNote">Poznámka (nepovinné)</label>
+                  <input
+                    id="entryFeeNote"
+                    name="entryFeeNote"
+                    placeholder="Např. kolik a od koho přišlo"
+                  />
+                </div>
+                <button className="btn btn-accent" type="submit">
+                  Potvrdit zápisné
+                </button>
+              </form>
+            ) : (
+              <p className="empty-state">
+                Zápisné potvrzuje moderátor nebo admin.
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
+      {canReview && (
+      <div className="card">
         <h2>{isPending ? "Posouzení" : "Oprava rozhodnutí"}</h2>
 
         {isPending ? (
@@ -190,6 +266,7 @@ export default async function RegistrationDetailPage({
           </form>
         )}
       </div>
+      )}
 
       <Link className="btn" href="/admin/registrations">
         Zpět na seznam

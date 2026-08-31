@@ -11,6 +11,9 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  // Moderátor = běžný uživatel + potvrzování zápisného a schvalování termínů.
+  // Nesmí schvalovat/zamítat registrace ani sahat na sezónu, shuffle a týmy.
+  MODERATOR
   USER
 }
 
@@ -89,6 +92,7 @@ model Season {
   teams         Team[]
   teamMembers   TeamMembership[]
   shuffleRuns   ShuffleRun[]
+  availabilities Availability[]
 }
 
 model SeasonDungeon {
@@ -99,7 +103,10 @@ model SeasonDungeon {
   abbreviation String
   // Časový limit klíče v sekundách - pro sezónu se doplňuje ručně, dokud není známý.
   timeLimitSeconds Int?
-  coefficient  Float
+  /// Násobitel časového bonusu. 1 = bez zvýhodnění; vyšší hodnota dungeon
+  /// zvýhodní (např. kvůli nucenému čekání na NPC, které nikdo neovlivní).
+  /// Bonus je vždy useknutý ve 100, aby vyšší klíč nemohl prohrát s nižším.
+  bonusMultiplier Float  @default(1)
   isActive     Boolean @default(true)
 
   @@index([seasonId])
@@ -117,9 +124,11 @@ model User {
 
   character           Character?
   reviewedRegistrations SeasonRegistration[] @relation("ReviewedBy")
+  confirmedEntryFees   SeasonRegistration[] @relation("EntryFeeConfirmedBy")
   auditLogs            AuditLog[]
   shuffleRunsExecuted  ShuffleRun[]
   verifiedResults      MatchResult[]        @relation("VerifiedBy")
+  confirmedMatches     Match[]              @relation("ConfirmedMatches")
 }
 
 model Character {
@@ -132,6 +141,11 @@ model Character {
   faction        String?
   guildName      String?
   class          String?
+  // Konkrétní specializace (např. "Beast Mastery") - podle ní se v shuffle
+  // určuje ranged/melee, battle rez a bloodlust (viz src/lib/wow-specs.ts).
+  // Nullable kvůli postavám založeným před zavedením pole a kvůli specům,
+  // které Raider.io nevrátí.
+  wowSpec        String?
   specRole       SpecRole
   rioScore       Float?
   lastSyncedAt   DateTime?
@@ -139,6 +153,7 @@ model Character {
   registrations   SeasonRegistration[]
   teamMemberships TeamMembership[]
   proposedMatches Match[]              @relation("ProposedBy")
+  availabilities  Availability[]
 
   @@index([userId])
 }
@@ -158,6 +173,13 @@ model SeasonRegistration {
   reviewedBy        User?               @relation("ReviewedBy", fields: [reviewedById], references: [id])
   reviewedAt        DateTime?
   rejectionReason   String?
+  // Zápisné se platí ve hře (poslané zlato), takže ho aplikace neumí ověřit
+  // sama - moderátor nebo admin potvrdí, že peníze dorazily. Prázdné
+  // entryFeePaidAt znamená nezaplaceno.
+  entryFeePaidAt        DateTime?
+  entryFeeConfirmedById String?
+  entryFeeConfirmedBy   User?    @relation("EntryFeeConfirmedBy", fields: [entryFeeConfirmedById], references: [id])
+  entryFeeNote          String?
   createdAt         DateTime            @default(now())
 
   @@index([seasonId, status])
@@ -206,6 +228,9 @@ model ShuffleRun {
   executedBy  User              @relation(fields: [executedById], references: [id])
   executedAt  DateTime          @default(now())
   status      ShuffleRunStatus  @default(PROPOSED)
+  // Seed generátoru náhodných čísel - se stejným seedem a stejným vstupem
+  // vrátí shuffle stejné varianty (kvůli dohledání, proč vyšlo, co vyšlo).
+  seed        Int?
 
   proposals ShuffleProposal[]
 
@@ -235,12 +260,34 @@ model Match {
   windowStart   DateTime
   windowEnd     DateTime
   status        MatchStatus @default(PROPOSED)
-  // TBD: kdo termín potvrzuje - pole připravené, logika potvrzení se doladí později
+  /// Poznámka od toho, kdo termín navrhl (např. "sejdeme se na Discordu").
+  note          String?
+  // Termín potvrzuje moderátor nebo admin - hráči si ho jen navrhnou mezi sebou.
   confirmedById String?
+  confirmedBy   User?       @relation("ConfirmedMatches", fields: [confirmedById], references: [id])
+  confirmedAt   DateTime?
+  createdAt     DateTime    @default(now())
 
   results MatchResult[]
 
   @@index([teamId])
+  @@index([windowStart])
+}
+
+/// Kdy má hráč čas. Z překryvů dostupností celého týmu se skládá návrh termínu.
+model Availability {
+  id          String    @id @default(cuid())
+  seasonId    String
+  season      Season    @relation(fields: [seasonId], references: [id])
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id])
+  start       DateTime
+  end         DateTime
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  @@index([seasonId, characterId])
+  @@index([seasonId, start])
 }
 
 model MatchResult {
@@ -252,6 +299,9 @@ model MatchResult {
   clearTimeSeconds   Int
   source             ResultSource
   screenshotUrl      String?
+  /// Id běhu na Raider.io - podle něj se pozná, že už je běh nahraný,
+  /// a dá se z něj složit zpětný odkaz.
+  raiderioRunId      Int?
   rawRaiderioData     Json?
   isValid            Boolean       @default(false)
   invalidReason      String?
@@ -262,6 +312,7 @@ model MatchResult {
   createdAt          DateTime      @default(now())
 
   @@index([matchId])
+  @@unique([matchId, raiderioRunId])
 }
 
 // ---------- Audit & Discord ----------

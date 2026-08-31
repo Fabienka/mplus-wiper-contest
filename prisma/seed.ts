@@ -8,6 +8,8 @@ const prisma = new PrismaClient();
 
 const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME ?? "admin";
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "admin1234";
+const MODERATOR_USERNAME = process.env.SEED_MODERATOR_USERNAME ?? "moderator";
+const MODERATOR_PASSWORD = process.env.SEED_MODERATOR_PASSWORD ?? "moderator1234";
 const SEASON_NAME = process.env.SEED_SEASON_NAME ?? "Testovací sezóna";
 const SEASON_SLUG = process.env.SEED_SEASON_SLUG ?? "season-mn-2";
 
@@ -31,6 +33,16 @@ async function main() {
       username: ADMIN_USERNAME,
       passwordHash: await bcrypt.hash(ADMIN_PASSWORD, 10),
       role: "ADMIN",
+    },
+  });
+
+  const moderator = await prisma.user.upsert({
+    where: { username: MODERATOR_USERNAME },
+    update: { role: "MODERATOR" },
+    create: {
+      username: MODERATOR_USERNAME,
+      passwordHash: await bcrypt.hash(MODERATOR_PASSWORD, 10),
+      role: "MODERATOR",
     },
   });
 
@@ -63,11 +75,12 @@ async function main() {
         },
       },
       update: { abbreviation: dungeon.abbreviation },
-      create: { ...dungeon, seasonId: season.id, coefficient: 1 },
+      create: { ...dungeon, seasonId: season.id, bonusMultiplier: 1 },
     });
   }
 
   console.log(`Admin: ${admin.username} / ${ADMIN_PASSWORD}`);
+  console.log(`Moderátor: ${moderator.username} / ${MODERATOR_PASSWORD}`);
   console.log(`Sezóna: ${season.name} (${season.status}), id=${season.id}`);
   console.log(`Dungeonů: ${DUNGEONS.length}, Raider.io sezóna: ${season.raiderioSeasonSlug}`);
 }

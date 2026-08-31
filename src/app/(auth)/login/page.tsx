@@ -1,35 +1,99 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Notice } from "../../notice";
+
+/** Kam se jde po úspěšném přihlášení. */
+const AFTER_LOGIN = "/profile?prihlaseno=1";
+
+interface LoginFailure {
+  message: string;
+  detail: string;
+}
+
+/**
+ * Technický výpis pro rozklikávací detail. Heslo se do něj schválně nedostane,
+ * ostatní hodnoty jsou to, co vrátí NextAuth - podle nich jde poznat, jestli
+ * šlo o špatné heslo, spadlou databázi nebo nedostupný endpoint.
+ */
+function buildDetail(input: {
+  username: string;
+  status?: number;
+  error?: string;
+  ok?: boolean;
+  thrown?: unknown;
+}) {
+  const lines = [
+    `čas:       ${new Date().toISOString()}`,
+    `uživatel:  ${input.username || "(prázdné)"}`,
+    `endpoint:  POST /api/auth/callback/credentials`,
+  ];
+
+  if (input.status !== undefined) lines.push(`status:    ${input.status}`);
+  if (input.ok !== undefined) lines.push(`ok:        ${input.ok}`);
+  if (input.error) lines.push(`chyba:     ${input.error}`);
+
+  if (input.thrown) {
+    const thrown =
+      input.thrown instanceof Error
+        ? `${input.thrown.name}: ${input.thrown.message}`
+        : String(input.thrown);
+    lines.push(`výjimka:   ${thrown}`);
+  }
+
+  return lines.join("\n");
+}
 
 export default function LoginPage() {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<LoginFailure | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setFailure(null);
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      username,
-      password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        username,
+        password,
+        redirect: false,
+      });
 
-    setLoading(false);
+      if (!result || result.error || !result.ok) {
+        setFailure({
+          message:
+            result?.status === 401
+              ? "Přihlášení se nezdařilo. Zkontroluj uživatelské jméno a heslo."
+              : "Přihlášení se nezdařilo.",
+          detail: buildDetail({
+            username,
+            status: result?.status,
+            error: result?.error ?? undefined,
+            ok: result?.ok,
+          }),
+        });
+        setLoading(false);
+        return;
+      }
 
-    if (result?.error) {
-      setError("Nesprávné uživatelské jméno nebo heslo.");
-      return;
+      // Lišta i stránky se renderují na serveru podle session - bez refresh()
+      // by po přesměrování ukazovaly ještě stav nepřihlášeného uživatele.
+      router.replace(AFTER_LOGIN);
+      router.refresh();
+    } catch (err) {
+      setFailure({
+        message: "Přihlášení se nepodařilo odeslat. Nejspíš je nedostupný server.",
+        detail: buildDetail({ username, thrown: err }),
+      });
+      setLoading(false);
     }
-
-    router.push("/");
   }
 
   return (
@@ -43,6 +107,7 @@ export default function LoginPage() {
             id="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
             required
           />
         </div>
@@ -54,6 +119,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
             required
           />
         </div>
@@ -62,7 +128,17 @@ export default function LoginPage() {
           {loading ? "Přihlašuji..." : "Přihlásit se"}
         </button>
 
-        {error && <p className="error-text">{error}</p>}
+        {failure && (
+          <div style={{ marginTop: "1.25rem" }}>
+            <Notice kind="error" title={failure.message} detail={failure.detail}>
+              Pokud se to opakuje, pošli obsah detailu adminovi.
+            </Notice>
+          </div>
+        )}
+
+        <p style={{ marginTop: "1.25rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+          Nemáš účet? <Link href="/register" style={{ color: "var(--accent)" }}>Zaregistruj se</Link>.
+        </p>
       </form>
     </div>
   );

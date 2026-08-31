@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { can } from "@/lib/permissions";
+import { SiteNavLink } from "./site-nav-link";
 
 /** Lišta pro veřejné stránky - odkazy se řídí tím, kdo je přihlášený. */
 export async function SiteHeader() {
@@ -14,7 +16,18 @@ export async function SiteHeader() {
       </Link>
 
       <nav className="site-nav">
-        {user?.role === "ADMIN" && <Link href="/admin">Administrace</Link>}
+        <SiteNavLink href="/leaderboard">Žebříček</SiteNavLink>
+
+        {user && (
+          <>
+            <SiteNavLink href="/profile">Můj profil</SiteNavLink>
+            <SiteNavLink href="/team">Můj tým</SiteNavLink>
+          </>
+        )}
+
+        {can(user?.role, "accessAdmin") && (
+          <SiteNavLink href="/admin">Administrace</SiteNavLink>
+        )}
 
         {user ? (
           <>

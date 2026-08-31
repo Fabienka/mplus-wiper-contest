@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Prisma, SeasonStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, writeAuditLog } from "@/lib/admin";
+import { requirePermission, writeAuditLog } from "@/lib/admin";
 import { parseTimeLimit } from "@/lib/labels";
 import { RaiderioLookupError, fetchSeasonDungeons } from "@/lib/raiderio";
+import { ScoringConfigError, parseScoringConfig } from "@/lib/scoring";
 
 function revalidateSeason() {
   revalidatePath("/admin");
@@ -14,7 +15,7 @@ function revalidateSeason() {
 }
 
 export async function updateSeason(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
   const id = String(formData.get("seasonId"));
   const name = String(formData.get("name") ?? "").trim();
   const status = String(formData.get("status")) as SeasonStatus;
@@ -25,11 +26,33 @@ export async function updateSeason(formData: FormData) {
     throw new Error("Název sezóny nesmí být prázdný.");
   }
 
+  // Nastavení bodování se ověřuje tady, ne až při počítání skóre - špatná
+  // hodnota by se jinak projevila až rozbitým žebříčkem.
+  let scoringConfig;
+  try {
+    scoringConfig = parseScoringConfig({
+      minScoredKeyLevel: Number(formData.get("minScoredKeyLevel")),
+      pointsPerKeyLevel: Number(formData.get("pointsPerKeyLevel")),
+    });
+  } catch (err) {
+    redirect(
+      "/admin/season?error=" +
+        encodeURIComponent(
+          err instanceof ScoringConfigError ? err.message : "Neplatné nastavení bodování."
+        )
+    );
+  }
+
   const season = await prisma.season.findUniqueOrThrow({ where: { id } });
 
   // Časy otevření/uzavření registrace se odvozují od přechodu stavu,
   // ať je admin nemusí hlídat ručně.
-  const data: Prisma.SeasonUpdateInput = { name, status, raiderioSeasonSlug };
+  const data: Prisma.SeasonUpdateInput = {
+    name,
+    status,
+    raiderioSeasonSlug,
+    scoringConfig: scoringConfig as unknown as Prisma.InputJsonValue,
+  };
 
   if (status === "REGISTRATION_OPEN" && !season.registrationOpenedAt) {
     data.registrationOpenedAt = new Date();
@@ -51,8 +74,14 @@ export async function updateSeason(formData: FormData) {
         name: season.name,
         status: season.status,
         raiderioSeasonSlug: season.raiderioSeasonSlug,
+        scoringConfig: season.scoringConfig,
       },
-      newValue: { name, status, raiderioSeasonSlug },
+      newValue: {
+        name,
+        status,
+        raiderioSeasonSlug,
+        scoringConfig: { ...scoringConfig },
+      },
     });
   });
 
@@ -60,7 +89,7 @@ export async function updateSeason(formData: FormData) {
 }
 
 export async function updateDungeons(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
   const ids = formData.getAll("dungeonId").map(String);
 
   const existing = await prisma.seasonDungeon.findMany({
@@ -77,7 +106,7 @@ export async function updateDungeons(formData: FormData) {
         timeLimitSeconds: parseTimeLimit(
           String(formData.get(`time-${dungeon.id}`) ?? "")
         ),
-        coefficient: Number(formData.get(`coef-${dungeon.id}`)),
+        bonusMultiplier: Number(formData.get(`mult-${dungeon.id}`)),
         isActive: formData.get(`active-${dungeon.id}`) === "on",
       };
 
@@ -85,9 +114,9 @@ export async function updateDungeons(formData: FormData) {
         throw new Error("Název i zkratka dungeonu jsou povinné.");
       }
 
-      if (!Number.isFinite(next.coefficient) || next.coefficient <= 0) {
+      if (!Number.isFinite(next.bonusMultiplier) || next.bonusMultiplier <= 0) {
         throw new Error(
-          `Koeficient u "${next.dungeonName}" musí být kladné číslo.`
+          `Násobitel bonusu u "${next.dungeonName}" musí být kladné číslo (1 = bez zvýhodnění).`
         );
       }
 
@@ -95,7 +124,7 @@ export async function updateDungeons(formData: FormData) {
         next.dungeonName === dungeon.dungeonName &&
         next.abbreviation === dungeon.abbreviation &&
         next.timeLimitSeconds === dungeon.timeLimitSeconds &&
-        next.coefficient === dungeon.coefficient &&
+        next.bonusMultiplier === dungeon.bonusMultiplier &&
         next.isActive === dungeon.isActive;
 
       if (unchanged) continue;
@@ -111,7 +140,7 @@ export async function updateDungeons(formData: FormData) {
           dungeonName: dungeon.dungeonName,
           abbreviation: dungeon.abbreviation,
           timeLimitSeconds: dungeon.timeLimitSeconds,
-          coefficient: dungeon.coefficient,
+          bonusMultiplier: dungeon.bonusMultiplier,
           isActive: dungeon.isActive,
         },
         newValue: next,
@@ -123,7 +152,7 @@ export async function updateDungeons(formData: FormData) {
 }
 
 export async function addDungeon(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
   const seasonId = String(formData.get("seasonId"));
   const dungeonName = String(formData.get("dungeonName") ?? "").trim();
   const abbreviation = String(formData.get("abbreviation") ?? "")
@@ -136,7 +165,7 @@ export async function addDungeon(formData: FormData) {
 
   await prisma.$transaction(async (tx) => {
     const dungeon = await tx.seasonDungeon.create({
-      data: { seasonId, dungeonName, abbreviation, coefficient: 1 },
+      data: { seasonId, dungeonName, abbreviation, bonusMultiplier: 1 },
     });
 
     await writeAuditLog(tx, {
@@ -152,7 +181,7 @@ export async function addDungeon(formData: FormData) {
 }
 
 export async function deleteDungeon(id: string) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
 
   const dungeon = await prisma.seasonDungeon.findUniqueOrThrow({ where: { id } });
 
@@ -179,7 +208,7 @@ export async function deleteDungeon(id: string) {
  * názvy se mezi Raider.io a naší evidencí liší (Kings' Rest vs King's Rest).
  */
 export async function syncDungeonTimes(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
   const seasonId = String(formData.get("seasonId"));
 
   const season = await prisma.season.findUniqueOrThrow({

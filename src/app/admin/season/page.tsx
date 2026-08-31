@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { SEASON_STATUS_LABELS, formatTimeLimit } from "@/lib/labels";
+import { DEFAULT_SCORING_CONFIG, parseScoringConfig } from "@/lib/scoring";
 import { ConfirmButton } from "../confirm-button";
 import {
   addDungeon,
@@ -37,6 +38,15 @@ export default async function SeasonPage({
   });
 
   const synced = Number(searchParams.synced);
+
+  // Rozbité nastavení nesmí shodit celou stránku - formulář se pak otevře
+  // s výchozími hodnotami a admin ho může opravit.
+  let scoring = DEFAULT_SCORING_CONFIG;
+  try {
+    scoring = parseScoringConfig(season.scoringConfig);
+  } catch {
+    scoring = DEFAULT_SCORING_CONFIG;
+  }
 
   return (
     <>
@@ -98,6 +108,42 @@ export default async function SeasonPage({
             </span>
           </div>
 
+          <div className="field">
+            <label htmlFor="minScoredKeyLevel">Nejnižší bodovaný klíč</label>
+            <input
+              id="minScoredKeyLevel"
+              name="minScoredKeyLevel"
+              type="number"
+              min="2"
+              max="30"
+              step="1"
+              defaultValue={scoring.minScoredKeyLevel}
+              required
+            />
+            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+              Nižší klíče se nebodují vůbec, i když je tým stihne v limitu.
+              Zároveň se od téhle výšky počítá skóre, takže nejnižší bodovaný
+              klíč začíná na nule.
+            </span>
+          </div>
+
+          <div className="field">
+            <label htmlFor="pointsPerKeyLevel">Body za úroveň klíče</label>
+            <input
+              id="pointsPerKeyLevel"
+              name="pointsPerKeyLevel"
+              type="number"
+              min="100"
+              step="10"
+              defaultValue={scoring.pointsPerKeyLevel}
+              required
+            />
+            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+              Nesmí být pod 100 - časový bonus je až 100 bodů a vyšší klíč musí
+              porazit nižší i při horším čase.
+            </span>
+          </div>
+
           <button className="btn btn-accent" type="submit">
             Uložit sezónu
           </button>
@@ -124,6 +170,16 @@ export default async function SeasonPage({
           </span>
         </form>
 
+        <p style={{ margin: "0 0 1.25rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+          <strong style={{ color: "var(--text)" }}>Násobitel bonusu</strong> je
+          normálně <strong style={{ color: "var(--text)" }}>1</strong>. Zvýšením
+          se dungeon zvýhodní - hodí se tam, kde tým část času neovlivní
+          (nucené čekání na NPC). Při 1,2 dostane tým za stejně ušetřený čas
+          o 20 % bodů víc. Bonus je vždy useknutý těsně pod 100 body, aby vyšší
+          klíč nemohl prohrát s nižším - hodnoty nad zhruba 2 proto už jen
+          ubírají rozlišení mezi rychlými běhy.
+        </p>
+
         {dungeons.length === 0 ? (
           <p className="empty-state">Sezóna zatím nemá žádné dungeony.</p>
         ) : (
@@ -134,7 +190,7 @@ export default async function SeasonPage({
                   <th style={{ width: "32%" }}>Název</th>
                   <th style={{ width: "12%" }}>Zkratka</th>
                   <th style={{ width: "14%" }}>Čas (mm:ss)</th>
-                  <th style={{ width: "14%" }}>Koeficient</th>
+                  <th style={{ width: "14%" }}>Násobitel bonusu</th>
                   <th style={{ width: "10%" }}>Aktivní</th>
                   <th />
                 </tr>
@@ -169,11 +225,12 @@ export default async function SeasonPage({
                     </td>
                     <td>
                       <input
-                        name={`coef-${dungeon.id}`}
+                        name={`mult-${dungeon.id}`}
                         type="number"
                         step="0.05"
                         min="0.05"
-                        defaultValue={dungeon.coefficient}
+                        defaultValue={dungeon.bonusMultiplier}
+                        title="1 = bez zvýhodnění"
                         required
                       />
                     </td>
