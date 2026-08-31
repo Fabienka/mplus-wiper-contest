@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import {
   checkLoginAllowed,
   clearLoginFailures,
-  clientIpFromHeaders,
+  clientIpFromAuthRequest,
   recordFailedLogin,
 } from "@/lib/login-attempts";
 import { LoginThrottledError } from "@/lib/login-throttle";
@@ -29,7 +29,7 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const ip = clientIpFromHeaders(req?.headers);
+        const ip = clientIpFromAuthRequest(req?.headers);
 
         try {
           // Kontrola je schválně před bcrypt.compare - právě to je ta drahá

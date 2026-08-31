@@ -1,17 +1,23 @@
 /**
- * Kontrola omezení pokusů o přihlášení.
+ * Kontrola omezení počtu pokusů (přihlášení i registrace).
  *
- *   npm run check:login-throttle
+ *   npm run check:rate-limit
  */
 
+import {
+  evaluateAttempts,
+  retryAfterLabel,
+  strictest,
+} from "../src/lib/rate-limit";
 import {
   LOGIN_WINDOW_MS,
   MAX_FAILURES_PER_IP,
   MAX_FAILURES_PER_USERNAME,
-  evaluateAttempts,
-  retryAfterLabel,
-  strictest,
 } from "../src/lib/login-throttle";
+import {
+  MAX_REGISTRATIONS_PER_IP,
+  REGISTRATION_WINDOW_MS,
+} from "../src/lib/registration-throttle";
 
 let failures = 0;
 let checks = 0;
@@ -151,6 +157,44 @@ console.log("6. Hláška o zbývajícím čase");
 
   // Zaokrouhluje se nahoru, ať hláška neslíbí dřívější čas, než blokace končí.
   check(retryAfterLabel(61) === "za 2 minuty", "61 s se zaokrouhlí nahoru");
+}
+
+console.log("7. Limit registrací na IP");
+{
+  const within = (count: number) =>
+    Array.from({ length: count }, (_, i) => new Date(NOW.getTime() - i * 10_000));
+
+  check(
+    REGISTRATION_WINDOW_MS > LOGIN_WINDOW_MS,
+    "okno registraci je delsi nez u prihlaseni",
+    `${REGISTRATION_WINDOW_MS} vs ${LOGIN_WINDOW_MS}`
+  );
+
+  check(
+    !evaluateAttempts(
+      within(MAX_REGISTRATIONS_PER_IP - 1),
+      MAX_REGISTRATIONS_PER_IP,
+      NOW,
+      REGISTRATION_WINDOW_MS
+    ).blocked,
+    "tesne pod limitem projde"
+  );
+
+  const atLimit = evaluateAttempts(
+    within(MAX_REGISTRATIONS_PER_IP),
+    MAX_REGISTRATIONS_PER_IP,
+    NOW,
+    REGISTRATION_WINDOW_MS
+  );
+  check(atLimit.blocked, "na limitu blokuje");
+  check(atLimit.retryAfterSeconds > 0, "a vraci cas do odblokovani");
+
+  // Pokusy starsi nez okno registraci se nepocitaji.
+  const old = [new Date(NOW.getTime() - REGISTRATION_WINDOW_MS - 1000)];
+  check(
+    !evaluateAttempts(old, 1, NOW, REGISTRATION_WINDOW_MS).blocked,
+    "stary pokus mimo okno se ignoruje"
+  );
 }
 
 console.log(

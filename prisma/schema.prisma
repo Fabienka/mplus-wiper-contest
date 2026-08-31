@@ -330,6 +330,16 @@ model LoginAttempt {
   @@index([ipAddress, createdAt])
 }
 
+/// Pokusy o registraci pro omezení jejich počtu. Zapisují se všechny, i
+/// neúspěšné - limit chrání i volání Raider.io, které registrace dělá.
+model RegistrationAttempt {
+  id        String   @id @default(cuid())
+  ipAddress String
+  createdAt DateTime @default(now())
+
+  @@index([ipAddress, createdAt])
+}
+
 model AuditLog {
   id         String   @id @default(cuid())
   actorId    String

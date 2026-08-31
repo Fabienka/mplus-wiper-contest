@@ -29,7 +29,7 @@
     "check:match-result": "tsx scripts/check-match-result.ts",
     "check:result-flow:test": "dotenv -e .env.test -- tsx scripts/check-result-flow.ts",
     "check:leaderboard": "tsx scripts/check-leaderboard.ts",
-    "check:login-throttle": "tsx scripts/check-login-throttle.ts"
+    "check:rate-limit": "tsx scripts/check-rate-limit.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",

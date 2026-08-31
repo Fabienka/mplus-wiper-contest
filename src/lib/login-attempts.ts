@@ -11,10 +11,13 @@ import {
   LOGIN_WINDOW_MS,
   MAX_FAILURES_PER_IP,
   MAX_FAILURES_PER_USERNAME,
+} from "@/lib/login-throttle";
+import {
   evaluateAttempts,
   strictest,
   type ThrottleVerdict,
-} from "@/lib/login-throttle";
+  clientIpFromHeaders,
+} from "@/lib/rate-limit";
 
 /** Jak dlouho se záznamy drží, než je úklid zahodí. */
 const RETENTION_MS = LOGIN_WINDOW_MS * 8;
@@ -29,23 +32,19 @@ function normalize(username: string): string {
 }
 
 /**
- * IP z hlaviček proxy. Za nedůvěryhodnou proxy jde hodnota podvrhnout, takže
- * limit na IP je jen doplněk - účet chrání limit na uživatelské jméno, který
- * na hlavičkách nezávisí.
+ * IP z hlaviček, které NextAuth předává do authorize. Limit na IP je jen
+ * doplněk - účet chrání limit na uživatelské jméno, který na hlavičkách
+ * (a tedy na jejich podvržení) nezávisí.
  */
-export function clientIpFromHeaders(
+export function clientIpFromAuthRequest(
   headers: Record<string, string | string[] | undefined> | undefined
 ): string | null {
   if (!headers) return null;
 
-  const read = (name: string): string | null => {
+  return clientIpFromHeaders((name) => {
     const value = headers[name] ?? headers[name.toLowerCase()];
-    if (!value) return null;
-    const first = Array.isArray(value) ? value[0] : value;
-    return first.split(",")[0]?.trim() || null;
-  };
-
-  return read("x-forwarded-for") ?? read("x-real-ip") ?? null;
+    return Array.isArray(value) ? value[0] : value;
+  });
 }
 
 /** Smí se teď pro tuhle dvojici zkusit přihlášení? */
