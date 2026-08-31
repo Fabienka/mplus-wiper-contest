@@ -122,6 +122,36 @@ export function formatMonthParam({ year, month }: MonthRef): string {
   return `${year}-${String(month + 1).padStart(2, "0")}`;
 }
 
+/** Date -> "2026-09-14" v místním čase (toISOString by posunul přes UTC). */
+export function formatDayParam(date: Date): string {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/** "2026-09-14" -> půlnoc toho dne. Nesmysl i neexistující datum vrátí null. */
+export function parseDayParam(value: string | undefined): Date | null {
+  const match = value?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]) - 1;
+  const day = Number(match[3]);
+  const date = new Date(year, month, day);
+
+  // Date normalizuje přetečení (31. února = 3. března), takže se zpětnou
+  // kontrolou odfiltrují data, která ve skutečnosti neexistují.
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return date;
+}
+
 export function shiftMonth({ year, month }: MonthRef, delta: number): MonthRef {
   const shifted = new Date(year, month + delta, 1);
   return { year: shifted.getFullYear(), month: shifted.getMonth() };

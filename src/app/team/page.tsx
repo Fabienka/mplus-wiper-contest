@@ -29,7 +29,7 @@ const FALLBACK_STEPS = [0, 1, 2];
 export default async function TeamPage({
   searchParams,
 }: {
-  searchParams: { error?: string; saved?: string; month?: string };
+  searchParams: { error?: string; saved?: string; month?: string; day?: string };
 }) {
   const context = await getMyTeamContext();
 
@@ -194,19 +194,18 @@ export default async function TeamPage({
 
       <div className="card">
         <h2>Kalendář</h2>
-        <div className="cal-scroll">
-          <MonthCalendar
-            month={month}
-            events={calendarEvents}
-            basePath="/team"
-            legend={[
-              { kind: "MATCH_CONFIRMED", label: "schválený termín" },
-              { kind: "MATCH_PROPOSED", label: "navržený termín" },
-              { kind: "OVERLAP", label: "může celý tým" },
-              { kind: "AVAILABILITY", label: "můj čas" },
-            ]}
-          />
-        </div>
+        <MonthCalendar
+          month={month}
+          events={calendarEvents}
+          basePath="/team"
+          selectedDay={searchParams.day}
+          legend={[
+            { kind: "MATCH_CONFIRMED", label: "schválený termín" },
+            { kind: "MATCH_PROPOSED", label: "navržený termín" },
+            { kind: "OVERLAP", label: "může celý tým" },
+            { kind: "AVAILABILITY", label: "můj čas" },
+          ]}
+        />
       </div>
 
       <div className="card">
