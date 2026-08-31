@@ -1,3 +1,5 @@
+import type { SpecRole } from "@prisma/client";
+
 /**
  * Raider.io veřejné API - čtení profilu postavy a dat o sezóně.
  * Dokumentace: https://raider.io/api
@@ -241,4 +243,148 @@ export async function fetchSeasonDungeons(
   }
 
   return [...found.values()];
+}
+
+// ---------- Detail konkrétního běhu ----------
+
+export interface RaiderioRosterMember {
+  characterName: string;
+  realm: string;
+  region: string;
+  className: string;
+  specName: string;
+  specRole: SpecRole;
+}
+
+export interface RaiderioRunDetails {
+  keystoneRunId: number;
+  dungeonName: string;
+  abbreviation: string;
+  keyLevel: number;
+  clearTimeSeconds: number;
+  parTimeSeconds: number;
+  /** Sjednoceno s profilovým endpointem: 0 = nestihnuto, 1-3 povýšení. */
+  keystoneUpgrades: number;
+  completedAt: Date;
+  url: string;
+  roster: RaiderioRosterMember[];
+  raw: unknown;
+}
+
+/** Raider.io používá "tank" | "healer" | "dps". */
+function toSpecRole(role: string | undefined): SpecRole {
+  if (role === "tank") return "TANK";
+  if (role === "healer") return "HEALER";
+  return "DPS";
+}
+
+/**
+ * Rozebere odkaz na běh, např.
+ * https://raider.io/mythic-plus-runs/season-mn-2/3868732-10-the-blinding-vale
+ *
+ * Bere i samotné číslo běhu - to se ale pak musí doplnit slug sezóny zvlášť.
+ */
+export function parseRunUrl(input: string): { seasonSlug?: string; runId: number } {
+  const trimmed = input.trim();
+
+  const fromUrl = trimmed.match(
+    /raider\.io\/mythic-plus-runs\/([a-z0-9-]+)\/(\d+)/i
+  );
+  if (fromUrl) {
+    return { seasonSlug: fromUrl[1], runId: Number(fromUrl[2]) };
+  }
+
+  if (/^\d+$/.test(trimmed)) {
+    return { runId: Number(trimmed) };
+  }
+
+  throw new RaiderioLookupError(
+    "Odkaz na běh nemá očekávaný formát (https://raider.io/mythic-plus-runs/<sezóna>/<id>-...)."
+  );
+}
+
+interface RawRunDetails {
+  status?: string;
+  deleted_at?: string | null;
+  keystone_run_id: number;
+  mythic_level: number;
+  clear_time_ms: number;
+  keystone_time_ms?: number;
+  completed_at: string;
+  num_chests?: number;
+  num_keystone_upgrades?: number;
+  dungeon?: {
+    name: string;
+    short_name: string;
+    keystone_timer_ms?: number;
+  };
+  roster?: {
+    role?: string;
+    character?: {
+      name: string;
+      class?: { name: string };
+      spec?: { name: string; role?: string };
+      realm?: { name: string };
+      region?: { slug: string };
+    };
+  }[];
+}
+
+/**
+ * Detail jednoho běhu včetně sestavy.
+ *
+ * POZOR: tenhle endpoint má jiný tvar než profil postavy - časový limit je
+ * `keystone_time_ms` (případně `dungeon.keystone_timer_ms`) místo `par_time_ms`
+ * a povýšení klíče je `num_chests` místo `num_keystone_upgrades`. Proto se to
+ * tady převádí na stejná pole, jaká vrací fetchRecentRuns.
+ */
+export async function fetchRunDetails(
+  runId: number,
+  seasonSlug: string
+): Promise<RaiderioRunDetails> {
+  const data = (await callRaiderio("/mythic-plus/run-details", {
+    season: seasonSlug,
+    id: String(runId),
+  })) as RawRunDetails;
+
+  if (!data?.keystone_run_id) {
+    throw new RaiderioLookupError(
+      `Běh ${runId} se v sezóně "${seasonSlug}" nepodařilo najít.`
+    );
+  }
+
+  if (data.deleted_at) {
+    throw new RaiderioLookupError("Tenhle běh byl na Raider.io smazaný.");
+  }
+
+  const parTimeMs = data.keystone_time_ms ?? data.dungeon?.keystone_timer_ms;
+  if (!parTimeMs) {
+    throw new RaiderioLookupError("U běhu chybí časový limit klíče.");
+  }
+
+  const roster: RaiderioRosterMember[] = (data.roster ?? [])
+    .filter((entry) => entry.character?.name)
+    .map((entry) => ({
+      characterName: entry.character!.name,
+      realm: entry.character!.realm?.name ?? "",
+      region: entry.character!.region?.slug ?? "eu",
+      className: entry.character!.class?.name ?? "",
+      specName: entry.character!.spec?.name ?? "",
+      specRole: toSpecRole(entry.role ?? entry.character!.spec?.role),
+    }));
+
+  return {
+    keystoneRunId: data.keystone_run_id,
+    dungeonName: data.dungeon?.name ?? "",
+    abbreviation: data.dungeon?.short_name ?? "",
+    keyLevel: data.mythic_level,
+    clearTimeSeconds: Math.round(data.clear_time_ms / 1000),
+    // API vrací limit o milisekundu delší (1800999 = 30:00), proto floor.
+    parTimeSeconds: Math.floor(parTimeMs / 1000),
+    keystoneUpgrades: data.num_chests ?? data.num_keystone_upgrades ?? 0,
+    completedAt: new Date(data.completed_at),
+    url: `https://raider.io/mythic-plus-runs/${seasonSlug}/${data.keystone_run_id}`,
+    roster,
+    raw: data,
+  };
 }

@@ -9,11 +9,13 @@ import {
   SPEC_ROLE_LABELS,
   formatDuration,
   formatRange,
+  formatTimeLimit,
   toDateTimeLocal,
 } from "@/lib/labels";
 import { ConfirmButton } from "../admin/confirm-button";
 import {
   addAvailability,
+  addRunResult,
   deleteAvailability,
   deleteMatch,
   proposeMatch,
@@ -87,6 +89,7 @@ export default async function TeamPage({
       include: {
         proposedBy: { select: { characterName: true } },
         confirmedBy: { select: { username: true } },
+        results: { orderBy: { createdAt: "asc" } },
       },
     }),
   ]);
@@ -387,6 +390,95 @@ export default async function TeamPage({
               ))}
             </tbody>
           </table>
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Výsledky</h2>
+        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+          Po odehrání vlož odkaz na běh z Raider.io. Čas i sestavu si aplikace
+          stáhne sama, takže se nedá překlepnout. Počítá se jen nejlepší platný
+          běh - neúspěšný pokus o vyšší klíč vás o dřívější výsledek nepřipraví.
+        </p>
+
+        {matches.filter((m) => m.status === "CONFIRMED").length === 0 ? (
+          <p className="empty-state">
+            Výsledky jdou nahrávat až ke schválenému termínu.
+          </p>
+        ) : (
+          matches
+            .filter((m) => m.status === "CONFIRMED")
+            .map((match) => (
+              <div key={match.id} style={{ marginBottom: "1.5rem" }}>
+                <strong style={{ fontSize: "0.95rem" }}>
+                  {formatRange(match.windowStart, match.windowEnd)}
+                </strong>
+
+                {match.results.length === 0 ? (
+                  <p className="empty-state" style={{ padding: "0.75rem 0" }}>
+                    Zatím žádný běh.
+                  </p>
+                ) : (
+                  <table className="data" style={{ marginTop: "0.5rem" }}>
+                    <thead>
+                      <tr>
+                        <th style={{ width: "30%" }}>Dungeon</th>
+                        <th style={{ width: "10%" }}>Klíč</th>
+                        <th style={{ width: "14%" }}>Čas</th>
+                        <th style={{ width: "14%" }}>Body</th>
+                        <th>Stav</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {match.results.map((result) => (
+                        <tr key={result.id}>
+                          <td>{result.dungeonName}</td>
+                          <td>+{result.keyLevel}</td>
+                          <td>{formatTimeLimit(result.clearTimeSeconds)}</td>
+                          <td>
+                            {result.points === null ? "-" : result.points.toFixed(1)}
+                          </td>
+                          <td>
+                            {result.isOfficial ? (
+                              <span className="badge badge-approved">Počítá se</span>
+                            ) : result.isValid ? (
+                              <span className="badge badge-pending">Platný</span>
+                            ) : (
+                              <>
+                                <span className="badge badge-rejected">Nepočítá se</span>
+                                {result.invalidReason && (
+                                  <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>
+                                    {result.invalidReason}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+
+                <form action={addRunResult} style={{ marginTop: "0.75rem" }}>
+                  <input type="hidden" name="matchId" value={match.id} />
+                  <div className="row-actions" style={{ alignItems: "flex-end" }}>
+                    <div className="field" style={{ marginBottom: 0, flex: 1 }}>
+                      <label htmlFor={`run-${match.id}`}>Odkaz na běh</label>
+                      <input
+                        id={`run-${match.id}`}
+                        name="runUrl"
+                        placeholder="https://raider.io/mythic-plus-runs/..."
+                        required
+                      />
+                    </div>
+                    <button className="btn btn-accent" type="submit">
+                      Nahrát výsledek
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ))
         )}
       </div>
 

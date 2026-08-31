@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/admin";
+import { RecordResultError, recordRunResult } from "@/lib/record-result";
 
 function fail(message: string): never {
   redirect("/team?error=" + encodeURIComponent(message));
@@ -190,4 +191,41 @@ export async function deleteMatch(formData: FormData) {
   revalidatePath("/team");
   revalidatePath("/admin/matches");
   redirect("/team?saved=1");
+}
+
+/**
+ * Nahraje výsledek běhu z odkazu na Raider.io.
+ *
+ * Vlastní logika je v src/lib/record-result.ts, aby se dala spustit i mimo
+ * server action. Tady zbývá jen ověření, kdo akci vyvolal, a překlad chyby
+ * na hlášku pro uživatele.
+ */
+export async function addRunResult(formData: FormData) {
+  const { user, character } = await requireCharacter();
+  const membership = await requireMembership(character.id);
+
+  let outcome;
+  try {
+    outcome = await recordRunResult(prisma, {
+      matchId: String(formData.get("matchId")),
+      runInput: String(formData.get("runUrl") ?? ""),
+      actorId: user.id,
+      requireTeamId: membership.teamId,
+    });
+  } catch (err) {
+    if (err instanceof RecordResultError) fail(err.message);
+    throw err;
+  }
+
+  revalidatePath("/team");
+  revalidatePath("/admin/matches");
+
+  redirect(
+    outcome.evaluation.valid
+      ? "/team?saved=1"
+      : "/team?error=" +
+          encodeURIComponent(
+            `Běh se uložil, ale nepočítá se: ${outcome.evaluation.reasons.join(" ")}`
+          )
+  );
 }

@@ -7,18 +7,26 @@ import {
   formatDateTime,
   formatDuration,
   formatRange,
+  formatTimeLimit,
   plural,
 } from "@/lib/labels";
 import { parseMonthParam, type CalendarEvent } from "@/lib/calendar";
 import { MonthCalendar } from "../../month-calendar";
 import { ConfirmButton } from "../confirm-button";
-import { confirmMatch, revokeMatch } from "./actions";
+import {
+  closeMatch,
+  confirmMatch,
+  reopenMatch,
+  revokeMatch,
+  setResultValidity,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
 
 const FILTERS: { value: string; label: string }[] = [
   { value: "PROPOSED", label: "Ke schválení" },
   { value: "CONFIRMED", label: "Schválené" },
+  { value: "COMPLETED", label: "Uzavřené" },
   { value: "ALL", label: "Vše" },
 ];
 
@@ -47,13 +55,14 @@ export default async function MatchesPage({
       team: { seasonId: season.id },
       ...(activeFilter === "ALL"
         ? {}
-        : { status: activeFilter as "PROPOSED" | "CONFIRMED" }),
+        : { status: activeFilter as "PROPOSED" | "CONFIRMED" | "COMPLETED" }),
     },
     orderBy: { windowStart: "asc" },
     include: {
       team: { select: { name: true } },
       proposedBy: { select: { characterName: true } },
       confirmedBy: { select: { username: true } },
+      results: { orderBy: { createdAt: "asc" } },
     },
   });
 
@@ -158,7 +167,7 @@ export default async function MatchesPage({
               </tr>
             </thead>
             <tbody>
-              {matches.map((match) => (
+              {matches.flatMap((match) => [
                 <tr key={match.id}>
                   <td>{match.team.name}</td>
                   <td>
@@ -195,19 +204,122 @@ export default async function MatchesPage({
                     )}
 
                     {match.status === "CONFIRMED" && (
-                      <form action={revokeMatch}>
+                      <div className="row-actions" style={{ flexWrap: "wrap" }}>
+                        <form action={closeMatch}>
+                          <input type="hidden" name="matchId" value={match.id} />
+                          <ConfirmButton
+                            className="btn btn-accent"
+                            message="Uzavřít zápas? Tým už nebude moct nahrát další běh."
+                          >
+                            Uzavřít
+                          </ConfirmButton>
+                        </form>
+
+                        {/* Zrušit schválení jde jen dokud u zápasu nejsou běhy -
+                            jinak by výsledky visely na termínu, který neplatí. */}
+                        {match.results.length === 0 && (
+                          <form action={revokeMatch}>
+                            <input type="hidden" name="matchId" value={match.id} />
+                            <ConfirmButton
+                              className="btn btn-danger"
+                              message="Opravdu vrátit termín mezi návrhy?"
+                            >
+                              Zrušit schválení
+                            </ConfirmButton>
+                          </form>
+                        )}
+                      </div>
+                    )}
+
+                    {match.status === "COMPLETED" && (
+                      <form action={reopenMatch}>
                         <input type="hidden" name="matchId" value={match.id} />
                         <ConfirmButton
-                          className="btn btn-danger"
-                          message="Opravdu vrátit termín mezi návrhy?"
+                          className="btn"
+                          message="Znovu otevřít zápas, aby šly doplnit výsledky?"
                         >
-                          Zrušit schválení
+                          Znovu otevřít
                         </ConfirmButton>
                       </form>
                     )}
                   </td>
-                </tr>
-              ))}
+                </tr>,
+
+                /* Běhy se vypisují v samostatném řádku pod zápasem, ať se
+                   hlavní tabulka nerozšiřuje o další sloupce. */
+                match.results.length > 0 ? (
+                  <tr key={`${match.id}-results`}>
+                    <td colSpan={6} style={{ background: "var(--bg)" }}>
+                      <strong style={{ fontSize: "0.82rem" }}>
+                        Běhy ({match.results.length})
+                      </strong>
+                      <table className="data" style={{ marginTop: "0.4rem" }}>
+                        <tbody>
+                          {match.results.map((result) => (
+                            <tr key={result.id}>
+                              <td style={{ width: "26%" }}>
+                                {result.dungeonName} +{result.keyLevel}
+                              </td>
+                              <td style={{ width: "12%" }}>
+                                {formatTimeLimit(result.clearTimeSeconds)}
+                              </td>
+                              <td style={{ width: "12%" }}>
+                                {result.points === null
+                                  ? "-"
+                                  : result.points.toFixed(1)}
+                              </td>
+                              <td style={{ width: "28%" }}>
+                                {result.isOfficial ? (
+                                  <span className="badge badge-approved">
+                                    Počítá se
+                                  </span>
+                                ) : result.isValid ? (
+                                  <span className="badge badge-pending">Platný</span>
+                                ) : (
+                                  <>
+                                    <span className="badge badge-rejected">
+                                      Neplatný
+                                    </span>
+                                    {result.invalidReason && (
+                                      <div
+                                        style={{
+                                          color: "var(--muted)",
+                                          fontSize: "0.76rem",
+                                        }}
+                                      >
+                                        {result.invalidReason}
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </td>
+                              <td>
+                                {match.status === "CONFIRMED" && (
+                                  <form action={setResultValidity}>
+                                    <input
+                                      type="hidden"
+                                      name="resultId"
+                                      value={result.id}
+                                    />
+                                    <input
+                                      type="hidden"
+                                      name="valid"
+                                      value={result.isValid ? "0" : "1"}
+                                    />
+                                    <button className="btn" type="submit">
+                                      {result.isValid ? "Zneplatnit" : "Uznat"}
+                                    </button>
+                                  </form>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                ) : null,
+              ])}
             </tbody>
           </table>
         )}

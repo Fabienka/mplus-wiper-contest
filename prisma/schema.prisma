@@ -299,6 +299,9 @@ model MatchResult {
   clearTimeSeconds   Int
   source             ResultSource
   screenshotUrl      String?
+  /// Id běhu na Raider.io - podle něj se pozná, že už je běh nahraný,
+  /// a dá se z něj složit zpětný odkaz.
+  raiderioRunId      Int?
   rawRaiderioData     Json?
   isValid            Boolean       @default(false)
   invalidReason      String?
@@ -309,6 +312,7 @@ model MatchResult {
   createdAt          DateTime      @default(now())
 
   @@index([matchId])
+  @@unique([matchId, raiderioRunId])
 }
 
 // ---------- Audit & Discord ----------

@@ -17,6 +17,7 @@ Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webh
 - Ruční úprava týmů a smazání rozdělení (`/admin/teams`)
 - Bodování běhů (`src/lib/scoring.ts`) + nastavení v sezóně
 - Statistiky o složení pole na úvodní stránce (`src/lib/stats.ts`)
+- Výsledky běhů - nahrání odkazu z Raider.io, ověření, bodování, uzavření zápasu
 - Kalendář dostupností a termíny zápasů - hráči na `/team`, schvalování moderátorem na `/admin/matches`
 - Měsíční kalendář s událostmi (`src/app/month-calendar.tsx`) na obou stránkách
 - Seed skript (`prisma/seed.ts`) – admin účet + otevřená sezóna pro lokální vývoj
@@ -24,7 +25,7 @@ Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webh
 
 ## Co chybí (další kroky)
 
-- Stahování výsledků běhů z Raider.io v domluveném okně a jejich vyhodnocení
+- Žebříček týmů
 - Žebříček
 - Discord webhook
 
@@ -153,6 +154,40 @@ Pravidla, která z toho plynou:
 
 Kontroluje se `npm run check:scoring`.
 
+## Výsledky běhů
+
+Tým nahraje odkaz na běh z Raider.io, aplikace si čas i sestavu stáhne sama -
+opsané číslo by se dalo zfalšovat. Ověřuje se, že běh patří týmu (celá sestava
+musí být z týmu), spadá do okna zápasu a je z dungeonu v rotaci; teprve pak se
+boduje. Neplatný běh se ukládá taky, jen s důvodem - tým i moderátor pak vidí,
+že se pokus stal a proč se nepočítá.
+
+Týmu se počítá **jen nejlepší platný běh** (`MatchResult.isOfficial`), který se
+přepočítává po každé změně. Neúspěšný pokus o vyšší klíč tým nepřipraví o dřív
+dosažený výsledek.
+
+Zápas uzavírá moderátor ručně, ne automaticky koncem okna - jde tak doplnit běh
+odehraný těsně před koncem. Po uzavření se výsledky zamknou; moderátor může
+zápas znovu otevřít.
+
+Kontroluje se `npm run check:match-result` (logika bez databáze) a
+`npm run check:result-flow:test` (celý průchod proti reálnému běhu z Raider.io).
+
+**Aplikace běžící v sandboxu nemá přístup na Raider.io**, zatímco skripty ano -
+proto ten druhý kontrolní skript existuje. Na běžném stroji stahování z prohlížeče
+funguje.
+
+## Testovací tým z reálného běhu
+
+```bash
+npm run seed:run-team:test          # výchozí běh
+npm run seed:run-team:test -- <odkaz na běh>
+```
+
+Založí tým ze sestavy konkrétního běhu na Raider.io. Hodí se, když je potřeba
+mít data, na která sedí i stažení výsledku. Přihlášení:
+`runteam-<jméno postavy malými písmeny>` / `test1234`.
+
 ## Dev server a kontrolní build
 
 `next build` a `next dev` si sdílejí adresář `.next`. Build spuštěný za běhu
@@ -166,6 +201,9 @@ npm run build:check
 
 Když se přesto stane, že se stránka načte neostylovaná, pomůže smazat `.next`
 a spustit dev server znovu.
+
+**Po migraci schématu je potřeba dev server restartovat** - drží si v paměti
+Prisma klient vygenerovaný při startu, takže by jinak hlásil neexistující sloupec.
 
 ## Responzivita
 

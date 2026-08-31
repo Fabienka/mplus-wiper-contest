@@ -24,7 +24,10 @@
     "check:availability": "tsx scripts/check-availability.ts",
     "check:calendar": "tsx scripts/check-calendar.ts",
     "check:scoring": "tsx scripts/check-scoring.ts",
-    "check:stats": "tsx scripts/check-stats.ts"
+    "check:stats": "tsx scripts/check-stats.ts",
+    "seed:run-team:test": "dotenv -e .env.test -- tsx scripts/seed-run-team.ts",
+    "check:match-result": "tsx scripts/check-match-result.ts",
+    "check:result-flow:test": "dotenv -e .env.test -- tsx scripts/check-result-flow.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
