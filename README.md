@@ -15,6 +15,7 @@ Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webh
 - Shuffle algoritmus (`src/lib/shuffle.ts`) + admin stránka `/admin/shuffle` se 3 variantami
 - Ruční úprava týmů a smazání rozdělení (`/admin/teams`)
 - Kalendář dostupností a termíny zápasů - hráči na `/team`, schvalování moderátorem na `/admin/matches`
+- Měsíční kalendář s událostmi (`src/app/month-calendar.tsx`) na obou stránkách
 - Seed skript (`prisma/seed.ts`) – admin účet + otevřená sezóna pro lokální vývoj
 - Oddělená testovací databáze a zálohování ostré databáze (viz níže)
 
@@ -141,6 +142,10 @@ tiše přidat práva.
   z toho přejezdem událostí spočítá úseky, kdy může celý tým. Když společný termín pro všech pět
   neexistuje, stránka postupně povolí jednoho a dva chybějící, ať nezůstane prázdná. Návrh termínu
   může založit kdokoli z týmu, schvaluje ho moderátor. Kontroluje se `npm run check:availability`.
+- **Měsíční kalendář** (`src/app/month-calendar.tsx`) je server komponenta - listování měsíců jde
+  přes odkazy s `?month=YYYY-MM`, takže funguje i bez JavaScriptu a na konkrétní měsíc se dá poslat
+  odkaz. Sestavení mřížky a mapování událostí na dny je v `src/lib/calendar.ts`, kontroluje se
+  `npm run check:calendar`. Týden začíná pondělím, událost přes půlnoc se ukáže u obou dnů.
 - **Časy se ukládají v UTC** a zobrazují v místním čase (`toDateTimeLocal`, `formatRange`).
   Při ručním vkládání do databáze přes SQL je potřeba na to myslet - holý timestamp se přečte
   jako UTC a v aplikaci se ukáže posunutý.

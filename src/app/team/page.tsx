@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { getMyTeamContext } from "@/lib/team";
 import { findOverlaps, type MemberSlots, type Overlap } from "@/lib/availability";
+import { parseMonthParam, type CalendarEvent } from "@/lib/calendar";
+import { MonthCalendar } from "../month-calendar";
 import {
   MATCH_STATUS_BADGES,
   MATCH_STATUS_LABELS,
@@ -25,7 +27,7 @@ const FALLBACK_STEPS = [0, 1, 2];
 export default async function TeamPage({
   searchParams,
 }: {
-  searchParams: { error?: string; saved?: string };
+  searchParams: { error?: string; saved?: string; month?: string };
 }) {
   const context = await getMyTeamContext();
 
@@ -115,13 +117,57 @@ export default async function TeamPage({
     }
   }
 
+  const month = parseMonthParam(searchParams.month);
+
+  // Do kalendáře jdou termíny, vlastní časy a překryvy celého týmu. Překryvy
+  // s chybějícími hráči se nezobrazují, ať kalendář nezaplní skoro-termíny.
+  const fullTeamOverlaps =
+    overlapMissing === 0
+      ? overlaps
+      : findOverlaps(memberSlots, team.members.length, { minDurationMinutes: 30 });
+
+  const calendarEvents: CalendarEvent[] = [
+    ...matches.map((match) => ({
+      id: `match-${match.id}`,
+      start: match.windowStart,
+      end: match.windowEnd,
+      kind:
+        match.status === "PROPOSED"
+          ? ("MATCH_PROPOSED" as const)
+          : ("MATCH_CONFIRMED" as const),
+      label: match.proposedBy.characterName,
+      detail: `${match.proposedBy.characterName} navrhl termín ${formatRange(
+        match.windowStart,
+        match.windowEnd
+      )} - ${MATCH_STATUS_LABELS[match.status].toLowerCase()}`,
+    })),
+    ...fullTeamOverlaps.map((overlap) => ({
+      id: `overlap-${overlap.start.toISOString()}`,
+      start: overlap.start,
+      end: overlap.end,
+      kind: "OVERLAP" as const,
+      label: "může tým",
+      detail: `Celý tým může ${formatRange(overlap.start, overlap.end)}`,
+    })),
+    ...mySlots.map((slot) => ({
+      id: `slot-${slot.id}`,
+      start: slot.start,
+      end: slot.end,
+      kind: "AVAILABILITY" as const,
+      label: "můj čas",
+      detail: `Zadal jsi si čas ${formatRange(slot.start, slot.end)}${
+        slot.note ? ` (${slot.note})` : ""
+      }`,
+    })),
+  ];
+
   const whoIsMissing = (ids: string[]) =>
     team.members
       .filter((m) => !ids.includes(m.characterId))
       .map((m) => m.character.characterName);
 
   return (
-    <div className="site-main">
+    <div className="site-main site-main-wide">
       <h1>{team.name}</h1>
       <p className="admin-subtitle">
         {team.members.length} hráčů - hraješ {SPEC_ROLE_LABELS[membership.roleInTeam]}
@@ -142,6 +188,23 @@ export default async function TeamPage({
           </p>
         </div>
       )}
+
+      <div className="card">
+        <h2>Kalendář</h2>
+        <div className="cal-scroll">
+          <MonthCalendar
+            month={month}
+            events={calendarEvents}
+            basePath="/team"
+            legend={[
+              { kind: "MATCH_CONFIRMED", label: "schválený termín" },
+              { kind: "MATCH_PROPOSED", label: "navržený termín" },
+              { kind: "OVERLAP", label: "může celý tým" },
+              { kind: "AVAILABILITY", label: "můj čas" },
+            ]}
+          />
+        </div>
+      </div>
 
       <div className="card">
         <h2>Kdy mám čas</h2>

@@ -9,6 +9,8 @@ import {
   formatRange,
   plural,
 } from "@/lib/labels";
+import { parseMonthParam, type CalendarEvent } from "@/lib/calendar";
+import { MonthCalendar } from "../../month-calendar";
 import { ConfirmButton } from "../confirm-button";
 import { confirmMatch, revokeMatch } from "./actions";
 
@@ -23,7 +25,7 @@ const FILTERS: { value: string; label: string }[] = [
 export default async function MatchesPage({
   searchParams,
 }: {
-  searchParams: { error?: string; saved?: string; status?: string };
+  searchParams: { error?: string; saved?: string; status?: string; month?: string };
 }) {
   const season = await getCurrentSeason();
 
@@ -59,6 +61,29 @@ export default async function MatchesPage({
     where: { team: { seasonId: season.id }, status: "PROPOSED" },
   });
 
+  // Kalendář schválně ignoruje filtr - je to přehled, filtr patří k tabulce.
+  const allMatches = await prisma.match.findMany({
+    where: { team: { seasonId: season.id } },
+    include: { team: { select: { name: true } }, proposedBy: { select: { characterName: true } } },
+  });
+
+  const month = parseMonthParam(searchParams.month);
+
+  const calendarEvents: CalendarEvent[] = allMatches.map((match) => ({
+    id: `match-${match.id}`,
+    start: match.windowStart,
+    end: match.windowEnd,
+    kind:
+      match.status === "PROPOSED"
+        ? ("MATCH_PROPOSED" as const)
+        : ("MATCH_CONFIRMED" as const),
+    label: match.team.name,
+    detail: `${match.team.name} - ${match.proposedBy.characterName} navrhl termín ${formatRange(
+      match.windowStart,
+      match.windowEnd
+    )}`,
+  }));
+
   return (
     <>
       <h1>Termíny</h1>
@@ -89,12 +114,28 @@ export default async function MatchesPage({
         </div>
       )}
 
+      <div className="card">
+        <h2>Kalendář termínů</h2>
+        <div className="cal-scroll">
+          <MonthCalendar
+            month={month}
+            events={calendarEvents}
+            basePath="/admin/matches"
+            keepParams={{ status: searchParams.status }}
+            legend={[
+              { kind: "MATCH_CONFIRMED", label: "schválený" },
+              { kind: "MATCH_PROPOSED", label: "čeká na schválení" },
+            ]}
+          />
+        </div>
+      </div>
+
       <div className="row-actions" style={{ marginBottom: "1.25rem" }}>
         {FILTERS.map((filter) => (
           <Link
             key={filter.value}
             className={`btn${filter.value === activeFilter ? " btn-accent" : ""}`}
-            href={`/admin/matches?status=${filter.value}`}
+            href={`/admin/matches?status=${filter.value}&month=${searchParams.month ?? ""}`}
           >
             {filter.label}
           </Link>

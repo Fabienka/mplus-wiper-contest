@@ -20,7 +20,8 @@
     "seed:players:test": "dotenv -e .env.test -- tsx scripts/seed-test-players.ts",
     "check:shuffle": "tsx scripts/check-shuffle.ts",
     "check:permissions": "tsx scripts/check-permissions.ts",
-    "check:availability": "tsx scripts/check-availability.ts"
+    "check:availability": "tsx scripts/check-availability.ts",
+    "check:calendar": "tsx scripts/check-calendar.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",
