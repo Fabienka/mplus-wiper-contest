@@ -69,6 +69,27 @@ Seed založí **`admin` / `admin1234`** a **`moderator` / `moderator1234`**
 (jde přepsat proměnnými `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD` a
 obdobně pro moderátora). Na prohlížení dat slouží `npx prisma studio`.
 
+S `NODE_ENV=production` se výchozí hesla **nepoužijí** - `SEED_ADMIN_PASSWORD`
+i `SEED_MODERATOR_PASSWORD` musí přijít z prostředí a mít aspoň 12 znaků,
+jinak seed skončí chybou. Hesla se v tom režimu ani nevypisují do logu.
+
+## Časová zóna
+
+Aplikace formátuje i parsuje všechny termíny v **systémové zóně serveru** -
+nikde se zóna nepředává explicitně. Hosting proto musí mít proměnnou prostředí:
+
+```
+TZ=Europe/Prague
+```
+
+Musí to být skutečná proměnná prostředí, ne řádek v `.env` - Node si zónu čte
+při startu procesu, dřív než se `.env` vůbec načte. Bez ní běží server v UTC
+a všechny časy se ukazují o hodinu (v létě o dvě) posunuté, aniž by cokoliv
+spadlo.
+
+Aby to nešlo přehlédnout, `src/instrumentation.ts` zónu při startu kontroluje:
+na produkci server rovnou spadne s vysvětlením, v dev jen napíše varování.
+
 ## Kontrolní skripty
 
 Projekt zatím nemá test runner, logika se ověřuje samostatnými skripty:

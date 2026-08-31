@@ -6,10 +6,39 @@ const prisma = new PrismaClient();
 // Dev seed - admin účet + otevřená sezóna, aby šlo projít registračním flow.
 // Skript je idempotentní, dá se pustit opakovaně.
 
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+/**
+ * Vývojová hesla jsou natvrdo v repu, takže je zná každý, kdo vidí kód.
+ * Na produkci se proto nesmí použít - buď přijdou z prostředí, nebo seed
+ * skončí chybou. Tiché založení admina s heslem "admin1234" na veřejné
+ * adrese je horší než neproběhlý seed.
+ */
+function seedPassword(envName: string, devDefault: string): string {
+  const value = process.env[envName];
+
+  if (!value) {
+    if (IS_PRODUCTION) {
+      throw new Error(
+        `${envName} není nastavené. Na produkci se výchozí vývojové heslo ` +
+          `nepoužije - nastav ${envName} na vlastní heslo (aspoň 12 znaků).`
+      );
+    }
+
+    return devDefault;
+  }
+
+  if (IS_PRODUCTION && value.length < 12) {
+    throw new Error(`${envName} má jen ${value.length} znaků, potřeba je aspoň 12.`);
+  }
+
+  return value;
+}
+
 const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME ?? "admin";
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "admin1234";
+const ADMIN_PASSWORD = seedPassword("SEED_ADMIN_PASSWORD", "admin1234");
 const MODERATOR_USERNAME = process.env.SEED_MODERATOR_USERNAME ?? "moderator";
-const MODERATOR_PASSWORD = process.env.SEED_MODERATOR_PASSWORD ?? "moderator1234";
+const MODERATOR_PASSWORD = seedPassword("SEED_MODERATOR_PASSWORD", "moderator1234");
 const SEASON_NAME = process.env.SEED_SEASON_NAME ?? "Testovací sezóna";
 const SEASON_SLUG = process.env.SEED_SEASON_SLUG ?? "season-mn-2";
 
@@ -79,8 +108,11 @@ async function main() {
     });
   }
 
-  console.log(`Admin: ${admin.username} / ${ADMIN_PASSWORD}`);
-  console.log(`Moderátor: ${moderator.username} / ${MODERATOR_PASSWORD}`);
+  // Logy hostingu bývají čitelné víc lidem, než by se do hesel mělo dostat.
+  const shown = (password: string) => (IS_PRODUCTION ? "(z prostředí)" : password);
+
+  console.log(`Admin: ${admin.username} / ${shown(ADMIN_PASSWORD)}`);
+  console.log(`Moderátor: ${moderator.username} / ${shown(MODERATOR_PASSWORD)}`);
   console.log(`Sezóna: ${season.name} (${season.status}), id=${season.id}`);
   console.log(`Dungeonů: ${DUNGEONS.length}, Raider.io sezóna: ${season.raiderioSeasonSlug}`);
 }
