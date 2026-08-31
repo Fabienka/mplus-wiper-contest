@@ -75,7 +75,7 @@ async function main() {
         },
       },
       update: { abbreviation: dungeon.abbreviation },
-      create: { ...dungeon, seasonId: season.id, coefficient: 1 },
+      create: { ...dungeon, seasonId: season.id, bonusMultiplier: 1 },
     });
   }
 

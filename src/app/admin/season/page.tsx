@@ -170,6 +170,16 @@ export default async function SeasonPage({
           </span>
         </form>
 
+        <p style={{ margin: "0 0 1.25rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+          <strong style={{ color: "var(--text)" }}>Násobitel bonusu</strong> je
+          normálně <strong style={{ color: "var(--text)" }}>1</strong>. Zvýšením
+          se dungeon zvýhodní - hodí se tam, kde tým část času neovlivní
+          (nucené čekání na NPC). Při 1,2 dostane tým za stejně ušetřený čas
+          o 20 % bodů víc. Bonus je vždy useknutý těsně pod 100 body, aby vyšší
+          klíč nemohl prohrát s nižším - hodnoty nad zhruba 2 proto už jen
+          ubírají rozlišení mezi rychlými běhy.
+        </p>
+
         {dungeons.length === 0 ? (
           <p className="empty-state">Sezóna zatím nemá žádné dungeony.</p>
         ) : (
@@ -180,7 +190,7 @@ export default async function SeasonPage({
                   <th style={{ width: "32%" }}>Název</th>
                   <th style={{ width: "12%" }}>Zkratka</th>
                   <th style={{ width: "14%" }}>Čas (mm:ss)</th>
-                  <th style={{ width: "14%" }}>Koeficient</th>
+                  <th style={{ width: "14%" }}>Násobitel bonusu</th>
                   <th style={{ width: "10%" }}>Aktivní</th>
                   <th />
                 </tr>
@@ -215,11 +225,12 @@ export default async function SeasonPage({
                     </td>
                     <td>
                       <input
-                        name={`coef-${dungeon.id}`}
+                        name={`mult-${dungeon.id}`}
                         type="number"
                         step="0.05"
                         min="0.05"
-                        defaultValue={dungeon.coefficient}
+                        defaultValue={dungeon.bonusMultiplier}
+                        title="1 = bez zvýhodnění"
                         required
                       />
                     </td>

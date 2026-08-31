@@ -106,7 +106,7 @@ export async function updateDungeons(formData: FormData) {
         timeLimitSeconds: parseTimeLimit(
           String(formData.get(`time-${dungeon.id}`) ?? "")
         ),
-        coefficient: Number(formData.get(`coef-${dungeon.id}`)),
+        bonusMultiplier: Number(formData.get(`mult-${dungeon.id}`)),
         isActive: formData.get(`active-${dungeon.id}`) === "on",
       };
 
@@ -114,9 +114,9 @@ export async function updateDungeons(formData: FormData) {
         throw new Error("Název i zkratka dungeonu jsou povinné.");
       }
 
-      if (!Number.isFinite(next.coefficient) || next.coefficient <= 0) {
+      if (!Number.isFinite(next.bonusMultiplier) || next.bonusMultiplier <= 0) {
         throw new Error(
-          `Koeficient u "${next.dungeonName}" musí být kladné číslo.`
+          `Násobitel bonusu u "${next.dungeonName}" musí být kladné číslo (1 = bez zvýhodnění).`
         );
       }
 
@@ -124,7 +124,7 @@ export async function updateDungeons(formData: FormData) {
         next.dungeonName === dungeon.dungeonName &&
         next.abbreviation === dungeon.abbreviation &&
         next.timeLimitSeconds === dungeon.timeLimitSeconds &&
-        next.coefficient === dungeon.coefficient &&
+        next.bonusMultiplier === dungeon.bonusMultiplier &&
         next.isActive === dungeon.isActive;
 
       if (unchanged) continue;
@@ -140,7 +140,7 @@ export async function updateDungeons(formData: FormData) {
           dungeonName: dungeon.dungeonName,
           abbreviation: dungeon.abbreviation,
           timeLimitSeconds: dungeon.timeLimitSeconds,
-          coefficient: dungeon.coefficient,
+          bonusMultiplier: dungeon.bonusMultiplier,
           isActive: dungeon.isActive,
         },
         newValue: next,
@@ -165,7 +165,7 @@ export async function addDungeon(formData: FormData) {
 
   await prisma.$transaction(async (tx) => {
     const dungeon = await tx.seasonDungeon.create({
-      data: { seasonId, dungeonName, abbreviation, coefficient: 1 },
+      data: { seasonId, dungeonName, abbreviation, bonusMultiplier: 1 },
     });
 
     await writeAuditLog(tx, {

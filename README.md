@@ -143,7 +143,12 @@ Pravidla, která z toho plynou:
   o dřív dosažený výsledek.
 - Procenta se počítají proti limitu **konkrétního běhu** z Raider.io, ne proti
   ručně udržovanému času u dungeonu. Ten slouží jen jako záloha pro výsledky
-  ze screenshotů. Uložený `SeasonDungeon.coefficient` se do bodování nepoužívá.
+  ze screenshotů.
+- `SeasonDungeon.bonusMultiplier` umožňuje dungeon **ručně zvýhodnit** - hodí se
+  tam, kde tým část času neovlivní (nucené čekání na NPC). 1 = bez zvýhodnění.
+  Bonus se usekne těsně pod 100, takže ani vysoký násobitel nedovolí nižšímu
+  klíči porazit vyšší; strop odpovídá teoreticky nejrychlejšímu doběhu, aby
+  mezi úrovněmi klíče zůstala mezera.
 
 Kontroluje se `npm run check:scoring`.
 

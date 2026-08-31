@@ -82,6 +82,11 @@ export interface RunInput {
    * Když chybí (výsledek ze screenshotu), rozhodne se podle časů.
    */
   keystoneUpgrades?: number | null;
+  /**
+   * Násobitel časového bonusu daného dungeonu (SeasonDungeon.bonusMultiplier).
+   * 1 = bez zvýhodnění. Chybějící hodnota se bere jako 1.
+   */
+  bonusMultiplier?: number | null;
 }
 
 export type RunScore =
@@ -90,8 +95,10 @@ export type RunScore =
       points: number;
       /** Body za výšku klíče. */
       keyLevelPoints: number;
-      /** Procento limitu, které tým nevyčerpal (0 až <100). */
+      /** Časový bonus po započtení násobitele a useknutí (0 až 100). */
       timeBonus: number;
+      /** Bonus narazil na strop - stane se jen u vysokého násobitele. */
+      timeBonusCapped: boolean;
     }
   | { scored: false; reason: string };
 
@@ -136,14 +143,32 @@ export function scoreRun(run: RunInput, config: ScoringConfig): RunScore {
   const keyLevelPoints =
     (run.keyLevel - config.minScoredKeyLevel) * config.pointsPerKeyLevel;
 
-  // Běh stihnutý v limitu má poměr <= 1, takže bonus vyjde 0 až 100.
-  const timeBonus = MAX_TIME_BONUS * (1 - run.clearTimeSeconds / run.parTimeSeconds);
+  // Běh stihnutý v limitu má poměr <= 1, takže základ vyjde 0 až 100.
+  const zaklad = MAX_TIME_BONUS * (1 - run.clearTimeSeconds / run.parTimeSeconds);
+
+  // Nesmyslný násobitel nesmí shodit výpočet - bere se jako "bez zvýhodnění".
+  const nasobitel =
+    Number.isFinite(run.bonusMultiplier) && (run.bonusMultiplier as number) > 0
+      ? (run.bonusMultiplier as number)
+      : 1;
+
+  // Strop je nutný: bez něj by zvýhodněný dungeon mohl dát přes 100 bodů a
+  // nižší klíč by porazil vyšší, což je proti pravidlům soutěže.
+  //
+  // Nestropuje se rovnou na 100, ale na hodnotu odpovídající teoreticky
+  // nejrychlejšímu doběhu (jedna sekunda). Ta je vždycky pod 100, takže mezi
+  // úrovněmi klíče zůstane mezera i při jakkoli vysokém násobiteli - se
+  // stropem přesně na 100 by zvýhodněný nižší klíč mohl s vyšším remizovat.
+  const strop = MAX_TIME_BONUS * (1 - 1 / run.parTimeSeconds);
+  const zvyhodneny = zaklad * nasobitel;
+  const timeBonus = Math.min(strop, zvyhodneny);
 
   return {
     scored: true,
     points: keyLevelPoints + timeBonus,
     keyLevelPoints,
     timeBonus,
+    timeBonusCapped: zvyhodneny > strop,
   };
 }
 

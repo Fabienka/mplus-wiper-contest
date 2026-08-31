@@ -201,7 +201,64 @@ console.log("6. Výběr nejlepšího běhu (scénář ze zadání)");
   check(bestRun(shoda) === shoda[0], "při shodě vyhrává dřívější");
 }
 
-console.log("7. Nastavení bodování");
+console.log("7. Násobitel bonusu u dungeonu");
+{
+  const zaklad = scoreRun(run(12, 0.6), cfg);
+  const zvyhodneny = scoreRun({ ...run(12, 0.6), bonusMultiplier: 1.2 }, cfg);
+
+  check(
+    zaklad.scored && zvyhodneny.scored && zvyhodneny.timeBonus > zaklad.timeBonus,
+    "vyšší násobitel dá víc bodů",
+    zaklad.scored && zvyhodneny.scored ? `${zaklad.timeBonus} -> ${zvyhodneny.timeBonus}` : ""
+  );
+  check(
+    zvyhodneny.scored && Math.abs(zvyhodneny.timeBonus - 48) < 1e-9,
+    "40 % ušetřeného času × 1,2 = 48",
+    zvyhodneny.scored ? String(zvyhodneny.timeBonus) : ""
+  );
+
+  // Násobitel 1 a chybějící násobitel musí dát totéž co bez něj.
+  const jedna = scoreRun({ ...run(12, 0.6), bonusMultiplier: 1 }, cfg);
+  check(
+    jedna.scored && zaklad.scored && jedna.points === zaklad.points,
+    "násobitel 1 = bez zvýhodnění"
+  );
+  for (const nesmysl of [0, -1, Number.NaN, null, undefined]) {
+    const s = scoreRun({ ...run(12, 0.6), bonusMultiplier: nesmysl as number }, cfg);
+    check(
+      s.scored && zaklad.scored && s.points === zaklad.points,
+      `nesmyslný násobitel (${String(nesmysl)}) se bere jako 1`
+    );
+  }
+
+  // Strop: bez něj by zvýhodněný nižší klíč porazil vyšší.
+  const pres = scoreRun({ ...run(11, 0.4), bonusMultiplier: 2 }, cfg);
+  check(pres.scored && pres.timeBonus < 100 && pres.timeBonus > 99,
+    "bonus se usekne těsně pod 100",
+    pres.scored ? String(pres.timeBonus) : "");
+  check(pres.scored && pres.timeBonusCapped, "a je označený jako useknutý");
+  check(zaklad.scored && !zaklad.timeBonusCapped, "běžný běh useknutý není");
+
+  const vyssiKlic = scoreRun(run(12, 0.95), cfg);
+  check(
+    pres.scored && vyssiKlic.scored && vyssiKlic.points > pres.points,
+    "+12 těsně v limitu pořád porazí zvýhodněný +11",
+    pres.scored && vyssiKlic.scored ? `${vyssiKlic.points} vs ${pres.points}` : ""
+  );
+
+  // Pravidlo o klíčích musí platit i při extrémním násobiteli.
+  let chyba = false;
+  for (const mult of [1, 1.5, 2, 5, 100]) {
+    for (let a = 10; a <= 17; a++) {
+      const nizsi = scoreRun({ ...run(a, 0.001), bonusMultiplier: mult }, cfg);
+      const vyssi = scoreRun(run(a + 1, 1.0), cfg);
+      if (nizsi.scored && vyssi.scored && nizsi.points >= vyssi.points) chyba = true;
+    }
+  }
+  check(!chyba, "vyšší klíč vyhraje i proti násobiteli 100×");
+}
+
+console.log("8. Nastavení bodování");
 {
   check(parseScoringConfig({}).minScoredKeyLevel === 10, "prázdné nastavení = výchozí");
   check(parseScoringConfig(null).pointsPerKeyLevel === 100, "null = výchozí");

@@ -103,7 +103,10 @@ model SeasonDungeon {
   abbreviation String
   // Časový limit klíče v sekundách - pro sezónu se doplňuje ručně, dokud není známý.
   timeLimitSeconds Int?
-  coefficient  Float
+  /// Násobitel časového bonusu. 1 = bez zvýhodnění; vyšší hodnota dungeon
+  /// zvýhodní (např. kvůli nucenému čekání na NPC, které nikdo neovlivní).
+  /// Bonus je vždy useknutý ve 100, aby vyšší klíč nemohl prohrát s nižším.
+  bonusMultiplier Float  @default(1)
   isActive     Boolean @default(true)
 
   @@index([seasonId])
