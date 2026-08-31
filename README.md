@@ -1,70 +1,91 @@
-# Mythic+ Wiper Contest – appka (kostra projektu)
+# Mythic+ Wiper Contest
 
-Tohle je první průchod kostrou projektu: **datový model (Prisma) + auth + registrační flow**.
-Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webhook) přijde v dalších krocích.
+Aplikace pro pořádání soutěže v Mythic+ dungeonech: přihlášky hráčů, rozdělení
+do týmů, domlouvání termínů, evidence odehraných běhů a jejich bodování.
 
-## Co je hotové
+## Jak soutěž funguje
 
-- Prisma schema (`prisma/schema.prisma`) odpovídající dohodnutému datovému modelu
-- Přihlášení přes username/heslo (NextAuth, `src/lib/auth.ts`)
-- Role a oprávnění (`src/lib/permissions.ts`) - admin / moderátor / uživatel, správa rolí na `/admin/users`
-- Zápisné - moderátor potvrzuje platbu poslanou ve hře (detail registrace)
-- Registrační formulář (`/register`) – vytvoří `User` + `Character` (data z Raider.io) + `SeasonRegistration` se stavem `PENDING`
-- Middleware chránící `/admin` podle role
-- Admin rozhraní – schvalování registrací, správa sezóny a dungeonů, audit log
-- Shuffle algoritmus (`src/lib/shuffle.ts`) + admin stránka `/admin/shuffle` se 3 variantami
-- Uživatelská část - profil s přihláškou a stavem zápisného (`/profile`), lišta s navigací
-- Ruční úprava týmů a smazání rozdělení (`/admin/teams`)
-- Bodování běhů (`src/lib/scoring.ts`) + nastavení v sezóně
-- Statistiky o složení pole na úvodní stránce (`src/lib/stats.ts`)
-- Výsledky běhů - nahrání odkazu z Raider.io, ověření, bodování, uzavření zápasu
-- Kalendář dostupností a termíny zápasů - hráči na `/team`, schvalování moderátorem na `/admin/matches`
-- Měsíční kalendář s událostmi (`src/app/month-calendar.tsx`) na obou stránkách
-- Seed skript (`prisma/seed.ts`) – admin účet + otevřená sezóna pro lokální vývoj
-- Oddělená testovací databáze a zálohování ostré databáze (viz níže)
+1. Hráč se přihlásí odkazem na svůj **Raider.io profil**; admin přihlášku schválí
+   a moderátor potvrdí zaplacené **zápisné** (platí se ve hře).
+2. Po uzavření registrace spustí admin **shuffle** - algoritmus rozdělí hráče do
+   týmů po pěti (1 tank, 1 healer, 3 DPS) a nabídne tři varianty na výběr.
+3. Členové týmu si zadají, **kdy mají čas**; z překryvů se navrhne termín, který
+   moderátor schválí.
+4. V termínu má tým zhruba dvě hodiny na odehrání klíčů. Výsledek nahraje
+   **odkazem na běh z Raider.io**, aplikace si čas i sestavu stáhne sama.
+5. Počítá se **jediný nejlepší běh**. Moderátor zápas uzavře a výsledky se
+   zamknou.
 
-## Co chybí (další kroky)
+Podrobná pravidla jsou v sekcích [Role a oprávnění](#role-a-oprávnění),
+[Bodování](#bodování) a [Výsledky běhů](#výsledky-běhů).
 
-- Žebříček týmů
-- Žebříček
-- Discord webhook
+## Stav projektu
 
-## Spuštění (protože tady v sandboxu appku spustit nejde – bez připojení k internetu a bez PostgreSQL)
+Rozpracované na větvi **`shuffle-algoritmus`**, nic nepushnuto. Sloučení:
 
-1. **Nainstaluj závislosti**
-   ```bash
-   npm install
-   ```
+```bash
+git checkout main && git merge shuffle-algoritmus
+```
 
-2. **Priprav PostgreSQL databázi** (lokálně nebo např. přes Docker):
-   ```bash
-   docker run --name wow-mplus-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=wow_mplus_app -p 5432:5432 -d postgres:16
-   ```
+### Hotové
 
-3. **Zkopíruj `.env.example` na `.env`** a uprav `DATABASE_URL` a `NEXTAUTH_SECRET`:
-   ```bash
-   cp .env.example .env
-   openssl rand -base64 32   # vlož výsledek jako NEXTAUTH_SECRET
-   ```
+- Přihlášení username/heslo (NextAuth), role **admin / moderátor / uživatel**
+  s oprávněními v `src/lib/permissions.ts`, správa rolí na `/admin/users`
+- Registrace do sezóny přes Raider.io profil, schvalování adminem, potvrzení
+  zápisného moderátorem
+- Správa sezóny a dungeonů včetně stažení časových limitů z Raider.io
+- **Shuffle** (`src/lib/shuffle.ts`) - tři varianty rozdělení s vysvětlením
+  porušených pravidel, ruční úprava týmů a smazání rozdělení
+- **Kalendář dostupností a termíny** - `/team` pro hráče, `/admin/matches` pro
+  moderátora, měsíční kalendář s událostmi
+- **Bodování** (`src/lib/scoring.ts`) a **výsledky běhů** - nahrání odkazu,
+  ověření, uzavření zápasu
+- Uživatelská část: `/profile` s přihláškou a stavem zápisného, statistiky
+  o složení pole na úvodní stránce
+- Audit log u všech admin akcí, zálohy databáze, oddělená testovací databáze
 
-4. **Spusť migraci** (vytvoří tabulky podle schema.prisma):
-   ```bash
-   npx prisma migrate dev --name init
-   ```
+### Chybí
 
-5. **Vytvoř testovací sezónu a admina** – seed skript (`prisma/seed.ts`) je idempotentní, dá se pustit opakovaně:
-   ```bash
-   npm run prisma:seed
-   ```
-   Založí admin účet (`admin` / `admin1234`, jde přepsat přes `SEED_ADMIN_USERNAME` a `SEED_ADMIN_PASSWORD`)
-   a sezónu se `status = REGISTRATION_OPEN` včetně placeholder dungeonů, aby šlo projít `/register`.
-   Na prohlížení a ruční úpravy dat slouží `npx prisma studio`.
+- **Žebříček týmů** - datově je na něj vše připravené (`MatchResult.isOfficial`
+  drží nejlepší běh každého zápasu), jde o pořadí podle jediného nejlepšího
+  běhu sezóny
+- Discord webhook (`DiscordEvent` je zatím model bez kódu)
+- Zamítnutí termínu s důvodem, oprava specu postavy z administrace
+- Administrace není použitelná na mobilu, ESLint není nakonfigurovaný
 
-6. **Spusť appku**
-   ```bash
-   npm run dev
-   ```
-   Appka poběží na http://localhost:3000, registrace na http://localhost:3000/register.
+## Spuštění
+
+Potřebuješ **Node.js** a **PostgreSQL** běžící lokálně na `localhost:5432`.
+
+```bash
+npm install
+cp .env.example .env          # uprav DATABASE_URL a NEXTAUTH_SECRET
+npx prisma migrate deploy     # vytvoří tabulky
+npm run prisma:seed           # admin účet + otevřená sezóna
+npm run dev                   # http://localhost:3000
+```
+
+Seed založí **`admin` / `admin1234`** a **`moderator` / `moderator1234`**
+(jde přepsat proměnnými `SEED_ADMIN_USERNAME`, `SEED_ADMIN_PASSWORD` a
+obdobně pro moderátora). Na prohlížení dat slouží `npx prisma studio`.
+
+## Kontrolní skripty
+
+Projekt zatím nemá test runner, logika se ověřuje samostatnými skripty:
+
+```bash
+npm run check:shuffle         # rozdělení do týmů
+npm run check:scoring         # bodování běhů
+npm run check:match-result    # ověření běhu proti zápasu
+npm run check:availability    # překryvy dostupností
+npm run check:calendar        # měsíční mřížka
+npm run check:permissions     # matice oprávnění
+npm run check:stats           # statistiky na úvodní stránce
+npm run check:result-flow:test  # celý zápis výsledku proti reálnému běhu
+```
+
+Poslední jmenovaný sahá na testovací databázi a na Raider.io, ostatní běží
+bez obojího.
 
 ## Testovací databáze
 
@@ -84,8 +105,26 @@ npm run db:test:reset         # smaže a znovu založí testovací DB
 Po každé změně `schema.prisma` je potřeba migrovat **obě** databáze – jinak
 testy běží proti starému schématu a nic to nenahlásí.
 
-`scripts/seed-test-players.ts` se sám brání spuštění nad databází, jejíž název
-neobsahuje „test“.
+Oba seed skripty se samy brání spuštění nad databází, jejíž název neobsahuje
+„test“.
+
+### Testovací účty
+
+| Účet | Heslo | Role | Odkud |
+|---|---|---|---|
+| `admin` | `admin1234` | admin | `prisma:seed` |
+| `moderator` | `moderator1234` | moderátor | `prisma:seed` |
+| `testplayer-tank-0` … | `test1234` | uživatel | `seed:players:test` (33 hráčů, 6 týmů) |
+| `runteam-thórus` … | `test1234` | uživatel | `seed:run-team:test` (tým z reálného běhu) |
+
+Kompletní příprava testovacího prostředí od nuly:
+
+```bash
+npm run db:test:reset         # schéma + admin a moderátor
+npm run seed:players:test     # 33 hráčů pro shuffle
+npm run seed:run-team:test    # tým z reálného běhu pro výsledky
+npm run dev:test
+```
 
 ## Zálohy
 
