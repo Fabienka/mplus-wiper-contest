@@ -132,6 +132,25 @@ npm run build:check
 Když se přesto stane, že se stránka načte neostylovaná, pomůže smazat `.next`
 a spustit dev server znovu.
 
+## Responzivita
+
+Layout je řešený v `src/app/globals.css`, zlomy na 900 px (administrace: sidebar
+nad obsah, navigace do řádku) a 640 px (lišta, formuláře a popisky pod sebe).
+Široké tabulky a kalendář se rolují **uvnitř své karty**, ne celou stránkou.
+
+Dvě věci, na které je potřeba myslet při úpravách:
+
+- Grid track musí být `minmax(0, 1fr)`, ne `1fr`. Track s `1fr` má implicitně
+  `min-width: auto`, takže se nesmrskne pod šířku obsahu a jedna široká tabulka
+  roztáhne celou stránku.
+- `color-mix()` a `dvh` mají v CSS uvedené jednodušší fallbacky kvůli starším
+  Safari (`color-mix` je od 16.2, `dvh` od 15.4).
+
+**Testování na Apple zařízeních:** vestavěný prohlížeč je Chromium, takže jde
+emulovat rozměr a dotyk iPhonu, ale ne WebKit. Chyby specifické pro Safari
+(hlavně vzhled `datetime-local` a chování `100vh`) tím odchytit nejdou -
+na to je potřeba reálné zařízení nebo Playwright s WebKitem.
+
 ## Poznámky k architektuře
 
 - **1 uživatel = 1 postava** – `Character.userId` je unique. Pokud se do budoucna přidá podpora víc postav na uživatele, stačí unique constraint zrušit; zbytek modelu (TeamMembership, SeasonRegistration) už visí na `characterId`, ne na `userId`.

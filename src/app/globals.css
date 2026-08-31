@@ -21,6 +21,9 @@ body {
 
 .auth-page {
   min-height: 100vh;
+  /* Na iOS Safari 100vh počítá i s lištou prohlížeče, která se při rolování
+     skrývá - obsah pak končí pod ní. dvh měří skutečně viditelnou výšku. */
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -102,8 +105,12 @@ button.primary:disabled {
 
 .admin-shell {
   display: grid;
-  grid-template-columns: 220px 1fr;
+  /* minmax(0, ...) je potřeba: track s "1fr" má implicitně min-width: auto,
+     takže by se nesmrskl pod šířku obsahu a široká tabulka by roztáhla celou
+     stránku místo toho, aby se rolovala uvnitř karty. */
+  grid-template-columns: 220px minmax(0, 1fr);
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .admin-sidebar {
@@ -146,6 +153,7 @@ button.primary:disabled {
 .admin-main {
   padding: 2rem;
   max-width: 1100px;
+  min-width: 0;
 }
 
 .admin-main h1 {
@@ -452,6 +460,7 @@ pre.json {
 }
 
 .cal-day-outside .cal-daynum {
+  color: #5a5e66;
   color: color-mix(in srgb, var(--muted) 55%, transparent);
 }
 
@@ -490,21 +499,25 @@ pre.json {
 }
 
 .cal-kind-confirmed {
+  background: #1d3a2c;
   background: color-mix(in srgb, #30a46c 22%, transparent);
   border-left-color: #30a46c;
 }
 
 .cal-kind-proposed {
+  background: #3d3320;
   background: color-mix(in srgb, #f5a524 20%, transparent);
   border-left-color: #f5a524;
 }
 
 .cal-kind-overlap {
+  background: #22283c;
   background: color-mix(in srgb, var(--accent) 18%, transparent);
   border-left-color: var(--accent);
 }
 
 .cal-kind-availability {
+  background: #23262d;
   background: color-mix(in srgb, var(--muted) 16%, transparent);
   border-left-color: var(--muted);
 }
@@ -517,13 +530,13 @@ pre.json {
 
 /* Na úzkém displeji by sedm sloupců bylo nečitelných, kalendář se proto
    odroluje vodorovně místo toho, aby se buňky smrskly. */
+.cal-scroll {
+  overflow-x: auto;
+}
+
 @media (max-width: 720px) {
   .cal-grid {
-    min-width: 640px;
-  }
-
-  .cal-scroll {
-    overflow-x: auto;
+    min-width: 620px;
   }
 }
 
@@ -552,16 +565,19 @@ pre.json {
 
 .notice-success {
   border-left-color: #30a46c;
+  background: #1a2721;
   background: color-mix(in srgb, #30a46c 10%, var(--surface));
 }
 
 .notice-error {
   border-left-color: var(--danger);
+  background: #2b1c1e;
   background: color-mix(in srgb, var(--danger) 10%, var(--surface));
 }
 
 .notice-info {
   border-left-color: var(--accent);
+  background: #1b2030;
   background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 
@@ -592,4 +608,153 @@ pre.json {
 .site-nav a[aria-current="page"] {
   color: var(--text);
   text-decoration: underline;
+}
+
+/* ---------- Responzivita ---------- */
+
+/* Dlouhá slova (jména postav, URL na Raider.io) nesmí roztáhnout layout. */
+.card,
+.notice,
+dl.detail dd {
+  overflow-wrap: anywhere;
+}
+
+/* Tabulky se na úzkém displeji rolují vodorovně místo toho, aby se sloupce
+   smrskly na jedno písmeno. Scrolluje se uvnitř karty, ne celá stránka. */
+.table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 900px) {
+  /* Administrace: sidebar nad obsah, navigace do řádku. */
+  .admin-shell {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: auto;
+  }
+
+  .admin-sidebar {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding: 1rem;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+
+  .admin-sidebar h2 {
+    margin-bottom: 0.6rem;
+  }
+
+  .admin-nav {
+    flex-direction: row;
+    gap: 0.35rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.2rem;
+  }
+
+  .admin-nav a {
+    white-space: nowrap;
+  }
+
+  .admin-main {
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  table.data {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* U rozbaleného display:block se ztratí zarovnání sloupců, proto uvnitř
+     zpátky tabulkové chování na minimální šířce. */
+  table.data thead,
+  table.data tbody {
+    display: table;
+    width: 100%;
+    min-width: 560px;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-header {
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    padding: 0.8rem 1rem;
+  }
+
+  .site-nav {
+    gap: 0.9rem;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+  }
+
+  .site-main {
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .auth-page {
+    padding: 1rem;
+    align-items: flex-start;
+    padding-top: 3rem;
+  }
+
+  .auth-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  /* Popisek nad hodnotou místo vedle - na 180px sloupec není místo. */
+  dl.detail {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+
+  dl.detail dd {
+    margin-bottom: 0.6rem;
+  }
+
+  /* Formulářové řádky (Od / Do / Poznámka / tlačítko) se skládají pod sebe. */
+  .row-actions {
+    flex-wrap: wrap;
+  }
+
+  .row-actions > .field {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .row-actions > .field input,
+  .row-actions > .field select {
+    width: 100%;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .stat {
+    padding: 0.8rem 0.9rem;
+  }
+
+  .stat .stat-value {
+    font-size: 1.4rem;
+  }
+
+  .card {
+    padding: 1rem;
+  }
+
+  .cal-legend {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  /* Tlačítka v úzkém sloupci se nesmí lepit na sebe. */
+  .btn {
+    padding: 0.45rem 0.7rem;
+  }
 }
