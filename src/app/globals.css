@@ -103,14 +103,23 @@ button.primary:disabled {
 
 /* ---------- Admin ---------- */
 
+/* Obal administrace: lišta nahoře, shell si vezme zbytek výšky. Bez toho by
+   shell se svojí vlastní výškou přes celý viewport lištu vystrčil ven. */
+.admin-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .admin-shell {
   display: grid;
   /* minmax(0, ...) je potřeba: track s "1fr" má implicitně min-width: auto,
      takže by se nesmrskl pod šířku obsahu a široká tabulka by roztáhla celou
      stránku místo toho, aby se rolovala uvnitř karty. */
   grid-template-columns: 220px minmax(0, 1fr);
-  min-height: 100vh;
-  min-height: 100dvh;
+  flex: 1;
+  min-height: 0;
 }
 
 .admin-sidebar {
