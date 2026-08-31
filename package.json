@@ -28,7 +28,8 @@
     "seed:run-team:test": "dotenv -e .env.test -- tsx scripts/seed-run-team.ts",
     "check:match-result": "tsx scripts/check-match-result.ts",
     "check:result-flow:test": "dotenv -e .env.test -- tsx scripts/check-result-flow.ts",
-    "check:leaderboard": "tsx scripts/check-leaderboard.ts"
+    "check:leaderboard": "tsx scripts/check-leaderboard.ts",
+    "check:login-throttle": "tsx scripts/check-login-throttle.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",

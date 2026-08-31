@@ -67,11 +67,21 @@ export default function LoginPage() {
       });
 
       if (!result || result.error || !result.ok) {
+        // Špatné jméno nebo heslo vrací NextAuth jako "CredentialsSignin".
+        // Cokoliv jiného je hláška, kterou authorize poslal schválně (zatím
+        // jen omezení počtu pokusů) - ta se ukáže rovnou v titulku, jinak by
+        // zablokovaný člověk marně kontroloval heslo.
+        const fromServer =
+          result?.error && result.error !== "CredentialsSignin"
+            ? result.error
+            : null;
+
         setFailure({
           message:
-            result?.status === 401
+            fromServer ??
+            (result?.status === 401
               ? "Přihlášení se nezdařilo. Zkontroluj uživatelské jméno a heslo."
-              : "Přihlášení se nezdařilo.",
+              : "Přihlášení se nezdařilo."),
           detail: buildDetail({
             username,
             status: result?.status,
