@@ -114,6 +114,12 @@ export default async function HomePage() {
           </div>
         )}
 
+        <div className="row-actions" style={{ marginBottom: "1.5rem" }}>
+          <Link className="btn" href="/leaderboard">
+            Žebříček týmů
+          </Link>
+        </div>
+
         <div className="stat-grid">
           <div className="stat">
             <div className="stat-value">{stats.total}</div>

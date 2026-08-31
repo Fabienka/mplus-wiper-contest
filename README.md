@@ -15,6 +15,8 @@ do týmů, domlouvání termínů, evidence odehraných běhů a jejich bodován
    **odkazem na běh z Raider.io**, aplikace si čas i sestavu stáhne sama.
 5. Počítá se **jediný nejlepší běh**. Moderátor zápas uzavře a výsledky se
    zamknou.
+6. Veřejný **žebříček** (`/leaderboard`) řadí týmy podle jejich nejlepšího
+   běhu sezóny.
 
 Podrobná pravidla jsou v sekcích [Role a oprávnění](#role-a-oprávnění),
 [Bodování](#bodování) a [Výsledky běhů](#výsledky-běhů).
@@ -40,15 +42,13 @@ git checkout main && git merge shuffle-algoritmus
   moderátora, měsíční kalendář s událostmi
 - **Bodování** (`src/lib/scoring.ts`) a **výsledky běhů** - nahrání odkazu,
   ověření, uzavření zápasu
+- **Žebříček** (`/leaderboard`) - veřejný, podle nejlepšího běhu sezóny
 - Uživatelská část: `/profile` s přihláškou a stavem zápisného, statistiky
   o složení pole na úvodní stránce
 - Audit log u všech admin akcí, zálohy databáze, oddělená testovací databáze
 
 ### Chybí
 
-- **Žebříček týmů** - datově je na něj vše připravené (`MatchResult.isOfficial`
-  drží nejlepší běh každého zápasu), jde o pořadí podle jediného nejlepšího
-  běhu sezóny
 - Discord webhook (`DiscordEvent` je zatím model bez kódu)
 - Zamítnutí termínu s důvodem, oprava specu postavy z administrace
 - Administrace není použitelná na mobilu, ESLint není nakonfigurovaný
@@ -81,6 +81,7 @@ npm run check:availability    # překryvy dostupností
 npm run check:calendar        # měsíční mřížka
 npm run check:permissions     # matice oprávnění
 npm run check:stats           # statistiky na úvodní stránce
+npm run check:leaderboard     # žebříček týmů
 npm run check:result-flow:test  # celý zápis výsledku proti reálnému běhu
 ```
 
@@ -215,6 +216,21 @@ Kontroluje se `npm run check:match-result` (logika bez databáze) a
 **Aplikace běžící v sandboxu nemá přístup na Raider.io**, zatímco skripty ano -
 proto ten druhý kontrolní skript existuje. Na běžném stroji stahování z prohlížeče
 funguje.
+
+## Žebříček
+
+Řadí se podle **jediného nejlepšího platného běhu sezóny**, ne podle součtu -
+soutěž je postavená na jednom výkonu v rámci dvouhodinového termínu.
+
+- Neplatné běhy se ignorují, takže tým s vysokým skóre z nepočítaného běhu
+  zůstane bez pořadí.
+- Tým, který něco odběhl, ale nemá platný běh, v žebříčku zůstane - jen bez
+  pořadí. Týmy bez jediného běhu jsou vypsané zvlášť pod tabulkou.
+- Shoda bodů znamená **sdílené umístění** (1., 2., 2., 4.). Při shodě je
+  v pořadí dřív ten, kdo výkonu dosáhl první.
+
+Stránka je veřejná, přihlášení nevyžaduje. Kontroluje se
+`npm run check:leaderboard`.
 
 ## Testovací tým z reálného běhu
 
