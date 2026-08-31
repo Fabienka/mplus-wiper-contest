@@ -16,6 +16,7 @@ Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webh
 - Uživatelská část - profil s přihláškou a stavem zápisného (`/profile`), lišta s navigací
 - Ruční úprava týmů a smazání rozdělení (`/admin/teams`)
 - Bodování běhů (`src/lib/scoring.ts`) + nastavení v sezóně
+- Statistiky o složení pole na úvodní stránce (`src/lib/stats.ts`)
 - Kalendář dostupností a termíny zápasů - hráči na `/team`, schvalování moderátorem na `/admin/matches`
 - Měsíční kalendář s událostmi (`src/app/month-calendar.tsx`) na obou stránkách
 - Seed skript (`prisma/seed.ts`) – admin účet + otevřená sezóna pro lokální vývoj

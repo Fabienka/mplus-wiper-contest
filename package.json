@@ -23,7 +23,8 @@
     "check:permissions": "tsx scripts/check-permissions.ts",
     "check:availability": "tsx scripts/check-availability.ts",
     "check:calendar": "tsx scripts/check-calendar.ts",
-    "check:scoring": "tsx scripts/check-scoring.ts"
+    "check:scoring": "tsx scripts/check-scoring.ts",
+    "check:stats": "tsx scripts/check-stats.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",

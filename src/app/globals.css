@@ -758,3 +758,94 @@ dl.detail dd {
     padding: 0.45rem 0.7rem;
   }
 }
+
+/* ---------- Statistiky na úvodní stránce ---------- */
+
+.trio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.rank-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.9rem;
+}
+
+.rank-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+/* Vodorovný pruh u zastoupení tříd. */
+.bar {
+  flex: 1 1 40%;
+  height: 6px;
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 40px;
+}
+
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+/* Poměr rolí jako jeden složený pruh. */
+.split-bar {
+  display: flex;
+  height: 12px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.split-bar > span {
+  display: block;
+  height: 100%;
+}
+
+.split-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.6rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.split-legend span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.split-legend i {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.split-tank {
+  background: #6e9fff;
+}
+
+.split-healer {
+  background: #46c08a;
+}
+
+.split-dps {
+  background: #e0834a;
+}
