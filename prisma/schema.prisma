@@ -11,6 +11,9 @@ datasource db {
 
 enum UserRole {
   ADMIN
+  // Moderátor = běžný uživatel + potvrzování zápisného a schvalování termínů.
+  // Nesmí schvalovat/zamítat registrace ani sahat na sezónu, shuffle a týmy.
+  MODERATOR
   USER
 }
 
@@ -117,6 +120,7 @@ model User {
 
   character           Character?
   reviewedRegistrations SeasonRegistration[] @relation("ReviewedBy")
+  confirmedEntryFees   SeasonRegistration[] @relation("EntryFeeConfirmedBy")
   auditLogs            AuditLog[]
   shuffleRunsExecuted  ShuffleRun[]
   verifiedResults      MatchResult[]        @relation("VerifiedBy")
@@ -163,6 +167,13 @@ model SeasonRegistration {
   reviewedBy        User?               @relation("ReviewedBy", fields: [reviewedById], references: [id])
   reviewedAt        DateTime?
   rejectionReason   String?
+  // Zápisné se platí ve hře (poslané zlato), takže ho aplikace neumí ověřit
+  // sama - moderátor nebo admin potvrdí, že peníze dorazily. Prázdné
+  // entryFeePaidAt znamená nezaplaceno.
+  entryFeePaidAt        DateTime?
+  entryFeeConfirmedById String?
+  entryFeeConfirmedBy   User?    @relation("EntryFeeConfirmedBy", fields: [entryFeeConfirmedById], references: [id])
+  entryFeeNote          String?
   createdAt         DateTime            @default(now())
 
   @@index([seasonId, status])

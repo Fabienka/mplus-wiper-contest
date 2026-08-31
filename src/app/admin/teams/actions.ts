@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { MembershipStatus, SpecRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, writeAuditLog } from "@/lib/admin";
+import { requirePermission, writeAuditLog } from "@/lib/admin";
 import { plural } from "@/lib/labels";
 
 function revalidateTeams() {
@@ -52,7 +52,7 @@ function parseDestination(raw: string, teamIds: Set<string>): Destination | null
  * nezakazuje - admin může potřebovat mezikrok. Stránka takový tým označí.
  */
 export async function updateTeams(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageTeams");
   const seasonId = String(formData.get("seasonId"));
 
   const [teams, memberships] = await Promise.all([
@@ -151,7 +151,7 @@ export async function updateTeams(formData: FormData) {
  * jde přesunout do týmu.
  */
 export async function addAsSubstitute(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageTeams");
   const seasonId = String(formData.get("seasonId"));
   const characterId = String(formData.get("characterId"));
 
@@ -207,7 +207,7 @@ export async function addAsSubstitute(formData: FormData) {
  * srozumitelnou hlášku.
  */
 export async function deleteAllTeams(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageTeams");
   const seasonId = String(formData.get("seasonId"));
 
   const [teamCount, membershipCount, matchCount] = await Promise.all([

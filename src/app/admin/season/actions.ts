@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Prisma, SeasonStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, writeAuditLog } from "@/lib/admin";
+import { requirePermission, writeAuditLog } from "@/lib/admin";
 import { parseTimeLimit } from "@/lib/labels";
 import { RaiderioLookupError, fetchSeasonDungeons } from "@/lib/raiderio";
 
@@ -14,7 +14,7 @@ function revalidateSeason() {
 }
 
 export async function updateSeason(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
   const id = String(formData.get("seasonId"));
   const name = String(formData.get("name") ?? "").trim();
   const status = String(formData.get("status")) as SeasonStatus;
@@ -60,7 +60,7 @@ export async function updateSeason(formData: FormData) {
 }
 
 export async function updateDungeons(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
   const ids = formData.getAll("dungeonId").map(String);
 
   const existing = await prisma.seasonDungeon.findMany({
@@ -123,7 +123,7 @@ export async function updateDungeons(formData: FormData) {
 }
 
 export async function addDungeon(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
   const seasonId = String(formData.get("seasonId"));
   const dungeonName = String(formData.get("dungeonName") ?? "").trim();
   const abbreviation = String(formData.get("abbreviation") ?? "")
@@ -152,7 +152,7 @@ export async function addDungeon(formData: FormData) {
 }
 
 export async function deleteDungeon(id: string) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
 
   const dungeon = await prisma.seasonDungeon.findUniqueOrThrow({ where: { id } });
 
@@ -179,7 +179,7 @@ export async function deleteDungeon(id: string) {
  * názvy se mezi Raider.io a naší evidencí liší (Kings' Rest vs King's Rest).
  */
 export async function syncDungeonTimes(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("manageSeason");
   const seasonId = String(formData.get("seasonId"));
 
   const season = await prisma.season.findUniqueOrThrow({

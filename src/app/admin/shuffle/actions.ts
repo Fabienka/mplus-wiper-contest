@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin, writeAuditLog } from "@/lib/admin";
+import { requirePermission, writeAuditLog } from "@/lib/admin";
 import { plural } from "@/lib/labels";
 import {
   runShuffle,
@@ -27,7 +27,7 @@ function fail(message: string): never {
  * takže je dohledatelné, co algoritmus kdy navrhl.
  */
 export async function runShuffleForSeason(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("runShuffle");
   const seasonId = String(formData.get("seasonId"));
 
   const registrations = await prisma.seasonRegistration.findMany({
@@ -118,7 +118,7 @@ export async function runShuffleForSeason(formData: FormData) {
  * přihlásil a zbyl.
  */
 export async function applyVariant(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await requirePermission("runShuffle");
   const proposalId = String(formData.get("proposalId"));
 
   const proposal = await prisma.shuffleProposal.findUniqueOrThrow({

@@ -20,7 +20,7 @@ export default async function AdminOverviewPage() {
     );
   }
 
-  const [pending, approved, rejected, teams, dungeons, recentLogs] =
+  const [pending, approved, rejected, paid, teams, dungeons, recentLogs] =
     await Promise.all([
       prisma.seasonRegistration.count({
         where: { seasonId: season.id, status: "PENDING" },
@@ -30,6 +30,9 @@ export default async function AdminOverviewPage() {
       }),
       prisma.seasonRegistration.count({
         where: { seasonId: season.id, status: "REJECTED" },
+      }),
+      prisma.seasonRegistration.count({
+        where: { seasonId: season.id, entryFeePaidAt: { not: null } },
       }),
       prisma.team.count({ where: { seasonId: season.id } }),
       prisma.seasonDungeon.count({
@@ -61,6 +64,10 @@ export default async function AdminOverviewPage() {
         <div className="stat">
           <div className="stat-value">{rejected}</div>
           <div className="stat-label">Zamítnutých</div>
+        </div>
+        <div className="stat">
+          <div className="stat-value">{paid}</div>
+          <div className="stat-label">Zaplacené zápisné</div>
         </div>
         <div className="stat">
           <div className="stat-value">{teams}</div>

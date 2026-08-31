@@ -1,4 +1,9 @@
-import type { RegistrationStatus, SeasonStatus, SpecRole } from "@prisma/client";
+import type {
+  RegistrationStatus,
+  SeasonStatus,
+  SpecRole,
+  UserRole,
+} from "@prisma/client";
 
 export const REGISTRATION_STATUS_LABELS: Record<RegistrationStatus, string> = {
   PENDING: "Čeká na schválení",
@@ -18,6 +23,19 @@ export const SEASON_STATUS_LABELS: Record<SeasonStatus, string> = {
   REGISTRATION_CLOSED: "Registrace uzavřená",
   ACTIVE: "Probíhá",
   CLOSED: "Ukončená",
+};
+
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  ADMIN: "Admin",
+  MODERATOR: "Moderátor",
+  USER: "Uživatel",
+};
+
+/** Co která role smí - ukazuje se u výběru role, ať je to zřejmé. */
+export const USER_ROLE_HINTS: Record<UserRole, string> = {
+  ADMIN: "Kompletní práva.",
+  MODERATOR: "Jako uživatel + potvrzuje zápisné a schvaluje termíny.",
+  USER: "Běžný účastník, do administrace nemá přístup.",
 };
 
 export const SPEC_ROLE_LABELS: Record<SpecRole, string> = {

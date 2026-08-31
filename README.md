@@ -7,6 +7,8 @@ Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webh
 
 - Prisma schema (`prisma/schema.prisma`) odpovídající dohodnutému datovému modelu
 - Přihlášení přes username/heslo (NextAuth, `src/lib/auth.ts`)
+- Role a oprávnění (`src/lib/permissions.ts`) - admin / moderátor / uživatel, správa rolí na `/admin/users`
+- Zápisné - moderátor potvrzuje platbu poslanou ve hře (detail registrace)
 - Registrační formulář (`/register`) – vytvoří `User` + `Character` (data z Raider.io) + `SeasonRegistration` se stavem `PENDING`
 - Middleware chránící `/admin` podle role
 - Admin rozhraní – schvalování registrací, správa sezóny a dungeonů, audit log
@@ -94,6 +96,24 @@ Dvě omezení, o kterých je dobré vědět: úloha běží jen když je uživat
 přihlášený (zmeškaný běh se nedohání) a zálohy leží na stejném disku jako
 databáze – proti selhání disku tedy nechrání.
 
+## Role a oprávnění
+
+| | Admin | Moderátor | Uživatel |
+|---|---|---|---|
+| Vstup do administrace | ano | ano | ne |
+| Schválit/zamítnout registraci | ano | ne | ne |
+| Potvrdit zápisné | ano | ano | ne |
+| Schválit termín zápasu | ano | ano | ne |
+| Sezóna, shuffle, týmy, uživatelé | ano | ne | ne |
+
+Oprávnění jsou na jednom místě v `src/lib/permissions.ts` a ověřují se ve třech
+vrstvách: middleware (přístup na cestu), stránka (co se vykreslí) a server
+action (`requirePermission`). Poslední vrstva je ta podstatná - server actions
+jdou vyvolat i mimo stránku, takže schované tlačítko samo o sobě nic nechrání.
+
+Matici hlídá `npm run check:permissions`, aby budoucí úprava nemohla moderátorovi
+tiše přidat práva.
+
 ## Poznámky k architektuře
 
 - **1 uživatel = 1 postava** – `Character.userId` je unique. Pokud se do budoucna přidá podpora víc postav na uživatele, stačí unique constraint zrušit; zbytek modelu (TeamMembership, SeasonRegistration) už visí na `characterId`, ne na `userId`.
@@ -115,4 +135,7 @@ databáze – proti selhání disku tedy nechrání.
   každou class/spec. Neodvozuje se automaticky – **při každém větším patchi je potřeba ji projít**
   a aktualizovat `LAST_VERIFIED`. Drums se do ní zanést nedají (nezávisí na class), takže shuffle
   hlásí „chybí bloodlust“ i tam, kde by je tým pokryl drumy.
+- **Zápisné** je samostatná brána vedle schválení registrace, ne jeho náhrada - hráč může být
+  schválený a nezaplacený i naopak. Do shuffle zatím vstupují všichni schválení bez ohledu na
+  platbu (vědomé rozhodnutí, ne opomenutí).
 - **Formulář je verzovaný natvrdo v kódu** – aktuální `/register` stránka odpovídá zjednodušené verzi formuláře. Pro každou sezónu s jinými otázkami se počítá s tím, že se stránka/schema v `route.ts` upraví ručně (podle rozhodnutí nepoužívat zatím dynamický form builder).
