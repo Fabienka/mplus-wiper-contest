@@ -19,7 +19,8 @@
     "db:test:reset": "dotenv -e .env.test -- prisma migrate reset --force",
     "seed:players:test": "dotenv -e .env.test -- tsx scripts/seed-test-players.ts",
     "check:shuffle": "tsx scripts/check-shuffle.ts",
-    "check:permissions": "tsx scripts/check-permissions.ts"
+    "check:permissions": "tsx scripts/check-permissions.ts",
+    "check:availability": "tsx scripts/check-availability.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.18.0",

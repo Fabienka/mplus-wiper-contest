@@ -14,12 +14,13 @@ Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webh
 - Admin rozhraní – schvalování registrací, správa sezóny a dungeonů, audit log
 - Shuffle algoritmus (`src/lib/shuffle.ts`) + admin stránka `/admin/shuffle` se 3 variantami
 - Ruční úprava týmů a smazání rozdělení (`/admin/teams`)
+- Kalendář dostupností a termíny zápasů - hráči na `/team`, schvalování moderátorem na `/admin/matches`
 - Seed skript (`prisma/seed.ts`) – admin účet + otevřená sezóna pro lokální vývoj
 - Oddělená testovací databáze a zálohování ostré databáze (viz níže)
 
 ## Co chybí (další kroky)
 
-- Zápasy, návrhy termínů, stahování výsledků z Raider.io v časovém okně
+- Stahování výsledků běhů z Raider.io v domluveném okně a jejich vyhodnocení
 - Žebříček
 - Discord webhook
 
@@ -104,6 +105,7 @@ databáze – proti selhání disku tedy nechrání.
 | Schválit/zamítnout registraci | ano | ne | ne |
 | Potvrdit zápisné | ano | ano | ne |
 | Schválit termín zápasu | ano | ano | ne |
+| Zadat dostupnost a navrhnout termín za tým | ano | ano | ano (svůj tým) |
 | Sezóna, shuffle, týmy, uživatelé | ano | ne | ne |
 
 Oprávnění jsou na jednom místě v `src/lib/permissions.ts` a ověřují se ve třech
@@ -135,6 +137,13 @@ tiše přidat práva.
   každou class/spec. Neodvozuje se automaticky – **při každém větším patchi je potřeba ji projít**
   a aktualizovat `LAST_VERIFIED`. Drums se do ní zanést nedají (nezávisí na class), takže shuffle
   hlásí „chybí bloodlust“ i tam, kde by je tým pokryl drumy.
+- **Kalendář termínů** (`/team`): každý člen týmu si zadá, kdy má čas, a `src/lib/availability.ts`
+  z toho přejezdem událostí spočítá úseky, kdy může celý tým. Když společný termín pro všech pět
+  neexistuje, stránka postupně povolí jednoho a dva chybějící, ať nezůstane prázdná. Návrh termínu
+  může založit kdokoli z týmu, schvaluje ho moderátor. Kontroluje se `npm run check:availability`.
+- **Časy se ukládají v UTC** a zobrazují v místním čase (`toDateTimeLocal`, `formatRange`).
+  Při ručním vkládání do databáze přes SQL je potřeba na to myslet - holý timestamp se přečte
+  jako UTC a v aplikaci se ukáže posunutý.
 - **Zápisné** je samostatná brána vedle schválení registrace, ne jeho náhrada - hráč může být
   schválený a nezaplacený i naopak. Do shuffle zatím vstupují všichni schválení bez ohledu na
   platbu (vědomé rozhodnutí, ne opomenutí).

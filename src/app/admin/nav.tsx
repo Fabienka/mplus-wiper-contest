@@ -8,6 +8,7 @@ import { can, type Permission } from "@/lib/permissions";
 const LINKS: { href: string; label: string; permission: Permission }[] = [
   { href: "/admin", label: "Přehled", permission: "accessAdmin" },
   { href: "/admin/registrations", label: "Registrace", permission: "accessAdmin" },
+  { href: "/admin/matches", label: "Termíny", permission: "approveMatchTerms" },
   { href: "/admin/shuffle", label: "Shuffle", permission: "runShuffle" },
   { href: "/admin/teams", label: "Týmy", permission: "manageTeams" },
   { href: "/admin/season", label: "Sezóna a dungeony", permission: "manageSeason" },

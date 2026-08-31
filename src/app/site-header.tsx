@@ -15,6 +15,8 @@ export async function SiteHeader() {
       </Link>
 
       <nav className="site-nav">
+        {user && <Link href="/team">Můj tým</Link>}
+
         {can(user?.role, "accessAdmin") && (
           <Link href="/admin">Administrace</Link>
         )}

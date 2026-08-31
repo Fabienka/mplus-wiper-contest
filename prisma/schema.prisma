@@ -92,6 +92,7 @@ model Season {
   teams         Team[]
   teamMembers   TeamMembership[]
   shuffleRuns   ShuffleRun[]
+  availabilities Availability[]
 }
 
 model SeasonDungeon {
@@ -124,6 +125,7 @@ model User {
   auditLogs            AuditLog[]
   shuffleRunsExecuted  ShuffleRun[]
   verifiedResults      MatchResult[]        @relation("VerifiedBy")
+  confirmedMatches     Match[]              @relation("ConfirmedMatches")
 }
 
 model Character {
@@ -148,6 +150,7 @@ model Character {
   registrations   SeasonRegistration[]
   teamMemberships TeamMembership[]
   proposedMatches Match[]              @relation("ProposedBy")
+  availabilities  Availability[]
 
   @@index([userId])
 }
@@ -254,12 +257,34 @@ model Match {
   windowStart   DateTime
   windowEnd     DateTime
   status        MatchStatus @default(PROPOSED)
-  // TBD: kdo termín potvrzuje - pole připravené, logika potvrzení se doladí později
+  /// Poznámka od toho, kdo termín navrhl (např. "sejdeme se na Discordu").
+  note          String?
+  // Termín potvrzuje moderátor nebo admin - hráči si ho jen navrhnou mezi sebou.
   confirmedById String?
+  confirmedBy   User?       @relation("ConfirmedMatches", fields: [confirmedById], references: [id])
+  confirmedAt   DateTime?
+  createdAt     DateTime    @default(now())
 
   results MatchResult[]
 
   @@index([teamId])
+  @@index([windowStart])
+}
+
+/// Kdy má hráč čas. Z překryvů dostupností celého týmu se skládá návrh termínu.
+model Availability {
+  id          String    @id @default(cuid())
+  seasonId    String
+  season      Season    @relation(fields: [seasonId], references: [id])
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id])
+  start       DateTime
+  end         DateTime
+  note        String?
+  createdAt   DateTime  @default(now())
+
+  @@index([seasonId, characterId])
+  @@index([seasonId, start])
 }
 
 model MatchResult {
