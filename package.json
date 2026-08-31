@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:check": "dotenv -v NEXT_DIST_DIR=.next-build -- next build",
     "start": "next start",
     "lint": "next lint",
     "prisma:generate": "prisma generate",

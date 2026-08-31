@@ -13,6 +13,7 @@ Zbytek (admin rozhraní, shuffle algoritmus, zápasy, žebříček, Discord webh
 - Middleware chránící `/admin` podle role
 - Admin rozhraní – schvalování registrací, správa sezóny a dungeonů, audit log
 - Shuffle algoritmus (`src/lib/shuffle.ts`) + admin stránka `/admin/shuffle` se 3 variantami
+- Uživatelská část - profil s přihláškou a stavem zápisného (`/profile`), lišta s navigací
 - Ruční úprava týmů a smazání rozdělení (`/admin/teams`)
 - Kalendář dostupností a termíny zápasů - hráči na `/team`, schvalování moderátorem na `/admin/matches`
 - Měsíční kalendář s událostmi (`src/app/month-calendar.tsx`) na obou stránkách
@@ -116,6 +117,20 @@ jdou vyvolat i mimo stránku, takže schované tlačítko samo o sobě nic nechr
 
 Matici hlídá `npm run check:permissions`, aby budoucí úprava nemohla moderátorovi
 tiše přidat práva.
+
+## Dev server a kontrolní build
+
+`next build` a `next dev` si sdílejí adresář `.next`. Build spuštěný za běhu
+dev serveru mu přepíše chunky a stránka se pak načte bez CSS a bez JS
+(vypadá to jako rozbité styly, ale kód je v pořádku). Kontrolní build proto
+běží do vlastního adresáře:
+
+```bash
+npm run build:check
+```
+
+Když se přesto stane, že se stránka načte neostylovaná, pomůže smazat `.next`
+a spustit dev server znovu.
 
 ## Poznámky k architektuře
 

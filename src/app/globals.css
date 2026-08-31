@@ -526,3 +526,70 @@ pre.json {
     overflow-x: auto;
   }
 }
+
+/* ---------- Hlášení ---------- */
+
+.notice {
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.notice-title {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.notice-body {
+  color: var(--muted);
+  margin-top: 0.35rem;
+  line-height: 1.45;
+}
+
+.notice-success {
+  border-left-color: #30a46c;
+  background: color-mix(in srgb, #30a46c 10%, var(--surface));
+}
+
+.notice-error {
+  border-left-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+}
+
+.notice-info {
+  border-left-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.notice-detail {
+  margin-top: 0.6rem;
+}
+
+.notice-detail summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.notice-detail pre {
+  margin: 0.5rem 0 0;
+  padding: 0.6rem 0.7rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--muted);
+}
+
+/* Odkaz na aktuální stránku v horní liště. */
+.site-nav a[aria-current="page"] {
+  color: var(--text);
+  text-decoration: underline;
+}
