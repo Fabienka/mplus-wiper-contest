@@ -28,7 +28,10 @@ echo "📥 Stahuji aktualni kod z GitHubu..."
 git pull
 
 echo "📦 Instaluji zavislosti..."
-npm ci
+# --include=dev: NODE_ENV=production je uz nastavene (viz vyse), bez tohle
+# by npm ci preskocilo devDependencies vcetne typescript - Next.js pak nedokaze
+# precist "paths" z tsconfig.json a build spadne na "Can't resolve '@/...'".
+npm ci --include=dev
 
 echo "💾 Zalohuji databazi..."
 mkdir -p "$BACKUP_DIR"
