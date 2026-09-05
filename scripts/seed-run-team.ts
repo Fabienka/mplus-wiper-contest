@@ -7,7 +7,7 @@
  * postavami, na které pak sedí i stažení výsledku z Raider.io.
  *
  * Skript se stejně jako seed-test-players brání spuštění nad databází, jejíž
- * název neobsahuje "test".
+ * název neobsahuje "test" - jde vynutit přepínačem "--force".
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -22,13 +22,14 @@ const TEAM_NAME = process.env.SEED_RUN_TEAM_NAME ?? "Testovací tým (z Raider.i
 const DEFAULT_RUN =
   "https://raider.io/mythic-plus-runs/season-mn-2/3868732-10-the-blinding-vale";
 
-function assertTestDatabase() {
+function assertTestDatabase(force: boolean) {
   const url = process.env.DATABASE_URL ?? "";
   const database = url.split("/").pop()?.split("?")[0] ?? "";
 
-  if (!database.includes("test")) {
+  if (!database.includes("test") && !force) {
     console.error(
-      `Databáze "${database}" nevypadá jako testovací. Spusť skript přes 'npm run seed:run-team:test'.`
+      `Databáze "${database}" nevypadá jako testovací.\n` +
+        `Spusť skript přes 'npm run seed:run-team:test', nebo vynuť přes '--force', pokud opravdu chceš zakládat testovací tým tady.`
     );
     process.exit(1);
   }
@@ -37,9 +38,11 @@ function assertTestDatabase() {
 }
 
 async function main() {
-  const database = assertTestDatabase();
+  const args = process.argv.slice(2);
+  const force = args.includes("--force");
+  const database = assertTestDatabase(force);
 
-  const input = process.argv[2] ?? DEFAULT_RUN;
+  const input = args.find((arg) => arg !== "--force") ?? DEFAULT_RUN;
   const { seasonSlug, runId } = parseRunUrl(input);
 
   const season = await prisma.season.findFirst({ orderBy: { createdAt: "desc" } });
