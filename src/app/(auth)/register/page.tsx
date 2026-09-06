@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { specsForRole } from "@/lib/wow-specs";
 
 type SpecRole = "TANK" | "HEALER" | "DPS";
@@ -229,7 +230,20 @@ export default function RegisterPage() {
               checked={agreedToRules}
               onChange={(e) => setAgreedToRules(e.target.checked)}
             />
-            Přečetl/a jsem si pravidla soutěže a souhlasím s nimi
+            <span>
+              Přečetl/a jsem si{" "}
+              {/* Odkaz se otevírá do nové karty schválně - odchod ze stránky by
+                  vymazal rozepsaný formulář. */}
+              <Link
+                href="/info/pravidla"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--accent)" }}
+              >
+                pravidla soutěže
+              </Link>{" "}
+              a souhlasím s nimi
+            </span>
           </label>
         </div>
 

@@ -11,6 +11,7 @@ import {
   formatDateTime,
 } from "@/lib/labels";
 import { Notice } from "../notice";
+import { ChangePasswordForm } from "./password-form";
 
 export const dynamic = "force-dynamic";
 
@@ -187,6 +188,14 @@ export default async function ProfilePage({
             </div>
           </>
         )}
+
+        <div className="card">
+          <h2>Změna hesla</h2>
+          <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+            Heslo si můžeš změnit kdykoliv. Zůstaneš přihlášený.
+          </p>
+          <ChangePasswordForm />
+        </div>
 
         {can(user.role, "accessAdmin") && (
           <div className="card">

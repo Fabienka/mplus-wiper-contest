@@ -683,6 +683,54 @@ pre.json {
 
 /* ---------- Hlášení ---------- */
 
+/* Přepínač podstránek v informační části. */
+.info-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Seznamy v pravidlech - odrážky se musí číst pohodlně i na mobilu. */
+.info-list,
+.info-steps {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.info-list li + li,
+.info-steps li + li {
+  margin-top: 0.5rem;
+}
+
+/* Vzorec bodování. Přeteklý řádek roluje, ať kvůli němu neroluje celá
+   stránka do strany. */
+.info-formula {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+/* Pole s vydaným odkazem na reset hesla. Odkaz je dlouhý, takže se text
+   nezalamuje, ale roluje - jinak by hláška přerostla celou tabulku. */
+.reset-link {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
 .notice {
   border: 1px solid var(--border);
   border-left-width: 3px;

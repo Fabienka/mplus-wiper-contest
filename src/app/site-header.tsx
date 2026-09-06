@@ -17,6 +17,7 @@ export async function SiteHeader() {
 
       <nav className="site-nav">
         <SiteNavLink href="/leaderboard">Žebříček</SiteNavLink>
+        <SiteNavLink href="/info">Informace</SiteNavLink>
 
         {user && (
           <>

@@ -32,6 +32,30 @@ export const USER_ROLE_LABELS: Record<UserRole, string> = {
   USER: "Uživatel",
 };
 
+/**
+ * Pořadí rolí ve výpisech uživatelů.
+ *
+ * Řadit v databázi podle sloupce `role` nejde: MODERATOR přibyl do enumu až
+ * migrací a `ALTER TYPE ... ADD VALUE` ho v Postgresu zařadil na konec, takže
+ * `ORDER BY role` staví moderátory až za běžné uživatele.
+ */
+const USER_ROLE_ORDER: Record<UserRole, number> = {
+  ADMIN: 0,
+  MODERATOR: 1,
+  USER: 2,
+};
+
+/** Řazení seznamu uživatelů: nejdřív podle role, pak podle jména. */
+export function compareUsersByRole(
+  a: { role: UserRole; username: string },
+  b: { role: UserRole; username: string }
+): number {
+  return (
+    USER_ROLE_ORDER[a.role] - USER_ROLE_ORDER[b.role] ||
+    a.username.localeCompare(b.username)
+  );
+}
+
 /** Co která role smí - ukazuje se u výběru role, ať je to zřejmé. */
 export const USER_ROLE_HINTS: Record<UserRole, string> = {
   ADMIN: "Kompletní práva.",

@@ -10,6 +10,7 @@ import { can, type Permission } from "@/lib/permissions";
  * brána, aby se moderátor nedostal na stránky, kde nemá co dělat.
  */
 const ROUTE_PERMISSIONS: [string, Permission][] = [
+  ["/admin/hesla", "issuePasswordReset"],
   ["/admin/matches", "approveMatchTerms"],
   ["/admin/season", "manageSeason"],
   ["/admin/shuffle", "runShuffle"],

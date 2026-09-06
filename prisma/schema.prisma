@@ -129,6 +129,8 @@ model User {
   shuffleRunsExecuted  ShuffleRun[]
   verifiedResults      MatchResult[]        @relation("VerifiedBy")
   confirmedMatches     Match[]              @relation("ConfirmedMatches")
+  passwordResets       PasswordResetToken[] @relation("ResetForUser")
+  issuedPasswordResets PasswordResetToken[] @relation("ResetIssuedBy")
 }
 
 model Character {
@@ -338,6 +340,30 @@ model RegistrationAttempt {
   createdAt DateTime @default(now())
 
   @@index([ipAddress, createdAt])
+}
+
+/// Jednorázový odkaz na nastavení nového hesla.
+///
+/// Aplikace nemá SMTP, takže odkaz vydá admin nebo moderátor a pošle ho
+/// hráči na Discord. Heslo si nastaví hráč sám - nikdo ho nevidí a nikdo
+/// nesahá do databáze.
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation("ResetForUser", fields: [userId], references: [id])
+  /// Uložený je jen SHA-256 otisk tokenu. Kdo si přečte databázi, odkaz z ní
+  /// nesestaví - stejný důvod, proč se nikde neukládá heslo v čitelné podobě.
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  /// Vyplněný čas znamená spotřebovaný odkaz. Token je na jedno použití.
+  usedAt     DateTime?
+  /// Kdo odkaz vydal. Prázdné znamená vydání záchranným skriptem přímo na
+  /// serveru - ten se používá, když se nemá kdo přihlásit (viz README).
+  issuedById String?
+  issuedBy   User?     @relation("ResetIssuedBy", fields: [issuedById], references: [id])
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
 }
 
 model AuditLog {

@@ -20,6 +20,12 @@ export const PERMISSIONS = {
   confirmEntryFee: ["ADMIN", "MODERATOR"],
   /** Schválení domluveného termínu zápasu. */
   approveMatchTerms: ["ADMIN", "MODERATOR"],
+  /**
+   * Vydání jednorázového odkazu na reset hesla. Moderátor ho smí vydat jen
+   * běžnému uživateli - o tom rozhoduje canIssueResetFor v password-reset.ts,
+   * tohle je jen vstup na stránku.
+   */
+  issuePasswordReset: ["ADMIN", "MODERATOR"],
   manageSeason: ["ADMIN"],
   runShuffle: ["ADMIN"],
   manageTeams: ["ADMIN"],

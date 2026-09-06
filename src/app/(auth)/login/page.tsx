@@ -47,7 +47,13 @@ function buildDetail(input: {
   return lines.join("\n");
 }
 
-export default function LoginPage() {
+export default function LoginPage({
+  searchParams,
+}: {
+  // searchParams dostane i klientská stránka - je to prostý objekt z URL.
+  // useSearchParams by tu znamenal navíc Suspense hranici kvůli buildu.
+  searchParams: { zmeneno?: string };
+}) {
   const router = useRouter();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -111,6 +117,14 @@ export default function LoginPage() {
       <form className="auth-card" onSubmit={handleSubmit}>
         <h1>Přihlášení</h1>
 
+        {searchParams.zmeneno && !failure && (
+          <div style={{ marginBottom: "1.25rem" }}>
+            <Notice kind="success" title="Heslo je nastavené">
+              Přihlas se novým heslem.
+            </Notice>
+          </div>
+        )}
+
         <div className="field">
           <label htmlFor="username">Uživatelské jméno</label>
           <input
@@ -148,6 +162,13 @@ export default function LoginPage() {
 
         <p style={{ marginTop: "1.25rem", fontSize: "0.85rem", color: "var(--muted)" }}>
           Nemáš účet? <Link href="/register" style={{ color: "var(--accent)" }}>Zaregistruj se</Link>.
+        </p>
+
+        {/* Reset hesla nechodí mailem - odkaz vydává ručně admin nebo
+            moderátor, takže se o něj musí říct na Discordu. */}
+        <p style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+          Zapomenuté heslo? Napiš adminovi nebo moderátorovi na Discord, pošlou
+          ti odkaz na nastavení nového.
         </p>
       </form>
     </div>
