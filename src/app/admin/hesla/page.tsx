@@ -1,7 +1,10 @@
-import type { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/admin";
-import { USER_ROLE_LABELS, formatDateTime } from "@/lib/labels";
+import {
+  USER_ROLE_LABELS,
+  compareUsersByRole,
+  formatDateTime,
+} from "@/lib/labels";
 import {
   RESET_TOKEN_TTL_MINUTES,
   canIssueResetFor,
@@ -11,15 +14,6 @@ import { IssueResetForm } from "./issue-form";
 import { revokePasswordReset } from "./actions";
 
 export const dynamic = "force-dynamic";
-
-/**
- * Pořadí rolí v seznamu.
- *
- * Řadit v databázi podle sloupce `role` nejde: MODERATOR přibyl do enumu až
- * migrací a `ALTER TYPE ... ADD VALUE` ho v Postgresu zařadil na konec, takže
- * by se moderátoři vypsali až za běžné uživatele.
- */
-const ROLE_ORDER: Record<UserRole, number> = { ADMIN: 0, MODERATOR: 1, USER: 2 };
 
 export default async function PasswordResetsPage() {
   const actor = await getCurrentUser();
@@ -40,10 +34,7 @@ export default async function PasswordResetsPage() {
     },
   });
 
-  users.sort(
-    (a, b) =>
-      ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.username.localeCompare(b.username)
-  );
+  users.sort(compareUsersByRole);
 
   return (
     <>

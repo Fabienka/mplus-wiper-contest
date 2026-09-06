@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/admin";
 import {
   USER_ROLE_HINTS,
   USER_ROLE_LABELS,
+  compareUsersByRole,
   formatDateTime,
 } from "@/lib/labels";
 import { updateUserRole } from "./actions";
@@ -17,11 +18,13 @@ export default async function UsersPage({
   const currentUser = await getCurrentUser();
 
   const users = await prisma.user.findMany({
-    orderBy: [{ role: "asc" }, { username: "asc" }],
+    orderBy: { username: "asc" },
     include: {
       character: { select: { characterName: true, realm: true } },
     },
   });
+
+  users.sort(compareUsersByRole);
 
   return (
     <>

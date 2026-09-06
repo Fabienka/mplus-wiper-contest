@@ -10,6 +10,7 @@
 
 import type { UserRole } from "@prisma/client";
 import { PERMISSIONS, can, type Permission } from "../src/lib/permissions";
+import { compareUsersByRole } from "../src/lib/labels";
 
 const EXPECTED: Record<UserRole, Permission[]> = {
   ADMIN: [
@@ -69,6 +70,43 @@ for (const permission of ALL) {
   if (can("SOMETHING_ELSE", permission)) {
     failures++;
     console.error(`  ✗ neznámá role prošla oprávnění ${permission}`);
+  }
+}
+
+// Řazení uživatelů podle role. Patří sem, protože jde o stejnou past jako
+// oprávnění: MODERATOR přibyl do enumu až migrací a v Postgresu se proto řadí
+// až za USER - kdo by se vrátil k `ORDER BY role`, dostane nesmyslné pořadí.
+{
+  const user = (role: UserRole, username: string) => ({ role, username });
+
+  const sorted = [
+    user("USER", "zdenek"),
+    user("MODERATOR", "moderator"),
+    user("USER", "adam"),
+    user("ADMIN", "admin"),
+  ]
+    .sort(compareUsersByRole)
+    .map((u) => u.username);
+
+  checks++;
+  const expected = ["admin", "moderator", "adam", "zdenek"];
+  if (sorted.join(",") !== expected.join(",")) {
+    failures++;
+    console.error(
+      `  ✗ řazení podle role: čekáno ${expected.join(", ")}, je ${sorted.join(", ")}`
+    );
+  }
+
+  checks++;
+  if (compareUsersByRole(user("USER", "a"), user("MODERATOR", "z")) <= 0) {
+    failures++;
+    console.error("  ✗ moderátor se musí řadit před běžného uživatele");
+  }
+
+  checks++;
+  if (compareUsersByRole(user("USER", "a"), user("USER", "b")) >= 0) {
+    failures++;
+    console.error("  ✗ ve stejné roli rozhoduje jméno");
   }
 }
 
