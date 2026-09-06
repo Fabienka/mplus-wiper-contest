@@ -43,6 +43,8 @@ Před nasazením si projdi [Nasazení na server](#nasazení-na-server), hlavně
 - **Žebříček** (`/leaderboard`) - veřejný, podle nejlepšího běhu sezóny
 - Uživatelská část: `/profile` s přihláškou a stavem zápisného, statistiky
   o složení pole na úvodní stránce
+- **Veřejné informace** (`/info`) - pravidla soutěže a kontakt, přístupné bez
+  přihlášení; z registračního formuláře vede na pravidla odkaz
 - **Reset a změna hesla** bez e-mailu - jednorázový odkaz vydá admin nebo
   moderátor na `/admin/hesla`, změna vlastního hesla je v `/profile`
 - Audit log u všech admin akcí, zálohy databáze, oddělená testovací databáze
@@ -152,6 +154,9 @@ npm run build
   Je to schválně - tiše posunuté časy termínů by si nikdo nevšiml.
 - **Raider.io se volá bez timeoutu.** Když jejich API nereaguje, registrace visí,
   dokud request nespadne na timeoutu proxy.
+- **Kontakty na `/info/kontakt` jsou prázdné**, dokud je nevyplníš v
+  `src/lib/contest-info.ts`. Do té doby stránka jen řekne, že se doplňují -
+  schválně nic nevymýšlí, ať lidi nepíšou někam, kde je nikdo nečte.
 - **`NEXTAUTH_URL` musí sedět na veřejnou adresu.** Sestavují se z ní odkazy na
   reset hesla, takže při špatné hodnotě vydáš odkaz, který nikam nevede.
 - **Omezení pokusů** o přihlášení i registraci se počítá podle IP z hlavičky
@@ -232,6 +237,20 @@ npm run backup:db
 Dvě omezení, o kterých je dobré vědět: úloha běží jen když je uživatel
 přihlášený (zmeškaný běh se nedohání) a zálohy leží na stejném disku jako
 databáze – proti selhání disku tedy nechrání.
+
+## Veřejné informace
+
+`/info` je přístupná bez přihlášení (middleware hlídá jen `/admin` a `/team`)
+a má dvě podstránky:
+
+- **`/info/pravidla`** - pravidla soutěže. Čísla se **neopisují ručně**: nejnižší
+  bodovaná výška klíče, body za úroveň i seznam dungeonů se berou z aktuální
+  sezóny, takže po změně bodování v administraci nemůžou pravidla lhát.
+- **`/info/kontakt`** - na koho se obrátit. Obsah je v `src/lib/contest-info.ts`;
+  není v databázi schválně - mění se výjimečně a patří do verzí.
+
+Na pravidla vede odkaz z registračního formuláře, od zaškrtávátka se souhlasem.
+Otevírá se do nové karty, aby odchod ze stránky nesmazal rozepsanou registraci.
 
 ## Role a oprávnění
 
