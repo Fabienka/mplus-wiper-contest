@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requirePermission, writeAuditLog } from "@/lib/admin";
 import { plural } from "@/lib/labels";
+import { enqueueDiscordEvent, sendDiscordEvent } from "@/lib/discord";
+import type { ShuffleResultPayload } from "@/lib/discord-message";
 import {
   runShuffle,
   type ShufflePlayer,
@@ -167,10 +169,27 @@ export async function applyVariant(formData: FormData) {
     );
   }
 
-  await prisma.$transaction(async (tx) => {
+  const season = await prisma.season.findUniqueOrThrow({
+    where: { id: seasonId },
+    select: { name: true },
+  });
+
+  const discordEventId = await prisma.$transaction(async (tx) => {
+    // Do notifikace jdou názvy týmů tak, jak je právě dostaly v databázi -
+    // návrh z shuffle je nezná.
+    const createdTeams: ShuffleResultPayload["teams"] = [];
+
     for (const team of assignments.teams) {
       const created = await tx.team.create({
         data: { seasonId, name: `Tým ${team.teamIndex + 1}` },
+      });
+
+      createdTeams.push({
+        name: created.name,
+        members: team.members.map((m) => ({
+          characterName: m.characterName,
+          roleInTeam: m.roleInTeam,
+        })),
       });
 
       for (const member of team.members) {
@@ -217,7 +236,23 @@ export async function applyVariant(formData: FormData) {
         substitutes: assignments.substitutes.length,
       },
     });
+
+    return enqueueDiscordEvent(tx, {
+      eventType: "SHUFFLE_RESULT",
+      payload: {
+        seasonName: season.name,
+        teams: createdTeams,
+        substitutes: assignments.substitutes.map((s) => ({
+          characterName: s.characterName,
+          roleInTeam: s.roleInTeam,
+        })),
+      },
+    });
   });
+
+  // Až po commitu - redirect() níž vyhazuje výjimku, takže by odeslání
+  // umístěné za ním nikdy neproběhlo.
+  if (discordEventId) await sendDiscordEvent(prisma, discordEventId);
 
   revalidateShuffle();
   redirect("/admin/shuffle?applied=1");

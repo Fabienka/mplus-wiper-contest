@@ -9,6 +9,7 @@ import {
   recordRegistrationAttempt,
 } from "@/lib/registration-attempts";
 import { clientIpFromHeaders, retryAfterLabel } from "@/lib/rate-limit";
+import { enqueueDiscordEvent, sendDiscordEvent } from "@/lib/discord";
 
 // Formulář je verzovaný natvrdo v kódu pro danou sezónu - toto je
 // zjednodušená verze pokrývající pole z aktuálního formuláře.
@@ -161,10 +162,30 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return { user, character, registration };
+    // Zápis do fronty patří do transakce - při jejím pádu neodejde zpráva
+    // o přihlášce, která nakonec nevznikla.
+    const discordEventId = await enqueueDiscordEvent(tx, {
+      eventType: "NEW_REGISTRATION",
+      payload: {
+        seasonName: season.name,
+        characterName: character.characterName,
+        realm: character.realm,
+        className: character.class,
+        wowSpec: character.wowSpec,
+        specRole: character.specRole,
+        rioScore: character.rioScore,
+        discordNick: user.discordNick,
+      },
+    });
+
+    return { user, character, registration, discordEventId };
   });
 
-  // TODO: odeslat Discord webhook event "new_registration"
+  // Odesílá se až po commitu a chyby si řeší samo - hráč nesmí přijít
+  // o registraci kvůli výpadku Discordu.
+  if (result.discordEventId) {
+    await sendDiscordEvent(prisma, result.discordEventId);
+  }
 
   return NextResponse.json(
     {

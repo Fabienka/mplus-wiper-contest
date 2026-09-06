@@ -4,6 +4,7 @@ import { evaluateRun, type RunEvaluation } from "./match-result";
 import { parseScoringConfig } from "./scoring";
 import { recomputeOfficialResult } from "./match-official";
 import { writeAuditLog } from "./admin";
+import { enqueueDiscordEvent, sendDiscordEvent } from "./discord";
 
 /**
  * Zapsání výsledku běhu k zápasu.
@@ -120,7 +121,7 @@ export async function recordRunResult(
     config: parseScoringConfig(season.scoringConfig),
   });
 
-  const resultId = await prisma.$transaction(async (tx) => {
+  const { resultId, discordEventId } = await prisma.$transaction(async (tx) => {
     const result = await tx.matchResult.create({
       data: {
         matchId: input.matchId,
@@ -156,8 +157,26 @@ export async function recordRunResult(
       },
     });
 
-    return result.id;
+    // Do kanálu jde i neplatný běh - je pak vidět, že tým hrál, a proč se
+    // pokus nepočítá. Ticho by vypadalo jako že se výsledek ztratil.
+    const discordEventId = await enqueueDiscordEvent(tx, {
+      eventType: "MATCH_RESULT",
+      payload: {
+        teamName: match.team.name,
+        dungeonName: run.dungeonName,
+        keyLevel: run.keyLevel,
+        clearTimeSeconds: run.clearTimeSeconds,
+        isValid: evaluation.valid,
+        invalidReason: evaluation.valid ? null : evaluation.reasons.join(" "),
+        points: evaluation.score.scored ? evaluation.score.points : null,
+        runUrl: run.url,
+      },
+    });
+
+    return { resultId: result.id, discordEventId };
   });
+
+  if (discordEventId) await sendDiscordEvent(prisma, discordEventId);
 
   return {
     resultId,

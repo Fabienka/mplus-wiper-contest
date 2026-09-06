@@ -40,7 +40,9 @@ export async function approveRegistration(formData: FormData) {
     });
   });
 
-  // TODO: odeslat Discord webhook event o schválení, až bude webhook hotový
+  // Notifikace se posílá už při odeslání přihlášky (NEW_REGISTRATION v
+  // src/app/api/register/route.ts). Pro schválení typ události není - hráč se
+  // o něm dozví v aplikaci, do kanálu by to byl jen šum.
   revalidateRegistration(id);
 }
 

@@ -47,13 +47,14 @@ Před nasazením si projdi [Nasazení na server](#nasazení-na-server), hlavně
   přihlášení; z registračního formuláře vede na pravidla odkaz
 - **Reset a změna hesla** bez e-mailu - jednorázový odkaz vydá admin nebo
   moderátor na `/admin/hesla`, změna vlastního hesla je v `/profile`
+- **Notifikace na Discord** přes webhook - nová přihláška, rozdělení do týmů,
+  blížící se termín a nahraný běh; viz [Discord](#discord)
 - Audit log u všech admin akcí, zálohy databáze, oddělená testovací databáze
 
 ### Chybí
 
 - **Upgrade Next.js na 15/16.** Na řadě 14.x zůstávají dvě `high`
   zranitelnosti, které v ní opravit nejdou (`npm audit` je vypíše).
-- Discord webhook (`DiscordEvent` je zatím model bez kódu)
 - Zamítnutí termínu s důvodem, oprava specu postavy z administrace
 - ESLint není nakonfigurovaný, takže `next build` reálně nelintuje
 
@@ -115,7 +116,7 @@ Musí to být skutečné proměnné prostředí serveru, ne jen soubor `.env`.
 | `SEED_ADMIN_PASSWORD` | jen při seedu | aspoň 12 znaků |
 | `SEED_MODERATOR_PASSWORD` | jen při seedu | aspoň 12 znaků |
 | `RAIDERIO_API_BASE` | ne | výchozí `https://raider.io/api/v1` |
-| `DISCORD_WEBHOOK_URL` | ne | zatím nikde nečtená, zásoba na notifikace |
+| `DISCORD_WEBHOOK_URL` | ne | bez ní se notifikace neposílají, viz [Discord](#discord) |
 
 ### Postup
 
@@ -178,6 +179,7 @@ npm run check:stats           # statistiky na úvodní stránce
 npm run check:leaderboard     # žebříček týmů
 npm run check:rate-limit      # omezení počtu pokusů
 npm run check:password-reset  # platnost odkazu, kdo komu smí reset vydat
+npm run check:discord         # tvar zpráv pro Discord
 npm run check:result-flow:test  # celý zápis výsledku proti reálnému běhu
 ```
 
@@ -188,8 +190,10 @@ bez obojího.
 
 Testovací data nepatří do ostré databáze, takže projekt má druhou databázi
 (`wow_mplus_app_test`) na stejném lokálním PostgreSQL serveru. Přepínání řeší
-`.env.test` (má vlastní `DATABASE_URL` a **prázdný `DISCORD_WEBHOOK_URL`**, aby
-testovací běh neposílal notifikace do ostrého kanálu).
+`.env.test` (má vlastní `DATABASE_URL` a vlastní `DISCORD_WEBHOOK_URL`).
+
+Ten webhook musí mířit **do testovacího kanálu, nebo být prázdný** - nikdy do
+ostrého. Testovací data jinak skončí tam, kde je uvidí účastníci soutěže.
 
 ```bash
 npm run dev:test              # appka proti testovací DB
@@ -332,6 +336,76 @@ administrace, ať je poznat, kdo je vydal.
 
 Odkazy se sestavují z **`NEXTAUTH_URL`** - bez ní se odkaz nevydá. Po nasazení
 na veřejnou adresu ji tedy musí mít i prostředí, ve kterém běží tenhle skript.
+
+## Discord
+
+Aplikace umí posílat notifikace do kanálu na Discordu přes **incoming webhook**.
+Není to bot ani přihlašování - jen odchozí zprávy, žádná registrace aplikace
+u Discordu není potřeba.
+
+### Nastavení
+
+1. Na Discordu: *Nastavení kanálu → Integrace → Webhooky → Nový webhook*.
+   Zvol kanál a zkopíruj URL.
+2. Vlož ji serveru jako `DISCORD_WEBHOOK_URL`. Bez ní se notifikace neposílají
+   a ani nezapisují do fronty - aplikace jede dál, jen tiše.
+
+URL webhooku je heslo: kdo ji má, může do kanálu psát za aplikaci. Patří mezi
+proměnné prostředí, ne do gitu.
+
+### Co se posílá
+
+| Událost | Kdy odejde |
+|---|---|
+| `NEW_REGISTRATION` | hráč odeslal přihlášku (ještě před schválením) |
+| `SHUFFLE_RESULT` | admin potvrdil variantu rozdělení a týmy vznikly |
+| `UPCOMING_MATCH` | termín začíná v nejbližších hodinách - posílá cron, viz níž |
+| `MATCH_RESULT` | tým nahrál běh; do kanálu jde i neplatný, ať je vidět proč |
+
+Zprávy mají zakázané zmínky (`allowed_mentions`), takže si nikdo nevynutí ping
+tím, že si napíše `@everyone` do poznámky k termínu nebo do jména postavy.
+
+Jak zprávy v kanálu vypadají, ukáže náhled - pošle po jedné ukázce od každého
+typu, na vymyšlených datech a bez zápisu do databáze:
+
+```bash
+npm run discord:preview
+npm run discord:preview -- --only MATCH_RESULT
+```
+
+Míří do kanálu podle `DISCORD_WEBHOOK_URL` v `.env`, takže se pouští proti
+testovacímu Discordu, ne proti ostrému.
+
+### Fronta
+
+Každá notifikace se nejdřív zapíše do tabulky `DiscordEvent` ve stejné
+transakci jako změna, která ji vyvolala, a teprve pak se odesílá. Zpráva o něčem,
+co nakonec neproběhlo, tak nemůže odejít, a při výpadku Discordu zůstane
+událost ve stavu `PENDING` místo aby se ztratila.
+
+Výpadek Discordu nikdy neshodí akci uživatele - chyba se jen zaloguje. Ve
+`status` je pak vidět, jak to dopadlo: `SENT` odesláno, `PENDING` čeká na další
+pokus, `FAILED` Discord požadavek odmítl a opakování by dopadlo stejně.
+
+### Cron
+
+Připomínky termínů a dorovnání fronty nemá co spustit - aplikace nemá plánovač.
+Pouští je skript, ideálně jednou za hodinu:
+
+```bash
+npm run discord:notify
+```
+
+```
+0 * * * * cd /cesta/k/aplikaci && npm run discord:notify >> /var/log/mplus-discord.log 2>&1
+```
+
+Skript se dá pouštět opakovaně: na jeden termín upozorní jen jednou. Výchozí
+předstih je 24 hodin, `-- --hours 3` ho zkrátí. S `-- --dry-run` jen vypíše,
+co by odešlo - dobré na vyzkoušení, než se cron nasadí.
+
+Bez cronu funguje všechno ostatní, jen nechodí připomínky termínů a zprávy
+zdržené výpadkem zůstanou ve frontě.
 
 ## Bodování
 
