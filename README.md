@@ -238,6 +238,24 @@ Dvě omezení, o kterých je dobré vědět: úloha běží jen když je uživat
 přihlášený (zmeškaný běh se nedohání) a zálohy leží na stejném disku jako
 databáze – proti selhání disku tedy nechrání.
 
+## Logo a ikony
+
+Zdroj je `public/logo.png` (212×183). Z něj jsou odvozené:
+
+- `public/icon-16/32/48/64.png` - **výřez hlavy berana**, ne celé logo. V šestnácti
+  pixelech je z nápisu „Mythic Dungeon" jen šmouha, kdežto beran je poznat i
+  v liště plné karet. Velikosti jsou předpočítané, ať si je prohlížeč
+  nezmenšuje sám.
+- `public/apple-icon.png` (180×180) - celé logo na čtverci; na ploše telefonu
+  je ikona dost velká, aby se dal nápis přečíst.
+
+Odkazuje na ně `metadata.icons` v `src/app/layout.tsx`. `logo.png` slouží
+zároveň jako náhled při vložení odkazu na Discord (`openGraph.images`); ten
+potřebuje absolutní adresu, takže se bere z `NEXTAUTH_URL`.
+
+Zdrojové logo je malé - kdyby se objevila verze ve větším rozlišení, ikony
+je potřeba přegenerovat z ní, hlavně `apple-icon.png`.
+
 ## Veřejné informace
 
 `/info` je přístupná bez přihlášení (middleware hlídá jen `/admin` a `/team`)
