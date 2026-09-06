@@ -683,6 +683,19 @@ pre.json {
 
 /* ---------- Hlášení ---------- */
 
+/* Pole s vydaným odkazem na reset hesla. Odkaz je dlouhý, takže se text
+   nezalamuje, ale roluje - jinak by hláška přerostla celou tabulku. */
+.reset-link {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
 .notice {
   border: 1px solid var(--border);
   border-left-width: 3px;

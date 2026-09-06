@@ -21,8 +21,17 @@ const EXPECTED: Record<UserRole, Permission[]> = {
     "runShuffle",
     "manageTeams",
     "manageUsers",
+    "issuePasswordReset",
   ],
-  MODERATOR: ["accessAdmin", "confirmEntryFee", "approveMatchTerms"],
+  // Moderátor smí vydat odkaz na reset hesla, ale jen běžnému uživateli - tuhle
+  // část hlídá canIssueResetFor (npm run check:password-reset), sem se vejde
+  // jen to, že na stránku vůbec smí.
+  MODERATOR: [
+    "accessAdmin",
+    "confirmEntryFee",
+    "approveMatchTerms",
+    "issuePasswordReset",
+  ],
   USER: [],
 };
 

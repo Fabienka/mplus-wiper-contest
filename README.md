@@ -43,12 +43,12 @@ Před nasazením si projdi [Nasazení na server](#nasazení-na-server), hlavně
 - **Žebříček** (`/leaderboard`) - veřejný, podle nejlepšího běhu sezóny
 - Uživatelská část: `/profile` s přihláškou a stavem zápisného, statistiky
   o složení pole na úvodní stránce
+- **Reset a změna hesla** bez e-mailu - jednorázový odkaz vydá admin nebo
+  moderátor na `/admin/hesla`, změna vlastního hesla je v `/profile`
 - Audit log u všech admin akcí, zálohy databáze, oddělená testovací databáze
 
 ### Chybí
 
-- **Reset a změna hesla.** Když člen zapomene heslo, musí mu ho admin přepsat
-  přímo v databázi - `email` je navíc při registraci nepovinný.
 - **Upgrade Next.js na 15/16.** Na řadě 14.x zůstávají dvě `high`
   zranitelnosti, které v ní opravit nejdou (`npm audit` je vypíše).
 - Discord webhook (`DiscordEvent` je zatím model bez kódu)
@@ -127,7 +127,8 @@ npm start                     # naslouchá na portu 3000, PORT ho přepíše
 
 Účty založíš buď seedem (`npm run prisma:seed` s nastavenými `SEED_*` hesly),
 nebo si admina vytvoříš ručně a seed vůbec nepouštíš. Seed je idempotentní
-a **existujícím účtům heslo nepřepisuje** - mění jen roli.
+a **existujícím účtům heslo nepřepisuje** - mění jen roli. Zapomenuté heslo
+se řeší jednorázovým odkazem, ne zásahem do databáze (viz [Hesla](#hesla)).
 
 Proces je potřeba držet naživu a restartovat po pádu (systemd unit, pm2, Docker
 - podle toho, co na serveru máš).
@@ -151,6 +152,8 @@ npm run build
   Je to schválně - tiše posunuté časy termínů by si nikdo nevšiml.
 - **Raider.io se volá bez timeoutu.** Když jejich API nereaguje, registrace visí,
   dokud request nespadne na timeoutu proxy.
+- **`NEXTAUTH_URL` musí sedět na veřejnou adresu.** Sestavují se z ní odkazy na
+  reset hesla, takže při špatné hodnotě vydáš odkaz, který nikam nevede.
 - **Omezení pokusů** o přihlášení i registraci se počítá podle IP z hlavičky
   `X-Forwarded-For`. Nastav proxy tak, aby ji posílala pravdivě, jinak budou
   všechny požadavky vypadat jako jedna adresa.
@@ -168,6 +171,8 @@ npm run check:calendar        # měsíční mřížka
 npm run check:permissions     # matice oprávnění
 npm run check:stats           # statistiky na úvodní stránce
 npm run check:leaderboard     # žebříček týmů
+npm run check:rate-limit      # omezení počtu pokusů
+npm run check:password-reset  # platnost odkazu, kdo komu smí reset vydat
 npm run check:result-flow:test  # celý zápis výsledku proti reálnému běhu
 ```
 
@@ -237,6 +242,7 @@ databáze – proti selhání disku tedy nechrání.
 | Potvrdit zápisné | ano | ano | ne |
 | Schválit termín zápasu | ano | ano | ne |
 | Zadat dostupnost a navrhnout termín za tým | ano | ano | ano (svůj tým) |
+| Vydat odkaz na reset hesla | ano (komukoli) | ano (jen uživateli) | ne |
 | Sezóna, shuffle, týmy, uživatelé | ano | ne | ne |
 
 Oprávnění jsou na jednom místě v `src/lib/permissions.ts` a ověřují se ve třech
@@ -246,6 +252,49 @@ jdou vyvolat i mimo stránku, takže schované tlačítko samo o sobě nic nechr
 
 Matici hlídá `npm run check:permissions`, aby budoucí úprava nemohla moderátorovi
 tiše přidat práva.
+
+## Hesla
+
+Aplikace neposílá e-maily - není kam připojit SMTP a `email` je při registraci
+nepovinný, takže standardní „zapomenuté heslo" e-mailem není možné. Místo něj
+je **doručení mimo aplikaci**: odkaz vydá admin nebo moderátor a pošle ho hráči
+na Discord.
+
+1. Hráč si na Discordu řekne o reset. Že je to opravdu on, ověří člověk -
+   aplikace to poznat nedokáže.
+2. Admin nebo moderátor vydá odkaz na `/admin/hesla`. Zobrazí se **jedinkrát**;
+   do databáze jde jen jeho SHA-256 otisk, takže ho zpátky nikdo nepřečte.
+3. Hráč odkaz otevře a nastaví si heslo sám. Odkaz platí **60 minut** a jde
+   použít **jednou**.
+
+Vlastní heslo si každý přihlášený mění v `/profile` (se zadáním stávajícího).
+Změna hesla i vydání nového odkazu ruší všechny dosud nepoužité odkazy na ten
+účet.
+
+**Moderátor smí vydat odkaz jen běžnému uživateli.** Kdyby směl adminovi,
+nastavil by mu heslo a povýšil se - přitom nemá právo měnit role. Rozhoduje o
+tom `canIssueResetFor` v `src/lib/password-rules.ts`; seznam na `/admin/hesla`
+proto moderátorovi ostatní účty ani neukazuje.
+
+Stránka resetu se neomezuje počtem pokusů schválně: token má 256 bitů náhody a
+při neplatném tokenu se ke kontrole hesla vůbec nedojde, takže zkoušení nestojí
+víc než jeden otisk a jeden dotaz do indexu.
+
+### Když se nemá kdo přihlásit
+
+Poslednímu adminovi nemá kdo odkaz vydat. Na to je skript, který běží přímo na
+serveru:
+
+```bash
+npm run reset-password -- admin
+```
+
+Vypíše stejný jednorázový odkaz. Spustí ho jen ten, kdo má přístup na server;
+v auditu je vidět jako `PASSWORD_RESET_ISSUED_BY_SCRIPT`. Běžné resety patří do
+administrace, ať je poznat, kdo je vydal.
+
+Odkazy se sestavují z **`NEXTAUTH_URL`** - bez ní se odkaz nevydá. Po nasazení
+na veřejnou adresu ji tedy musí mít i prostředí, ve kterém běží tenhle skript.
 
 ## Bodování
 
