@@ -14,7 +14,8 @@ export function Notice({
   detail,
 }: {
   kind?: NoticeKind;
-  title: string;
+  /** Většinou řetězec, ale hlášky složené z čísel a odkazů potřebují uzel. */
+  title: React.ReactNode;
   children?: React.ReactNode;
   detail?: string;
 }) {

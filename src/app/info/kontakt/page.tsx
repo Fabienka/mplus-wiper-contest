@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { CONTACTS } from "@/lib/contest-info";
 
+export const metadata = {
+  title: "Kontakt",
+};
+
 export default function ContactPage() {
   return (
     <>
@@ -24,11 +28,10 @@ export default function ContactPage() {
                 <dt>{contact.label}</dt>
                 <dd>
                   {contact.href ? (
-                    <a
+                    <a className="link"
                       href={contact.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: "var(--accent)" }}
                     >
                       {contact.value}
                     </a>
@@ -36,7 +39,7 @@ export default function ContactPage() {
                     contact.value
                   )}
                   {contact.note && (
-                    <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                    <div className="meta">
                       {contact.note}
                     </div>
                   )}
@@ -58,7 +61,7 @@ export default function ContactPage() {
           <li>
             <strong>Změna hesla.</strong> Když se přihlásit umíš, změníš si ho
             sám/sama v{" "}
-            <Link href="/profile" style={{ color: "var(--accent)" }}>
+            <Link className="link" href="/profile">
               profilu
             </Link>
             .
@@ -69,7 +72,7 @@ export default function ContactPage() {
           </li>
           <li>
             <strong>Jak se počítají body</strong> je popsané v{" "}
-            <Link href="/info/pravidla" style={{ color: "var(--accent)" }}>
+            <Link className="link" href="/info/pravidla">
               pravidlech
             </Link>
             .

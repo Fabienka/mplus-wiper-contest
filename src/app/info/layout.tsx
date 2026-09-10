@@ -1,4 +1,4 @@
-import { SiteHeader } from "../site-header";
+import { PublicShell } from "../public-shell";
 import { InfoNav } from "./nav";
 
 /**
@@ -8,12 +8,11 @@ import { InfoNav } from "./nav";
  */
 export default function InfoLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <SiteHeader />
-      <main className="site-main">
+    <PublicShell>
+      <main className="site-main" id="obsah">
         <InfoNav />
         {children}
       </main>
-    </>
+    </PublicShell>
   );
 }

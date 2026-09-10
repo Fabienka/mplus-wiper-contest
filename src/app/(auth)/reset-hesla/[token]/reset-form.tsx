@@ -39,8 +39,12 @@ export function ResetPasswordForm({ token }: { token: string }) {
           type="password"
           autoComplete="new-password"
           minLength={MIN_PASSWORD_LENGTH}
+          aria-describedby="reset-password-hint"
           required
         />
+        <span className="field-hint" id="reset-password-hint">
+          Aspoň {MIN_PASSWORD_LENGTH} znaků.
+        </span>
       </div>
 
       <div className="field">

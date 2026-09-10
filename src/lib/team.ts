@@ -45,3 +45,25 @@ export async function getMyTeamContext() {
 
   return { user: session.user, character, membership };
 }
+
+/**
+ * Jen id týmu přihlášeného hráče.
+ *
+ * Žebříček potřebuje vědět, který řádek je "tvůj", a nic víc -
+ * getMyTeamContext by kvůli tomu tahal celý tým i se spoluhráči.
+ */
+export async function getMyTeamId(): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return null;
+
+  const membership = await prisma.teamMembership.findFirst({
+    where: {
+      status: { not: "REMOVED" },
+      character: { userId: session.user.id },
+    },
+    orderBy: { joinedAt: "desc" },
+    select: { teamId: true },
+  });
+
+  return membership?.teamId ?? null;
+}

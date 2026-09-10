@@ -10,6 +10,10 @@ import { ResetPasswordForm } from "./reset-form";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Nastavení nového hesla",
+};
+
 /**
  * Stránka pro nastavení hesla z jednorázového odkazu.
  *
@@ -75,7 +79,7 @@ function InvalidLink({ title }: { title: string }) {
         </Notice>
 
         <p style={{ marginTop: "1.25rem", fontSize: "0.85rem", color: "var(--muted)" }}>
-          <Link href="/login" style={{ color: "var(--accent)" }}>
+          <Link className="link" href="/login">
             Zpět na přihlášení
           </Link>
         </p>

@@ -1,11 +1,59 @@
+/* ---------- Barvy ----------
+
+   Odvozené z loga. Vytažené z něj měřením, ne od oka:
+   vínová #5a0101 zabírá pětinu plochy štítu, zlatá obruba má medián
+   #af802d a nápis MYTHIC je #a7d0d2.
+
+   Podklad zůstává tmavý a skoro neutrální (jen teplý, do hněda), aby se
+   dlouhé tabulky v administraci daly číst. Vínová se objevuje jako
+   značka - lišta, patička - a zlatá dělá tlačítka a odkazy. */
+
 :root {
-  --bg: #0f1115;
-  --surface: #171a21;
-  --text: #e8e6e3;
-  --muted: #8b8f98;
-  --accent: #5b8cff;
-  --danger: #e5484d;
-  --border: #262a33;
+  /* Nativní prvky (výběr data, select, scrollbar, autofill) se kreslí podle
+     color-scheme, ne podle našeho CSS. */
+  color-scheme: dark;
+
+  /* Teplý uhel místo neutrální šedi - drží pohromadě s vínovou a zlatou. */
+  --bg: #12100f;
+  --surface: #1c1918;
+  --border: #302b28;
+  --text: #ece7e1;
+  --muted: #a09890;
+
+  /* Zlatá z obruby loga. --accent na text a odkazy, --accent-strong pod
+     výplň tlačítek. Zlatá je světlá, takže na ní není bílý, ale tmavý
+     popisek (--accent-ink) - bílá by měla kontrast 1,8:1. */
+  --accent: #d9a441;
+  --accent-strong: #c08f2f;
+  --accent-ink: #17130f;
+
+  /* Vínová ze štítu. Jen jako značka, ne jako podklad obsahu. */
+  --brand: #5a0101;
+  --brand-line: #7c1c14;
+
+  /* Tyrkysová - druhý akcent (překryvy v kalendáři, role tank, informační
+     hlášky). Odstín drží u ledové modré z nápisu MYTHIC, ale sytější:
+     přímo ta z loga je světlá a v ploše se rozpadne do šedé.
+
+     Stavové barvy jsou schválně v jedné rodině se zlatou: světlost 74-77
+     a barevnost (chroma v OKLCH) 0,12-0,18, stejně jako accent. Předchozí
+     zelená a tyrkysová z ní vypadávaly - tyrkysová měla chroma 0,06, ani ne
+     polovinu zbytku palety, a vedle zlaté proto vypadala jako šedá. */
+  --ice: #2fc0d8;
+
+  /* Stupně vítězů. Zlato je rovnou accent; stříbro a bronz jsou dopočítané
+     do stejné rodiny. Pořadí se nepozná podle jasu (stříbro je světlejší než
+     zlato, jako v reálu), ale podle odstínu - a první místo má navíc sytější
+     podklad řádku. */
+  --silver: #c3c8d2;
+  --bronze: #c98a5c;
+
+  --danger: #ef6b62;
+  --success: #34c96f;
+
+  /* Odstín 68 místo 79. Varovná měla prakticky stejný odstín jako accent
+     (80), takže odznak "Čeká" splýval se zlatou všude kolem. */
+  --warning: #f59f2b;
 }
 
 * {
@@ -17,6 +65,159 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+/* ---------- Typografie ----------
+
+   Nadpisové písmo je Marcellus - římský tvar navazující na nápis v logu,
+   ale s tenčími tahy, takže s ním nesoupeří. Nese ho jen to, co je vidět
+   jako první: název v liště, nadpis stránky a velká čísla. Běžný text a
+   tabulky zůstávají systémové, tam jde o čitelnost, ne o charakter.
+
+   Dvě proměnné, protože písmena s háčky jsou v druhém souboru; prohlížeč
+   si text poskládá po znacích. Pořadí je nutné dodržet: -ext první, jinak
+   by háčky vzal z náhradního patkového písma.
+
+   Marcellus má jen jeden řez. Tučná varianta se proto nenastavuje - písmo
+   by ji prohlížeč dopočítal sám a takové tučné vypadá rozmazaně. */
+
+h1,
+.site-brand,
+.stat-value,
+.cal-title {
+  font-family:
+    var(--font-display-ext),
+    var(--font-display),
+    Georgia,
+    serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+/* Cinzel je opticky větší než systémový font, takže výchozí 2em byly na
+   telefonu tři řádky. clamp drží nadpis v rozumné velikosti na obou koncích. */
+h1 {
+  font-size: clamp(1.45rem, 2.2vw + 0.9rem, 1.9rem);
+  line-height: 1.2;
+  margin: 0 0 0.4rem;
+}
+
+/* Nadpisy karet nejsou displejové, ale ani obyčejný tučný text - drobné
+   prostrkání je odliší od obsahu pod nimi. */
+.card h2,
+.stat-label,
+.admin-sidebar h2 {
+  letter-spacing: 0.02em;
+}
+
+/* Nic v aplikaci nemělo přechod, takže hover skákal skokem. Jen barvy -
+   posuny a měnění velikosti by u tabulek spíš rušily. */
+a,
+button,
+.btn,
+.card,
+.stat-link,
+.cal-day-link,
+input,
+select,
+textarea,
+table.data tbody tr {
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a,
+  button,
+  .btn,
+  .card,
+  .stat-link,
+  .cal-day-link,
+  input,
+  select,
+  textarea,
+  table.data tbody tr {
+    transition: none;
+  }
+}
+
+/* Jeden focus prstenec pro všechno. Dřív ho měla jen formulářová pole a dny
+   v kalendáři, zbytek spoléhal na výchozí prstenec prohlížeče - ten je na
+   tmavém pozadí sotva vidět. :focus-visible schválně: myš ho nevyvolá. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Přeskočení lišty rovnou na obsah. Vidět je až po zaostření tabulátorem. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: top 0.12s ease-out;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+}
+
+/* ---------- Drobné utility ----------
+   Nahrazují opakované inline style={{ ... }} - stejný text měl na různých
+   místech mírně jinou velikost, protože se hodnoty přepisovaly ručně. */
+
+/* Vedlejší text v odstavci nebo buňce tabulky. */
+.muted {
+  color: var(--muted);
+}
+
+/* Doplňující údaj pod hlavní hodnotou (druhý řádek v buňce tabulky). */
+.meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Úvodní odstavec karty - vysvětluje, k čemu formulář pod ním je. */
+.card-lead {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.card-lead:last-child {
+  margin-bottom: 0;
+}
+
+/* Odkaz uvnitř textu. Samotný <a> zdědí barvu textu a v odstavci se pak
+   nepozná od okolí - .btn odkazy proto barvu neberou plošně. */
+.link {
+  color: var(--accent);
+}
+
+/* Poznámka pod obsahem karty - vysvětlivka k tabulce nad ní. */
+.card-note {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--muted);
 }
 
 .auth-page {
@@ -25,9 +226,32 @@ body {
      skrývá - obsah pak končí pod ní. dvh měří skutečně viditelnou výšku. */
   min-height: 100dvh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1.25rem;
   padding: 2rem;
+}
+
+/* Značka nad kartou - na obrazovkách bez lišty jediná cesta zpátky.
+   Logo se tu ukazuje celé, název nese ono. */
+.brand-mark {
+  display: block;
+  line-height: 0;
+  border-radius: 50%;
+}
+
+.brand-mark img {
+  display: block;
+  width: 132px;
+  height: 132px;
+}
+
+@media (max-width: 640px) {
+  .brand-mark img {
+    width: 104px;
+    height: 104px;
+  }
 }
 
 .auth-card {
@@ -39,9 +263,49 @@ body {
   padding: 2rem;
 }
 
+/* Registrace má polí dvakrát tolik než přihlášení a snese víc místa. */
+.auth-card-wide {
+  max-width: 520px;
+}
+
 .auth-card h1 {
-  font-size: 1.25rem;
-  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  margin: 0 0 1.5rem;
+}
+
+.auth-notice {
+  margin: 1.25rem 0;
+}
+
+.auth-hint {
+  margin: 1.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.auth-hint + .auth-hint {
+  margin-top: 0.5rem;
+}
+
+.auth-hint a {
+  color: var(--accent);
+}
+
+/* Oddíl formuláře (Účet / Postava). fieldset má výchozí rámeček a odsazení,
+   které se sem nehodí - používá se kvůli legend a čtečkám. */
+.field-group {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0 0 1.5rem;
+  padding: 1rem 0 0;
+}
+
+.field-group > legend {
+  padding: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
 }
 
 .field {
@@ -56,26 +320,67 @@ body {
   color: var(--muted);
 }
 
+/* Vysvětlivka pod polem. Váže se přes aria-describedby, takže ji čtečka
+   přečte spolu s popiskem. */
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Zaškrtávátko má popisek vedle sebe, ne nad sebou. */
+.field-check > label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.field-check input[type="checkbox"] {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0.1rem 0 0;
+  accent-color: var(--accent-strong);
+  cursor: pointer;
+}
+
+.field-check a {
+  color: var(--accent);
+}
+
 .field input,
-.field select {
+.field select,
+.field textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.6rem 0.75rem;
   color: var(--text);
   font-size: 0.95rem;
+  font-family: inherit;
+}
+
+/* Textarea se roztahuje jen svisle - vodorovně by přerostla kartu. */
+.field textarea {
+  resize: vertical;
 }
 
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
 button.primary {
   width: 100%;
-  background: var(--accent);
-  color: white;
+  background: var(--accent-strong);
+  color: var(--accent-ink);
+  font-weight: 500;
   border: none;
   border-radius: 8px;
   padding: 0.7rem;
@@ -96,7 +401,7 @@ button.primary:disabled {
 }
 
 .success-text {
-  color: #4caf6d;
+  color: var(--success);
   font-size: 0.85rem;
   margin-top: 0.75rem;
 }
@@ -154,9 +459,12 @@ button.primary:disabled {
   background: var(--bg);
 }
 
+/* Zlatý proužek u kraje - samotná zlatá barva textu se v seznamu odkazů
+   ztrácela. */
 .admin-nav a[aria-current="page"] {
   background: var(--bg);
   color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .admin-main {
@@ -166,8 +474,8 @@ button.primary:disabled {
 }
 
 .admin-main h1 {
-  font-size: 1.35rem;
-  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  margin: 0 0 0.4rem;
 }
 
 .admin-subtitle {
@@ -184,9 +492,13 @@ button.primary:disabled {
   margin-bottom: 1.25rem;
 }
 
+/* Nadpisy karet schválně nejsou zlaté. Je jich v aplikaci přes šedesát a
+   když je zlaté všechno, není zlaté nic - zlatá zůstává tlačítkům, číslům,
+   odkazům a aktivní položce navigace. */
 .card h2 {
   font-size: 1rem;
   margin: 0 0 1rem;
+  color: var(--text);
 }
 
 .stat-grid {
@@ -204,14 +516,32 @@ button.primary:disabled {
 }
 
 .stat .stat-value {
-  font-size: 1.8rem;
-  font-weight: 600;
+  display: block;
+  font-size: 2rem;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
 }
 
 .stat .stat-label {
+  display: block;
   color: var(--muted);
   font-size: 0.82rem;
   margin-top: 0.15rem;
+}
+
+/* Statistika, která vede na filtrovaný seznam. */
+.stat-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.stat-link:hover {
+  border-color: var(--accent);
+}
+
+.stat-link:hover .stat-label {
+  color: var(--text);
 }
 
 table.data {
@@ -241,6 +571,11 @@ table.data tr:last-child td {
   border-bottom: none;
 }
 
+/* U čtyřiceti řádků oko na dlouhém řádku ujede o patro. */
+table.data tbody tr:hover {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
 table.data input,
 table.data select {
   background: var(--bg);
@@ -249,40 +584,73 @@ table.data select {
   padding: 0.4rem 0.5rem;
   color: var(--text);
   font-size: 0.88rem;
+  font-family: inherit;
   width: 100%;
 }
 
+/* Totéž pole, ale mimo tabulku (formulář v řadě pod ní). */
+.inline-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  min-width: 0;
+}
+
+/* Tónovaná výplň místo holého textu v rámečku - se sytější paletou drží
+   odznak tvar i v hustém řádku tabulky. */
 .badge {
   display: inline-block;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
   font-size: 0.75rem;
   border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
   color: var(--muted);
 }
 
 .badge-pending {
-  color: #e0b341;
-  border-color: #5a4a1e;
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
 }
 
 .badge-approved {
-  color: #4caf6d;
-  border-color: #235437;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+  border-color: color-mix(in srgb, var(--success) 40%, var(--border));
 }
 
 .badge-rejected {
   color: var(--danger);
-  border-color: #5c2528;
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
 }
 
+/* Používá se na <button> i na <a>. Odkaz si bez text-decoration nese výchozí
+   podtržení prohlížeče, takže odkaz stylovaný jako tlačítko vypadal jinak než
+   skutečné tlačítko vedle něj. */
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  /* Ve flexové řadě (.row-actions, buňka tabulky) se tlačítko nesmí smrsknout
+     pod svůj popisek - "Uložit" se jinak zalomí na "Ulo / žit". */
+  flex: 0 0 auto;
+  white-space: nowrap;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.45rem 0.8rem;
   font-size: 0.85rem;
+  font-family: inherit;
+  line-height: 1.4;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -296,20 +664,147 @@ table.data select {
 }
 
 .btn-accent {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--accent-ink);
+  font-weight: 500;
+}
+
+.btn-accent:hover:not(:disabled) {
   background: var(--accent);
   border-color: var(--accent);
-  color: white;
 }
 
 .btn-danger {
   color: var(--danger);
-  border-color: #5c2528;
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
 }
 
 .row-actions {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+/* Řada, ve které je vedle tlačítka pole s popiskem nad ním. Pole je vyšší
+   (popisek + input), takže by se tlačítko při align-items: center srovnalo
+   na střed celého sloupce a viselo pod inputem. Zarovnává se proto na
+   spodní hranu. */
+.row-actions-end {
+  align-items: flex-end;
+}
+
+/* Hledání nad tabulkou. */
+.search-form {
+  margin-bottom: 1.25rem;
+}
+
+/* ---------- Kostra při načítání ---------- */
+
+.skeleton {
+  background: var(--surface);
+  border-radius: 6px;
+  /* Pruh světla přejíždí zleva doprava, ať je poznat, že se čeká. */
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--muted) 18%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+.card .skeleton {
+  background-color: var(--bg);
+}
+
+.skeleton-title {
+  height: 1.9rem;
+  width: 40%;
+  max-width: 18rem;
+  margin-bottom: 0.6rem;
+}
+
+.skeleton-subtitle {
+  height: 0.9rem;
+  width: 25%;
+  max-width: 12rem;
+  margin-bottom: 2rem;
+}
+
+.skeleton-heading {
+  height: 1rem;
+  width: 30%;
+  max-width: 12rem;
+  margin-bottom: 1rem;
+}
+
+.skeleton-line {
+  height: 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.skeleton-line-short {
+  width: 60%;
+  margin-bottom: 0;
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Kdo má vypnuté animace, uvidí klidné obdélníky. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* ---------- Potvrzovací dialog ---------- */
+
+/* Nahrazuje window.confirm - ten vypadá jako systémové okno z jiné doby
+   a na mobilu ukazuje adresu stránky. <dialog> si sám hlídá focus,
+   Escape i překryv. */
+.confirm-dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.confirm-dialog-body {
+  padding: 1.4rem 1.5rem 1.5rem;
+}
+
+.confirm-dialog h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+}
+
+.confirm-dialog p {
+  margin: 0 0 1.4rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .empty-state {
@@ -347,21 +842,40 @@ pre.json {
 
 /* ---------- Veřejná lišta ---------- */
 
+/* Vínová plocha se zlatou linkou dole - obojí přímo z loga. Je to jediné
+   místo, kde značkové barvy nesou plochu; obsah pod tím zůstává na uhlu. */
 .site-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem 1.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  background: var(--brand);
+  border-bottom: 2px solid var(--accent-strong);
 }
 
 .site-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   color: var(--text);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
+  white-space: nowrap;
+}
+
+.site-brand img {
+  display: block;
+  flex: none;
+}
+
+/* Navigace + účet dohromady. Na širokém displeji je to prostě řádek,
+   pod 720 px se to skládá pod lištu a otevírá tlačítkem (viz níž). */
+.site-menu {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .site-nav {
@@ -380,8 +894,60 @@ pre.json {
   color: var(--accent);
 }
 
+/* Na vínové je potřeba světlejší potlačená barva než --muted na uhlu. */
+.site-header .site-user {
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+}
+
+/* Účet je oddělený svislou linkou, ať se jméno a odhlášení nepletou
+   s odkazy na stránky. */
+.site-account {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--brand-line);
+  font-size: 0.9rem;
+}
+
+/* Tlačítka v liště sedí na vínové, ne na uhlu. */
+.site-account .btn {
+  background: color-mix(in srgb, #000 22%, transparent);
+  border-color: var(--brand-line);
+  color: var(--text);
+}
+
+.site-account .btn:hover {
+  border-color: var(--accent);
+}
+
+.site-account .btn-accent {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--accent-ink);
+}
+
 .site-user {
   color: var(--muted);
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tlačítko menu je jen pro úzký displej. */
+.site-menu-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  background: color-mix(in srgb, #000 22%, transparent);
+  color: var(--text);
+  border: 1px solid var(--brand-line);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 .site-main {
@@ -393,6 +959,166 @@ pre.json {
 /* Stránky s kalendářem a tabulkami potřebují víc místa než běžný text. */
 .site-main-wide {
   max-width: 1100px;
+}
+
+/* ---------- Obal veřejné stránky ---------- */
+
+/* Sloupec přes celou výšku okna, aby patička držela dole i na krátké
+   stránce. Bez toho by na prázdném stavu skončila v půlce obrazovky. */
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.page-shell > main {
+  flex: 1;
+  width: 100%;
+}
+
+/* ---------- Úvodní blok ---------- */
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--brand) 30%, var(--surface));
+}
+
+.hero > img {
+  display: block;
+  flex: none;
+}
+
+.hero h1 {
+  margin: 0 0 0.35rem;
+}
+
+.hero-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.hero-lead {
+  margin: 0.9rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+/* Na telefonu se logo postaví nad text a všechno se srovná na střed. */
+@media (max-width: 640px) {
+  .hero {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.1rem;
+    padding: 1.5rem 1.25rem;
+  }
+
+  .hero > img {
+    width: 108px;
+    height: 108px;
+  }
+
+  .hero-lead {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-actions {
+    justify-content: center;
+  }
+}
+
+/* ---------- Patička ---------- */
+
+.site-footer {
+  margin-top: 3rem;
+  background: var(--brand);
+  border-top: 2px solid var(--accent-strong);
+}
+
+/* V administraci na ni navazuje shell, který si bere zbytek výšky, takže
+   odsazení navíc jen dělá mezeru. Obsah patičky se tu neomezuje na 1100 px:
+   administrace jde přes celou šířku a vycentrovaný pruh by pod postranní
+   navigací visel mimo osu zbytku stránky. */
+.admin-page > .site-footer {
+  margin-top: 0;
+}
+
+.admin-page > .site-footer .site-footer-inner {
+  max-width: none;
+}
+
+.site-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+}
+
+.site-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.site-footer-brand img {
+  display: block;
+  flex: none;
+}
+
+.site-footer-brand > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-footer-org {
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+  font-size: 0.8rem;
+}
+
+.site-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.site-footer-nav a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.site-footer-nav a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+@media (max-width: 640px) {
+  .site-footer-inner {
+    padding: 1.1rem 1rem;
+  }
 }
 
 /* ---------- Měsíční kalendář ---------- */
@@ -410,6 +1136,15 @@ pre.json {
   min-width: 9rem;
   text-align: center;
   text-transform: capitalize;
+}
+
+/* Šipky měsíců. Samotné "‹" je úzké, bez minimální šířky vyšel dotykový cíl
+   na 32 px - doporučené minimum je 44. */
+.cal-nav {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .cal-legend {
@@ -468,9 +1203,11 @@ pre.json {
   background: var(--bg);
 }
 
+/* Dny sousedního měsíce jsou potlačené, ale pořád se musí dát přečíst -
+   na 55 % měly kontrast 2,9:1. */
 .cal-day-outside .cal-daynum {
-  color: #5a5e66;
-  color: color-mix(in srgb, var(--muted) 55%, transparent);
+  color: #7d766f;
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
 }
 
 .cal-day-weekend .cal-daynum {
@@ -509,20 +1246,20 @@ pre.json {
 
 .cal-kind-confirmed {
   background: #1d3a2c;
-  background: color-mix(in srgb, #30a46c 22%, transparent);
-  border-left-color: #30a46c;
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+  border-left-color: var(--success);
 }
 
 .cal-kind-proposed {
   background: #3d3320;
-  background: color-mix(in srgb, #f5a524 20%, transparent);
-  border-left-color: #f5a524;
+  background: color-mix(in srgb, var(--warning) 22%, transparent);
+  border-left-color: var(--warning);
 }
 
 .cal-kind-overlap {
-  background: #22283c;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  border-left-color: var(--accent);
+  background: #1f2c2d;
+  background: color-mix(in srgb, var(--ice) 22%, transparent);
+  border-left-color: var(--ice);
 }
 
 .cal-kind-availability {
@@ -535,6 +1272,77 @@ pre.json {
   color: var(--muted);
   font-size: 0.7rem;
   padding-left: 0.32rem;
+}
+
+/* Nápověda k prázdnému měsíci. */
+.cal-empty {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.cal-empty a {
+  color: var(--accent);
+}
+
+/* ---------- Kalendář na úzkém displeji ----------
+   Seznam dnů místo mřížky. Na širokém displeji se nezobrazuje. */
+
+.cal-agenda,
+.cal-agenda-empty {
+  display: none;
+}
+
+.cal-agenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cal-agenda-day {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: inherit;
+  text-decoration: none;
+}
+
+.cal-agenda-today {
+  border-color: var(--accent);
+}
+
+.cal-agenda-date {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.cal-agenda-weekday {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.cal-agenda-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.cal-agenda-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 1rem 0;
+  text-align: center;
 }
 
 /* Den s událostmi je celý klikatelný. Odkaz vyplní buňku, aby se trefovalo
@@ -564,7 +1372,7 @@ pre.json {
    v mřížce vypadaly stejně. */
 .cal-day-selected {
   box-shadow: inset 0 0 0 2px var(--accent);
-  background: #1e2433;
+  background: #2a2318;
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 }
 
@@ -661,8 +1469,24 @@ pre.json {
 }
 
 @media (max-width: 720px) {
-  .cal-grid {
-    min-width: 620px;
+  /* Mřížka pryč, místo ní seznam dnů. Sedm sloupců se sem nevejde a
+     rolování do strany kvůli víkendu je otrava. */
+  .cal-grid-wrap {
+    display: none;
+  }
+
+  .cal-agenda {
+    display: flex;
+  }
+
+  .cal-agenda-empty {
+    display: block;
+  }
+
+  /* V seznamu se popisek události zalomí, místo aby se ořízl. */
+  .cal-agenda .cal-event {
+    white-space: normal;
+    overflow: visible;
   }
 
   /* Čtyři sloupce se na mobil nevejdou, detail se proto skládá pod sebe. */
@@ -684,11 +1508,18 @@ pre.json {
 /* ---------- Hlášení ---------- */
 
 /* Přepínač podstránek v informační části. */
-.info-nav {
+.info-nav,
+/* Rozcestník po sekcích dlouhé stránky (kotvy). */
+.section-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
+}
+
+/* Skok na kotvu nesmí nadpis zarazit těsně pod horní okraj. */
+[id] {
+  scroll-margin-top: 1rem;
 }
 
 /* Seznamy v pravidlech - odrážky se musí číst pohodlně i na mobilu. */
@@ -753,9 +1584,9 @@ pre.json {
 }
 
 .notice-success {
-  border-left-color: #30a46c;
-  background: #1a2721;
-  background: color-mix(in srgb, #30a46c 10%, var(--surface));
+  border-left-color: var(--success);
+  background: #1e2620;
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
 }
 
 .notice-error {
@@ -765,9 +1596,9 @@ pre.json {
 }
 
 .notice-info {
-  border-left-color: var(--accent);
-  background: #1b2030;
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border-left-color: var(--ice);
+  background: #1d2426;
+  background: color-mix(in srgb, var(--ice) 10%, var(--surface));
 }
 
 .notice-detail {
@@ -793,10 +1624,12 @@ pre.json {
   color: var(--muted);
 }
 
-/* Odkaz na aktuální stránku v horní liště. */
+/* Odkaz na aktuální stránku v horní liště. Podtržení samo o sobě splývá
+   s ostatními odkazy, proto ještě accent barva. */
 .site-nav a[aria-current="page"] {
-  color: var(--text);
+  color: var(--accent);
   text-decoration: underline;
+  text-underline-offset: 0.3em;
 }
 
 /* ---------- Responzivita ---------- */
@@ -867,17 +1700,108 @@ dl.detail dd {
   }
 }
 
-@media (max-width: 640px) {
-  .site-header {
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    padding: 0.8rem 1rem;
+/* Lišta na úzkém displeji: odkazy se schovají pod tlačítko Menu a rozbalí
+   se pod lištu. Sedm odkazů vedle sebe se zalomilo do dvou řádků a lišta pak
+   zabírala skoro třetinu obrazovky telefonu. */
+@media (max-width: 720px) {
+  .site-menu-toggle {
+    display: inline-flex;
+  }
+
+  .site-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: var(--brand);
+    border-bottom: 2px solid var(--accent-strong);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.55);
+  }
+
+  .site-menu-open {
+    display: flex;
   }
 
   .site-nav {
-    gap: 0.9rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    font-size: 0.95rem;
+  }
+
+  .site-nav a {
+    padding: 0.85rem 1rem;
+    border-top: 1px solid var(--brand-line);
+  }
+
+  .site-account {
     flex-wrap: wrap;
-    font-size: 0.85rem;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    border-left: none;
+    border-top: 1px solid var(--brand-line);
+  }
+
+  .site-account .btn {
+    padding: 0.6rem 0.9rem;
+  }
+}
+
+/* Tabulka, která se na telefonu rozpadne na kartičky. Sloupce se vejdou
+   jen do rolování do strany a dlouhé hodnoty se ořezávaly uprostřed slova
+   ("Monk - Brewmas..."). Popisek sloupce nese data-label. */
+@media (max-width: 640px) {
+  table.data.table-cards,
+  table.data.table-cards thead,
+  table.data.table-cards tbody,
+  table.data.table-cards tr,
+  table.data.table-cards td {
+    display: block;
+    width: auto;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  table.data.table-cards thead {
+    /* Hlavičku nahradí data-label u každé buňky. */
+    display: none;
+  }
+
+  table.data.table-cards tr {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.6rem;
+    background: var(--bg);
+  }
+
+  table.data.table-cards td {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0.22rem 0;
+    border-bottom: none;
+  }
+
+  table.data.table-cards td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-header {
+    padding: 0.8rem 1rem;
+  }
+
+  .site-brand {
+    font-size: 0.9rem;
   }
 
   .site-main {
@@ -885,9 +1809,9 @@ dl.detail dd {
   }
 
   .auth-page {
-    padding: 1rem;
-    align-items: flex-start;
-    padding-top: 3rem;
+    padding: 1rem 1rem 3rem;
+    justify-content: flex-start;
+    padding-top: 2rem;
   }
 
   .auth-card {
@@ -948,6 +1872,95 @@ dl.detail dd {
   }
 }
 
+/* ---------- Stupně vítězů v žebříčku ----------
+
+   První tři místa nesla dřív jen pořadové číslo v běžné barvě, takže vítěz
+   vypadal stejně jako osmý. Podklad řádku je tónovaný barvou kovu a levý
+   proužek ji opakuje - v soutěži je tohle ta obrazovka, kvůli které lidi
+   přijdou. */
+
+.rank-1 td,
+.rank-2 td,
+.rank-3 td {
+  border-bottom-color: transparent;
+}
+
+.rank-1 {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.rank-2 {
+  background: color-mix(in srgb, var(--silver) 8%, transparent);
+  box-shadow: inset 3px 0 0 var(--silver);
+}
+
+.rank-3 {
+  background: color-mix(in srgb, var(--bronze) 9%, transparent);
+  box-shadow: inset 3px 0 0 var(--bronze);
+}
+
+/* Zvýrazněný řádek nesmí hover shodit zpátky do šeda. */
+.rank-1:hover,
+.rank-2:hover,
+.rank-3:hover {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+/* Pořadové číslo v barvě kovu, o něco větší než u zbytku tabulky. */
+.rank-medal {
+  font-family: var(--font-display-ext), var(--font-display), Georgia, serif;
+  font-size: 1.3rem;
+}
+
+.rank-1 .rank-medal {
+  color: var(--accent);
+}
+
+.rank-2 .rank-medal {
+  color: var(--silver);
+}
+
+.rank-3 .rank-medal {
+  color: var(--bronze);
+}
+
+/* Řádek přihlášeného hráče. Zlatá je zabraná prvním místem, proto tyrkysová
+   - a přerušovaný proužek, aby se nepletl s medailí. */
+.rank-mine {
+  box-shadow: inset 3px 0 0 var(--ice);
+}
+
+.rank-1.rank-mine,
+.rank-2.rank-mine,
+.rank-3.rank-mine {
+  box-shadow:
+    inset 3px 0 0 var(--ice),
+    inset 6px 0 0 var(--surface);
+}
+
+.rank-mine-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ice) 16%, transparent);
+  color: var(--ice);
+  font-size: 0.7rem;
+  vertical-align: 0.1em;
+}
+
+/* Shrnutí nad tabulkou, když je vlastní tým mimo první obrazovku. */
+.rank-mine-summary {
+  margin: 0 0 1.25rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ice) 35%, var(--border));
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ice) 8%, var(--surface));
+  font-size: 0.9rem;
+}
+
 /* ---------- Statistiky na úvodní stránce ---------- */
 
 .trio-grid {
@@ -987,7 +2000,7 @@ dl.detail dd {
 .bar > span {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: var(--accent-strong);
   border-radius: 3px;
 }
 
@@ -1027,14 +2040,18 @@ dl.detail dd {
   display: inline-block;
 }
 
+/* Tank tyrkysová, healer zelená, DPS oranžová. Všechny tři mají stejnou
+   světlost (74) a podobnou barevnost, takže v jednom pruhu nesou stejnou
+   váhu - dřívější měď byla o deset stupňů tmavší a vedle ostatních dvou
+   vypadala jako pozadí. */
 .split-tank {
-  background: #6e9fff;
+  background: var(--ice);
 }
 
 .split-healer {
-  background: #46c08a;
+  background: var(--success);
 }
 
 .split-dps {
-  background: #e0834a;
+  background: #ee8b3a;
 }

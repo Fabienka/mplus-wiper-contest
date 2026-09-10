@@ -1,13 +1,19 @@
 import Link from "next/link";
+import { NoSeason } from "../no-season";
+import { SubmitButton } from "../../submit-button";
 import type { SpecRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { SPEC_ROLE_LABELS, plural } from "@/lib/labels";
 import { describeTeamComposition } from "@/lib/shuffle";
-import { ConfirmButton } from "../confirm-button";
 import { addAsSubstitute, deleteAllTeams, updateTeams } from "./actions";
+import { ActionNotice } from "../../action-notice";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Týmy – administrace",
+};
 
 const ROLE_ORDER: Record<SpecRole, number> = { TANK: 0, HEALER: 1, DPS: 2 };
 
@@ -33,12 +39,18 @@ function MemberRows({
       {rows.map((row) => (
         <tr key={row.membershipId}>
           <td>{row.characterName}</td>
-          <td style={{ color: "var(--muted)" }}>
+          <td className="muted">
             {row.wowSpec ? `${row.className} - ${row.wowSpec}` : row.className ?? "-"}
           </td>
           <td>{row.rioScore === null ? "-" : Math.round(row.rioScore)}</td>
           <td>
-            <select name={`role-${row.membershipId}`} defaultValue={row.roleInTeam}>
+            {/* Bez popisku přečte čtečka v řádku jen "combobox" a není
+                poznat, ke kterému hráči patří. */}
+            <select
+              name={`role-${row.membershipId}`}
+              defaultValue={row.roleInTeam}
+              aria-label={`Role hráče ${row.characterName} v týmu`}
+            >
               {Object.entries(SPEC_ROLE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -47,7 +59,11 @@ function MemberRows({
             </select>
           </td>
           <td>
-            <select name={`dest-${row.membershipId}`} defaultValue={row.destination}>
+            <select
+              name={`dest-${row.membershipId}`}
+              defaultValue={row.destination}
+              aria-label={`Zařazení hráče ${row.characterName}`}
+            >
               {teams.map((team) => (
                 <option key={team.id} value={`team:${team.id}`}>
                   {team.name}
@@ -68,11 +84,11 @@ function MemberTableHead() {
   return (
     <thead>
       <tr>
-        <th style={{ width: "22%" }}>Postava</th>
-        <th style={{ width: "26%" }}>Class / spec</th>
-        <th style={{ width: "10%" }}>RIO</th>
-        <th style={{ width: "18%" }}>Role v týmu</th>
-        <th style={{ width: "24%" }}>Zařazení</th>
+        <th scope="col" style={{ width: "22%" }}>Postava</th>
+        <th scope="col" style={{ width: "26%" }}>Class / spec</th>
+        <th scope="col" style={{ width: "10%" }}>RIO</th>
+        <th scope="col" style={{ width: "18%" }}>Role v týmu</th>
+        <th scope="col" style={{ width: "24%" }}>Zařazení</th>
       </tr>
     </thead>
   );
@@ -88,8 +104,7 @@ export default async function TeamsPage({
   if (!season) {
     return (
       <>
-        <h1>Týmy</h1>
-        <p className="admin-subtitle">Zatím není založená žádná sezóna.</p>
+        <NoSeason title="Týmy" />
       </>
     );
   }
@@ -150,29 +165,14 @@ export default async function TeamsPage({
       <h1>Týmy</h1>
       <p className="admin-subtitle">{season.name}</p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.saved && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Změny uložené.
-          </p>
-        </div>
-      )}
-
-      {searchParams.deleted && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Týmy smazané. Nové rozdělení jde vytvořit na stránce Shuffle.
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={
+          searchParams.deleted
+            ? "Týmy smazané. Nové rozdělení jde vytvořit na stránce Shuffle."
+            : searchParams.saved && "Změny v týmech uložené."
+        }
+      />
 
       {!hasAnything ? (
         <div className="card">
@@ -231,9 +231,8 @@ export default async function TeamsPage({
                   {violations.length > 0 && (
                     <ul style={{ margin: "0.75rem 0 0", paddingLeft: "1.2rem" }}>
                       {violations.map((violation) => (
-                        <li
+                        <li className="meta"
                           key={violation}
-                          style={{ fontSize: "0.82rem", color: "var(--muted)" }}
                         >
                           {violation}
                         </li>
@@ -271,9 +270,12 @@ export default async function TeamsPage({
             )}
 
             <div className="card">
-              <button className="btn btn-accent" type="submit">
+              <SubmitButton
+                className="btn btn-accent"
+                pendingLabel="Ukládám..."
+              >
                 Uložit změny
-              </button>
+              </SubmitButton>
               <span
                 style={{
                   color: "var(--muted)",
@@ -289,25 +291,25 @@ export default async function TeamsPage({
           {withoutMembership.length > 0 && (
             <div className="card">
               <h2>Schválení bez zařazení ({withoutMembership.length})</h2>
-              <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+              <p className="card-lead">
                 Typicky hráči schválení až po rozdělení týmů. Přidají se mezi
                 náhradníky, odkud je jde přesunout do týmu.
               </p>
               <table className="data">
                 <thead>
                   <tr>
-                    <th style={{ width: "26%" }}>Postava</th>
-                    <th style={{ width: "30%" }}>Class / spec</th>
-                    <th style={{ width: "14%" }}>Role</th>
-                    <th style={{ width: "12%" }}>RIO</th>
-                    <th />
+                    <th scope="col" style={{ width: "26%" }}>Postava</th>
+                    <th scope="col" style={{ width: "30%" }}>Class / spec</th>
+                    <th scope="col" style={{ width: "14%" }}>Role</th>
+                    <th scope="col" style={{ width: "12%" }}>RIO</th>
+                    <th scope="col" />
                   </tr>
                 </thead>
                 <tbody>
                   {withoutMembership.map((registration) => (
                     <tr key={registration.id}>
                       <td>{registration.character.characterName}</td>
-                      <td style={{ color: "var(--muted)" }}>
+                      <td className="muted">
                         {registration.character.wowSpec
                           ? `${registration.character.class} - ${registration.character.wowSpec}`
                           : registration.character.class ?? "-"}
@@ -326,9 +328,12 @@ export default async function TeamsPage({
                             name="characterId"
                             value={registration.characterId}
                           />
-                          <button className="btn" type="submit">
+                          <SubmitButton
+                            className="btn"
+                            pendingLabel="Přidávám..."
+                          >
                             Přidat mezi náhradníky
-                          </button>
+                          </SubmitButton>
                         </form>
                       </td>
                     </tr>
@@ -348,12 +353,15 @@ export default async function TeamsPage({
             </p>
             <form action={deleteAllTeams}>
               <input type="hidden" name="seasonId" value={season.id} />
-              <ConfirmButton
+              <SubmitButton
+                pendingLabel="Mažu..."
                 className="btn btn-danger"
-                message={`Opravdu smazat všechny týmy sezóny "${season.name}"? Nejde to vrátit.`}
+                confirmTitle="Smazat všechny týmy?"
+                confirm={`Zruší se všechny týmy sezóny "${season.name}" i členství v nich. Nejde to vrátit.`}
+                confirmLabel="Smazat všechny týmy"
               >
                 Smazat všechny týmy
-              </ConfirmButton>
+              </SubmitButton>
             </form>
           </div>
         </>

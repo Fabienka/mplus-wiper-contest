@@ -195,3 +195,41 @@ export function eventsForDay(events: CalendarEvent[], day: Date): CalendarEvent[
     .filter((event) => event.start < dayEnd && event.end > dayStart)
     .sort((a, b) => a.start.getTime() - b.start.getTime());
 }
+
+/** Zasahuje událost do daného měsíce? Úsek přes konec měsíce se počítá. */
+export function eventInMonth(event: CalendarEvent, { year, month }: MonthRef) {
+  const monthStart = new Date(year, month, 1);
+  const monthEnd = new Date(year, month + 1, 1);
+  return event.start < monthEnd && event.end > monthStart;
+}
+
+export function monthHasEvents(events: CalendarEvent[], month: MonthRef) {
+  return events.some((event) => eventInMonth(event, month));
+}
+
+/**
+ * Nejbližší událost k danému okamžiku.
+ *
+ * Přednost má nejbližší budoucí - koho zajímá kalendář, ten obvykle řeší, co
+ * bude, ne co bylo. Když už všechno proběhlo, vrátí se poslední minulá, ať se
+ * dá aspoň dohledat, co se odehrálo.
+ *
+ * Slouží k tomu, aby prázdný měsíc nebyl slepá ulička: kalendář se otevírá na
+ * dnešku, a když v něm nic není, ukáže odkaz tam, kde něco je.
+ */
+export function nearestEvent(
+  events: CalendarEvent[],
+  now: Date = new Date()
+): CalendarEvent | null {
+  if (events.length === 0) return null;
+
+  const upcoming = events
+    .filter((event) => event.end >= now)
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
+
+  if (upcoming.length > 0) return upcoming[0];
+
+  return events
+    .slice()
+    .sort((a, b) => b.start.getTime() - a.start.getTime())[0];
+}

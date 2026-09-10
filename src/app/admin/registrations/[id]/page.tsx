@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { SubmitButton } from "../../../submit-button";
 import { notFound } from "next/navigation";
-import { ConfirmButton } from "../../confirm-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/admin";
 import { can } from "@/lib/permissions";
@@ -19,6 +19,10 @@ import {
 } from "../actions";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Detail registrace – administrace",
+};
 
 /** Odpovědi z formuláře jsou volný JSON - vykreslí se, co v nich zrovna je. */
 function formatAnswer(value: unknown) {
@@ -88,11 +92,10 @@ export default async function RegistrationDetailPage({
           <dd>{character.faction ?? "-"}</dd>
           <dt>Raider.io</dt>
           <dd>
-            <a
+            <a className="link"
               href={character.raiderioUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "var(--accent)" }}
             >
               {character.raiderioUrl}
             </a>
@@ -175,18 +178,21 @@ export default async function RegistrationDetailPage({
             {canConfirmFee && (
               <form action={revokeEntryFee}>
                 <input type="hidden" name="registrationId" value={registration.id} />
-                <ConfirmButton
+                <SubmitButton
+                  pendingLabel="Ruším..."
                   className="btn btn-danger"
-                  message="Opravdu zrušit potvrzení zápisného?"
+                  confirmTitle="Zrušit potvrzení zápisného?"
+                  confirm="Přihláška se vrátí mezi nezaplacené a hráč to uvidí na svém profilu."
+                  confirmLabel="Zrušit potvrzení"
                 >
                   Zrušit potvrzení
-                </ConfirmButton>
+                </SubmitButton>
               </form>
             )}
           </>
         ) : (
           <>
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+            <p className="card-lead">
               Zápisné se posílá ve hře, aplikace ho neumí ověřit sama. Potvrď ho,
               až zlato dorazí.
             </p>
@@ -202,9 +208,12 @@ export default async function RegistrationDetailPage({
                     placeholder="Např. kolik a od koho přišlo"
                   />
                 </div>
-                <button className="btn btn-accent" type="submit">
+                <SubmitButton
+                  className="btn btn-accent"
+                  pendingLabel="Potvrzuji..."
+                >
                   Potvrdit zápisné
-                </button>
+                </SubmitButton>
               </form>
             ) : (
               <p className="empty-state">
@@ -223,9 +232,12 @@ export default async function RegistrationDetailPage({
           <>
             <form action={approveRegistration} style={{ marginBottom: "1.5rem" }}>
               <input type="hidden" name="registrationId" value={registration.id} />
-              <button className="btn btn-accent" type="submit">
+              <SubmitButton
+                className="btn btn-accent"
+                pendingLabel="Schvaluji..."
+              >
                 Schválit registraci
-              </button>
+              </SubmitButton>
             </form>
 
             <form action={rejectRegistration}>
@@ -237,32 +249,31 @@ export default async function RegistrationDetailPage({
                   name="rejectionReason"
                   rows={3}
                   required
-                  style={{
-                    background: "var(--bg)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "8px",
-                    padding: "0.6rem 0.75rem",
-                    color: "var(--text)",
-                    fontSize: "0.9rem",
-                    fontFamily: "inherit",
-                    resize: "vertical",
-                  }}
                 />
               </div>
-              <button className="btn btn-danger" type="submit">
+              <SubmitButton
+                className="btn btn-danger"
+                pendingLabel="Zamítám..."
+                confirmTitle="Zamítnout registraci?"
+                confirm="Hráč uvidí na svém profilu zamítnutí i důvod. Vrátit ji mezi čekající půjde."
+                confirmLabel="Zamítnout registraci"
+              >
                 Zamítnout registraci
-              </button>
+              </SubmitButton>
             </form>
           </>
         ) : (
           <form action={reopenRegistration}>
             <input type="hidden" name="registrationId" value={registration.id} />
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+            <p className="card-lead">
               Vrátí registraci mezi čekající, aby šla posoudit znovu.
             </p>
-            <button className="btn" type="submit">
+            <SubmitButton
+              className="btn"
+              pendingLabel="Vracím..."
+            >
               Vrátit k posouzení
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>

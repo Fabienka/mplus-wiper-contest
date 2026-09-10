@@ -1,8 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { NoSeason } from "../no-season";
+import { SubmitButton } from "../../submit-button";
 import { getCurrentSeason } from "@/lib/season";
 import { SEASON_STATUS_LABELS, formatTimeLimit } from "@/lib/labels";
 import { DEFAULT_SCORING_CONFIG, parseScoringConfig } from "@/lib/scoring";
-import { ConfirmButton } from "../confirm-button";
+import { ActionNotice } from "../../action-notice";
 import {
   addDungeon,
   deleteDungeon,
@@ -12,6 +14,10 @@ import {
 } from "./actions";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Sezóna a dungeony – administrace",
+};
 
 export default async function SeasonPage({
   searchParams,
@@ -23,11 +29,7 @@ export default async function SeasonPage({
   if (!season) {
     return (
       <>
-        <h1>Sezóna a dungeony</h1>
-        <p className="admin-subtitle">
-          Zatím není založená žádná sezóna. Založ ji seed skriptem
-          (<code>npm run prisma:seed</code>).
-        </p>
+        <NoSeason title="Sezóna a dungeony" />
       </>
     );
   }
@@ -53,25 +55,18 @@ export default async function SeasonPage({
       <h1>Sezóna a dungeony</h1>
       <p className="admin-subtitle">{season.name}</p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.synced !== undefined && !searchParams.error && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            {synced === 0
-              ? "Časy dungeonů už odpovídaly Raider.io, nic se neměnilo."
-              : `Doplněno časů z Raider.io: ${synced}.`}
-            {searchParams.missing &&
-              ` Na Raider.io se nepodařilo najít: ${searchParams.missing}.`}
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={
+          searchParams.synced !== undefined &&
+          (synced === 0
+            ? "Časy dungeonů už odpovídaly Raider.io, nic se neměnilo."
+            : `Doplněno časů z Raider.io: ${synced}.`) +
+            (searchParams.missing
+              ? ` Na Raider.io se nepodařilo najít: ${searchParams.missing}.`
+              : "")
+        }
+      />
 
       <div className="card">
         <h2>Nastavení sezóny</h2>
@@ -102,7 +97,7 @@ export default async function SeasonPage({
               defaultValue={season.raiderioSeasonSlug ?? ""}
               placeholder="season-mn-2"
             />
-            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+            <span className="meta">
               Najdeš ho v adrese běhu na Raider.io:
               raider.io/mythic-plus-runs/<b>season-mn-2</b>/...
             </span>
@@ -120,7 +115,7 @@ export default async function SeasonPage({
               defaultValue={scoring.minScoredKeyLevel}
               required
             />
-            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+            <span className="meta">
               Nižší klíče se nebodují vůbec, i když je tým stihne v limitu.
               Zároveň se od téhle výšky počítá skóre, takže nejnižší bodovaný
               klíč začíná na nule.
@@ -138,15 +133,18 @@ export default async function SeasonPage({
               defaultValue={scoring.pointsPerKeyLevel}
               required
             />
-            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+            <span className="meta">
               Nesmí být pod 100 - časový bonus je až 100 bodů a vyšší klíč musí
               porazit nižší i při horším čase.
             </span>
           </div>
 
-          <button className="btn btn-accent" type="submit">
+          <SubmitButton
+            className="btn btn-accent"
+            pendingLabel="Ukládám..."
+          >
             Uložit sezónu
-          </button>
+          </SubmitButton>
         </form>
       </div>
 
@@ -156,9 +154,12 @@ export default async function SeasonPage({
         {/* Vlastní formulář, aby stažení časů nezáviselo na validaci tabulky. */}
         <form action={syncDungeonTimes} style={{ marginBottom: "1.25rem" }}>
           <input type="hidden" name="seasonId" value={season.id} />
-          <button className="btn" type="submit">
+          <SubmitButton
+            className="btn"
+            pendingLabel="Stahuji z Raider.io..."
+          >
             Doplnit časy z Raider.io
-          </button>
+          </SubmitButton>
           <span
             style={{
               color: "var(--muted)",
@@ -170,7 +171,7 @@ export default async function SeasonPage({
           </span>
         </form>
 
-        <p style={{ margin: "0 0 1.25rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+        <p className="card-lead">
           <strong style={{ color: "var(--text)" }}>Násobitel bonusu</strong> je
           normálně <strong style={{ color: "var(--text)" }}>1</strong>. Zvýšením
           se dungeon zvýhodní - hodí se tam, kde tým část času neovlivní
@@ -187,12 +188,12 @@ export default async function SeasonPage({
             <table className="data">
               <thead>
                 <tr>
-                  <th style={{ width: "32%" }}>Název</th>
-                  <th style={{ width: "12%" }}>Zkratka</th>
-                  <th style={{ width: "14%" }}>Čas (mm:ss)</th>
-                  <th style={{ width: "14%" }}>Násobitel bonusu</th>
-                  <th style={{ width: "10%" }}>Aktivní</th>
-                  <th />
+                  <th scope="col" style={{ width: "32%" }}>Název</th>
+                  <th scope="col" style={{ width: "12%" }}>Zkratka</th>
+                  <th scope="col" style={{ width: "14%" }}>Čas (mm:ss)</th>
+                  <th scope="col" style={{ width: "14%" }}>Násobitel bonusu</th>
+                  <th scope="col" style={{ width: "10%" }}>Aktivní</th>
+                  <th scope="col" />
                 </tr>
               </thead>
               <tbody>
@@ -243,14 +244,17 @@ export default async function SeasonPage({
                       />
                     </td>
                     <td>
-                      <ConfirmButton
+                      <SubmitButton
+                        pendingLabel="Mažu..."
                         form="delete-dungeon"
                         className="btn btn-danger"
-                        message={`Opravdu smazat dungeon "${dungeon.dungeonName}"?`}
+                        confirmTitle="Smazat dungeon?"
+                        confirm={`"${dungeon.dungeonName}" zmizí z rotace sezóny. Běhy, které v něm už tým odehrál, zůstanou.`}
+                        confirmLabel="Smazat dungeon"
                         formAction={deleteDungeon.bind(null, dungeon.id)}
                       >
                         Smazat
-                      </ConfirmButton>
+                      </SubmitButton>
                     </td>
                   </tr>
                 ))}
@@ -276,36 +280,31 @@ export default async function SeasonPage({
         <h2>Přidat dungeon</h2>
         <form action={addDungeon} className="row-actions">
           <input type="hidden" name="seasonId" value={season.id} />
+          {/* Vzhled má .inline-input - je to stejné pole jako v tabulce výš,
+              jen tady není v <table class="data">, kde ho stylují ta pravidla. */}
           <input
+            className="inline-input"
             name="dungeonName"
             placeholder="Název dungeonu"
+            aria-label="Název dungeonu"
             required
-            style={{
-              flex: 1,
-              background: "var(--bg)",
-              border: "1px solid var(--border)",
-              borderRadius: "6px",
-              padding: "0.45rem 0.6rem",
-              color: "var(--text)",
-            }}
+            style={{ flex: 1 }}
           />
           <input
+            className="inline-input"
             name="abbreviation"
             placeholder="ZKR"
+            aria-label="Zkratka dungeonu"
             maxLength={8}
             required
-            style={{
-              width: "100px",
-              background: "var(--bg)",
-              border: "1px solid var(--border)",
-              borderRadius: "6px",
-              padding: "0.45rem 0.6rem",
-              color: "var(--text)",
-            }}
+            style={{ width: "100px" }}
           />
-          <button className="btn" type="submit">
+          <SubmitButton
+            className="btn"
+            pendingLabel="Přidávám..."
+          >
             Přidat
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </>

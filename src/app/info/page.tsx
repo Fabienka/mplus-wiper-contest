@@ -4,6 +4,10 @@ import { SEASON_STATUS_LABELS } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Informace",
+};
+
 export default async function InfoPage() {
   const season = await getCurrentSeason();
 
@@ -41,9 +45,9 @@ export default async function InfoPage() {
           </li>
         </ol>
 
-        <p style={{ margin: "1rem 0 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-note">
           Přesná pravidla včetně bodování jsou na stránce{" "}
-          <Link href="/info/pravidla" style={{ color: "var(--accent)" }}>
+          <Link className="link" href="/info/pravidla">
             Pravidla soutěže
           </Link>
           .

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { SubmitButton } from "../../submit-button";
 import { getCurrentUser } from "@/lib/admin";
 import {
   USER_ROLE_LABELS,
@@ -9,19 +11,46 @@ import {
   RESET_TOKEN_TTL_MINUTES,
   canIssueResetFor,
 } from "@/lib/password-rules";
-import { ConfirmButton } from "../confirm-button";
 import { IssueResetForm } from "./issue-form";
 import { revokePasswordReset } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function PasswordResetsPage() {
+export const metadata = {
+  title: "Reset hesel – administrace",
+};
+
+export default async function PasswordResetsPage({
+  searchParams,
+}: {
+  searchParams: { q?: string };
+}) {
   const actor = await getCurrentUser();
 
+  // Celý postup začíná tím, že někdo na Discordu píše o reset - hledá se
+  // proto i podle nicku a jména postavy, ne jen podle jména účtu.
+  const query = searchParams.q?.trim() ?? "";
+
+  // Moderátor smí resetovat jen běžné uživatele, takže ostatní účty ani
+  // nevidí - je to srozumitelnější než tlačítko, které vypíše chybu.
+  const roleFilter = actor?.role === "ADMIN" ? {} : { role: "USER" as const };
+
+  const searchFilter = query
+    ? {
+        OR: [
+          { username: { contains: query, mode: "insensitive" as const } },
+          { discordNick: { contains: query, mode: "insensitive" as const } },
+          {
+            character: {
+              characterName: { contains: query, mode: "insensitive" as const },
+            },
+          },
+        ],
+      }
+    : {};
+
   const users = await prisma.user.findMany({
-    // Moderátor smí resetovat jen běžné uživatele, takže ostatní účty ani
-    // nevidí - je to srozumitelnější než tlačítko, které vypíše chybu.
-    where: actor?.role === "ADMIN" ? {} : { role: "USER" },
+    where: { AND: [roleFilter, searchFilter] },
     orderBy: { username: "asc" },
     include: {
       character: { select: { characterName: true, realm: true } },
@@ -33,6 +62,8 @@ export default async function PasswordResetsPage() {
       },
     },
   });
+
+  const totalUsers = await prisma.user.count({ where: roleFilter });
 
   users.sort(compareUsersByRole);
 
@@ -58,22 +89,53 @@ export default async function PasswordResetsPage() {
             jde použít jednou - pak propadne.
           </li>
         </ol>
-        <p style={{ margin: "0.9rem 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+        <p className="card-note">
           Heslo hráče nikdy nevidíš a nikde se nedá přečíst. Vydání i použití
           odkazu se zapisuje do auditu.
         </p>
       </div>
 
       <div className="card">
-        <h2>Uživatelé ({users.length})</h2>
+        <h2>
+          Uživatelé ({users.length}
+          {query && ` z ${totalUsers}`})
+        </h2>
+
+        {/* Obyčejný GET formulář - hledání zůstane v adrese a funguje bez JS. */}
+        <form className="row-actions row-actions-end search-form" method="get">
+          <div className="field" style={{ marginBottom: 0, flex: 1 }}>
+            <label htmlFor="q">Hledat</label>
+            <input
+              id="q"
+              name="q"
+              type="search"
+              defaultValue={query}
+              placeholder="Jméno účtu, postavy nebo Discord nick"
+            />
+          </div>
+          <button className="btn" type="submit">
+            Hledat
+          </button>
+          {query && (
+            <Link className="btn" href="/admin/hesla">
+              Zrušit hledání
+            </Link>
+          )}
+        </form>
+
+        {users.length === 0 ? (
+          <p className="empty-state">
+            Hledání „{query}" neodpovídá žádný uživatel.
+          </p>
+        ) : (
         <table className="data">
           <thead>
             <tr>
-              <th style={{ width: "18%" }}>Uživatel</th>
-              <th style={{ width: "20%" }}>Postava</th>
-              <th style={{ width: "14%" }}>Discord</th>
-              <th style={{ width: "12%" }}>Role</th>
-              <th style={{ width: "36%" }}>Odkaz</th>
+              <th scope="col" style={{ width: "18%" }}>Uživatel</th>
+              <th scope="col" style={{ width: "20%" }}>Postava</th>
+              <th scope="col" style={{ width: "14%" }}>Discord</th>
+              <th scope="col" style={{ width: "12%" }}>Role</th>
+              <th scope="col" style={{ width: "36%" }}>Odkaz</th>
             </tr>
           </thead>
           <tbody>
@@ -87,22 +149,22 @@ export default async function PasswordResetsPage() {
                   <td>
                     {user.username}
                     {user.id === actor?.id && (
-                      <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                      <span className="meta">
                         {" "}
                         (ty)
                       </span>
                     )}
                   </td>
-                  <td style={{ color: "var(--muted)" }}>
+                  <td className="muted">
                     {user.character
                       ? `${user.character.characterName} - ${user.character.realm}`
                       : "-"}
                   </td>
-                  <td style={{ color: "var(--muted)" }}>{user.discordNick ?? "-"}</td>
+                  <td className="muted">{user.discordNick ?? "-"}</td>
                   <td>{USER_ROLE_LABELS[user.role]}</td>
                   <td>
                     {!allowed ? (
-                      <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
+                      <span className="meta">
                         {user.id === actor?.id
                           ? "Vlastní heslo si změň v profilu."
                           : "Na tuhle roli reset vydat nemůžeš."}
@@ -135,12 +197,15 @@ export default async function PasswordResetsPage() {
                           {pending && (
                             <form action={revokePasswordReset}>
                               <input type="hidden" name="userId" value={user.id} />
-                              <ConfirmButton
+                              <SubmitButton
+                                pendingLabel="Zneplatňuji..."
                                 className="btn btn-danger"
-                                message="Zneplatnit vydaný odkaz? Hráč si přes něj heslo už nenastaví."
+                                confirmTitle="Zneplatnit vydaný odkaz?"
+                                confirm="Hráč si přes něj heslo už nenastaví. Když ho pořád potřebuje, vydej mu nový."
+                                confirmLabel="Zneplatnit odkaz"
                               >
                                 Zneplatnit
-                              </ConfirmButton>
+                              </SubmitButton>
                             </form>
                           )}
                         </IssueResetForm>
@@ -152,6 +217,7 @@ export default async function PasswordResetsPage() {
             })}
           </tbody>
         </table>
+        )}
       </div>
     </>
   );

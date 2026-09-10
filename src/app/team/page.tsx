@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { SubmitButton } from "../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getMyTeamContext } from "@/lib/team";
 import { findOverlaps, type MemberSlots, type Overlap } from "@/lib/availability";
@@ -12,7 +14,7 @@ import {
   formatTimeLimit,
   toDateTimeLocal,
 } from "@/lib/labels";
-import { ConfirmButton } from "../admin/confirm-button";
+import { ActionNotice } from "../action-notice";
 import {
   addAvailability,
   addRunResult,
@@ -22,6 +24,10 @@ import {
 } from "./actions";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Můj tým",
+};
 
 /** Nejdřív se hledá termín pro celý tým, pak se povolí chybějící hráči. */
 const FALLBACK_STEPS = [0, 1, 2];
@@ -33,12 +39,22 @@ export default async function TeamPage({
 }) {
   const context = await getMyTeamContext();
 
+  // Prázdné stavy nesmí být slepá ulička - z každého vede odkaz na to,
+  // co má člověk udělat dál, nebo aspoň co se čeká.
   if (!context) {
     return (
-      <div className="site-main">
+      <main className="site-main" id="obsah">
         <h1>Můj tým</h1>
-        <p className="error-text">Nejsi přihlášený.</p>
-      </div>
+        <div className="card">
+          <h2>Nejsi přihlášený</h2>
+          <p className="card-lead">
+            Termíny týmu jsou jen pro přihlášené účastníky soutěže.
+          </p>
+          <Link className="btn btn-accent" href="/login">
+            Přihlásit se
+          </Link>
+        </div>
+      </main>
     );
   }
 
@@ -46,27 +62,40 @@ export default async function TeamPage({
 
   if (!character) {
     return (
-      <div className="site-main">
+      <main className="site-main" id="obsah">
         <h1>Můj tým</h1>
-        <p className="empty-state">
-          K účtu není přiřazená žádná postava. Projdi nejdřív registrací.
-        </p>
-      </div>
+        <div className="card">
+          <h2>Zatím nemáš přihlášku</h2>
+          <p className="card-lead">
+            K účtu není přiřazená žádná postava. Do soutěže se přihlásíš
+            registračním formulářem.
+          </p>
+          <Link className="btn btn-accent" href="/register">
+            Přejít na registraci
+          </Link>
+        </div>
+      </main>
     );
   }
 
   if (!membership?.team) {
+    const substitute = membership?.status === "SUBSTITUTE";
+
     return (
-      <div className="site-main">
+      <main className="site-main" id="obsah">
         <h1>Můj tým</h1>
         <div className="card">
-          <p className="empty-state" style={{ margin: 0 }}>
-            {membership?.status === "SUBSTITUTE"
-              ? "Jsi vedený jako náhradník, zatím nejsi v žádném týmu."
-              : "Ještě nejsi zařazený do týmu. Týmy vzniknou po rozdělení."}
+          <h2>{substitute ? "Jsi náhradník" : "Čeká se na rozdělení týmů"}</h2>
+          <p className="card-lead">
+            {substitute
+              ? "Zatím nejsi v žádném týmu. Když někdo vypadne, ozve se ti moderátor."
+              : "Až se registrace uzavře, admin rozdělí hráče do týmů a tahle stránka se naplní."}
           </p>
+          <Link className="btn" href="/profile">
+            Zpět na profil
+          </Link>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -170,30 +199,42 @@ export default async function TeamPage({
       .map((m) => m.character.characterName);
 
   return (
-    <div className="site-main site-main-wide">
+    <main className="site-main site-main-wide" id="obsah">
       <h1>{team.name}</h1>
       <p className="admin-subtitle">
         {team.members.length} hráčů - hraješ {SPEC_ROLE_LABELS[membership.roleInTeam]}
       </p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={searchParams.saved && "Uloženo."}
+      />
 
-      {searchParams.saved && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Uloženo.
-          </p>
-        </div>
-      )}
+      {/* Stránka má sedm karet a přes 2 000 px - bez rozcestníku se ke
+          každé věci muselo dorolovat. Obyčejné kotvy, fungují bez JS. */}
+      <nav className="section-nav" aria-label="Sekce stránky">
+        <a className="btn" href="#kalendar">
+          Kalendář
+        </a>
+        <a className="btn" href="#moje-casy">
+          Kdy mám čas
+        </a>
+        <a className="btn" href="#casy-tymu">
+          Kdy může tým
+        </a>
+        <a className="btn" href="#terminy">
+          Termíny
+        </a>
+        <a className="btn" href="#vysledky">
+          Výsledky
+        </a>
+        <a className="btn" href="#sestava">
+          Sestava
+        </a>
+      </nav>
 
-      <div className="card">
-        <h2>Kalendář</h2>
+      <section className="card" id="kalendar" aria-labelledby="kalendar-nadpis">
+        <h2 id="kalendar-nadpis">Kalendář</h2>
         <MonthCalendar
           month={month}
           events={calendarEvents}
@@ -206,11 +247,11 @@ export default async function TeamPage({
             { kind: "AVAILABILITY", label: "můj čas" },
           ]}
         />
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Kdy mám čas</h2>
-        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+      <section className="card" id="moje-casy" aria-labelledby="moje-casy-nadpis">
+        <h2 id="moje-casy-nadpis">Kdy mám čas</h2>
+        <p className="card-lead">
           Zadej úseky, kdy se ti dá hrát. Ze zadaných časů celého týmu se pak
           vybere společný termín.
         </p>
@@ -221,10 +262,10 @@ export default async function TeamPage({
           <table className="data">
             <thead>
               <tr>
-                <th style={{ width: "40%" }}>Kdy</th>
-                <th style={{ width: "14%" }}>Délka</th>
-                <th style={{ width: "30%" }}>Poznámka</th>
-                <th />
+                <th scope="col" style={{ width: "40%" }}>Kdy</th>
+                <th scope="col" style={{ width: "14%" }}>Délka</th>
+                <th scope="col" style={{ width: "30%" }}>Poznámka</th>
+                <th scope="col" />
               </tr>
             </thead>
             <tbody>
@@ -232,13 +273,19 @@ export default async function TeamPage({
                 <tr key={slot.id}>
                   <td>{formatRange(slot.start, slot.end)}</td>
                   <td>{formatDuration(slot.start, slot.end)}</td>
-                  <td style={{ color: "var(--muted)" }}>{slot.note ?? "-"}</td>
+                  <td className="muted">{slot.note ?? "-"}</td>
                   <td>
                     <form action={deleteAvailability}>
                       <input type="hidden" name="availabilityId" value={slot.id} />
-                      <button className="btn btn-danger" type="submit">
+                      <SubmitButton
+                        className="btn btn-danger"
+                        pendingLabel="Mažu..."
+                        confirmTitle="Smazat zadaný čas?"
+                        confirm="Přestane se počítat do společných termínů týmu. Zadat si ho znovu můžeš kdykoliv."
+                        confirmLabel="Smazat čas"
+                      >
                         Smazat
-                      </button>
+                      </SubmitButton>
                     </form>
                   </td>
                 </tr>
@@ -248,7 +295,7 @@ export default async function TeamPage({
         )}
 
         <form action={addAvailability} style={{ marginTop: "1.25rem" }}>
-          <div className="row-actions" style={{ alignItems: "flex-end" }}>
+          <div className="row-actions row-actions-end">
             <div className="field" style={{ marginBottom: 0 }}>
               <label htmlFor="start">Od</label>
               <input id="start" name="start" type="datetime-local" required />
@@ -261,15 +308,18 @@ export default async function TeamPage({
               <label htmlFor="note">Poznámka (nepovinné)</label>
               <input id="note" name="note" placeholder="Např. po 22:00 už jen možná" />
             </div>
-            <button className="btn btn-accent" type="submit">
+            <SubmitButton
+              className="btn btn-accent"
+              pendingLabel="Přidávám..."
+            >
               Přidat
-            </button>
+            </SubmitButton>
           </div>
         </form>
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Kdy může tým</h2>
+      <section className="card" id="casy-tymu" aria-labelledby="casy-tymu-nadpis">
+        <h2 id="casy-tymu-nadpis">Kdy může tým</h2>
 
         {overlaps.length === 0 ? (
           <p className="empty-state">
@@ -279,7 +329,7 @@ export default async function TeamPage({
         ) : (
           <>
             {overlapMissing > 0 && (
-              <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+              <p className="card-lead">
                 Termín, kdy může celý tým, se nenašel. Níže jsou nejbližší
                 možnosti, kde chybí nejvýš {overlapMissing} z týmu.
               </p>
@@ -288,11 +338,11 @@ export default async function TeamPage({
             <table className="data">
               <thead>
                 <tr>
-                  <th style={{ width: "32%" }}>Kdy</th>
-                  <th style={{ width: "12%" }}>Délka</th>
-                  <th style={{ width: "12%" }}>Volných</th>
-                  <th style={{ width: "26%" }}>Chybí</th>
-                  <th />
+                  <th scope="col" style={{ width: "32%" }}>Kdy</th>
+                  <th scope="col" style={{ width: "12%" }}>Délka</th>
+                  <th scope="col" style={{ width: "12%" }}>Volných</th>
+                  <th scope="col" style={{ width: "26%" }}>Chybí</th>
+                  <th scope="col" />
                 </tr>
               </thead>
               <tbody>
@@ -307,7 +357,7 @@ export default async function TeamPage({
                       <td>
                         {overlap.characterIds.length} / {team.members.length}
                       </td>
-                      <td style={{ color: "var(--muted)" }}>
+                      <td className="muted">
                         {missing.length === 0 ? "nikdo" : missing.join(", ")}
                       </td>
                       <td>
@@ -322,9 +372,12 @@ export default async function TeamPage({
                             name="end"
                             value={toDateTimeLocal(overlap.end)}
                           />
-                          <button className="btn" type="submit">
+                          <SubmitButton
+                            className="btn"
+                            pendingLabel="Navrhuji..."
+                          >
                             Navrhnout termín
-                          </button>
+                          </SubmitButton>
                         </form>
                       </td>
                     </tr>
@@ -334,10 +387,10 @@ export default async function TeamPage({
             </table>
           </>
         )}
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Termíny týmu</h2>
+      <section className="card" id="terminy" aria-labelledby="terminy-nadpis">
+        <h2 id="terminy-nadpis">Termíny týmu</h2>
 
         {matches.length === 0 ? (
           <p className="empty-state">Zatím není navržený žádný termín.</p>
@@ -345,11 +398,11 @@ export default async function TeamPage({
           <table className="data">
             <thead>
               <tr>
-                <th style={{ width: "32%" }}>Kdy</th>
-                <th style={{ width: "14%" }}>Stav</th>
-                <th style={{ width: "18%" }}>Navrhl</th>
-                <th style={{ width: "18%" }}>Schválil</th>
-                <th />
+                <th scope="col" style={{ width: "32%" }}>Kdy</th>
+                <th scope="col" style={{ width: "14%" }}>Stav</th>
+                <th scope="col" style={{ width: "18%" }}>Navrhl</th>
+                <th scope="col" style={{ width: "18%" }}>Schválil</th>
+                <th scope="col" />
               </tr>
             </thead>
             <tbody>
@@ -358,7 +411,7 @@ export default async function TeamPage({
                   <td>
                     {formatRange(match.windowStart, match.windowEnd)}
                     {match.note && (
-                      <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                      <div className="meta">
                         {match.note}
                       </div>
                     )}
@@ -369,19 +422,22 @@ export default async function TeamPage({
                     </span>
                   </td>
                   <td>{match.proposedBy.characterName}</td>
-                  <td style={{ color: "var(--muted)" }}>
+                  <td className="muted">
                     {match.confirmedBy?.username ?? "-"}
                   </td>
                   <td>
                     {match.status === "PROPOSED" && (
                       <form action={deleteMatch}>
                         <input type="hidden" name="matchId" value={match.id} />
-                        <ConfirmButton
+                        <SubmitButton
+                          pendingLabel="Ruším..."
                           className="btn btn-danger"
-                          message="Opravdu zrušit tenhle návrh termínu?"
+                          confirmTitle="Zrušit návrh termínu?"
+                          confirm="Zmizí i ostatním v týmu a moderátor ho už neschválí."
+                          confirmLabel="Zrušit návrh"
                         >
                           Zrušit
-                        </ConfirmButton>
+                        </SubmitButton>
                       </form>
                     )}
                   </td>
@@ -390,11 +446,11 @@ export default async function TeamPage({
             </tbody>
           </table>
         )}
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Výsledky</h2>
-        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+      <section className="card" id="vysledky" aria-labelledby="vysledky-nadpis">
+        <h2 id="vysledky-nadpis">Výsledky</h2>
+        <p className="card-lead">
           Po odehrání vlož odkaz na běh z Raider.io. Čas i sestavu si aplikace
           stáhne sama, takže se nedá překlepnout. Počítá se jen nejlepší platný
           běh - neúspěšný pokus o vyšší klíč vás o dřívější výsledek nepřipraví.
@@ -421,11 +477,11 @@ export default async function TeamPage({
                   <table className="data" style={{ marginTop: "0.5rem" }}>
                     <thead>
                       <tr>
-                        <th style={{ width: "30%" }}>Dungeon</th>
-                        <th style={{ width: "10%" }}>Klíč</th>
-                        <th style={{ width: "14%" }}>Čas</th>
-                        <th style={{ width: "14%" }}>Body</th>
-                        <th>Stav</th>
+                        <th scope="col" style={{ width: "30%" }}>Dungeon</th>
+                        <th scope="col" style={{ width: "10%" }}>Klíč</th>
+                        <th scope="col" style={{ width: "14%" }}>Čas</th>
+                        <th scope="col" style={{ width: "14%" }}>Body</th>
+                        <th scope="col">Stav</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -446,7 +502,7 @@ export default async function TeamPage({
                               <>
                                 <span className="badge badge-rejected">Nepočítá se</span>
                                 {result.invalidReason && (
-                                  <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>
+                                  <div className="meta">
                                     {result.invalidReason}
                                   </div>
                                 )}
@@ -461,7 +517,7 @@ export default async function TeamPage({
 
                 <form action={addRunResult} style={{ marginTop: "0.75rem" }}>
                   <input type="hidden" name="matchId" value={match.id} />
-                  <div className="row-actions" style={{ alignItems: "flex-end" }}>
+                  <div className="row-actions row-actions-end">
                     <div className="field" style={{ marginBottom: 0, flex: 1 }}>
                       <label htmlFor={`run-${match.id}`}>Odkaz na běh</label>
                       <input
@@ -471,24 +527,27 @@ export default async function TeamPage({
                         required
                       />
                     </div>
-                    <button className="btn btn-accent" type="submit">
+                    <SubmitButton
+                      className="btn btn-accent"
+                      pendingLabel="Stahuji běh z Raider.io..."
+                    >
                       Nahrát výsledek
-                    </button>
+                    </SubmitButton>
                   </div>
                 </form>
               </div>
             ))
         )}
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Navrhnout vlastní termín</h2>
-        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+      <section className="card" id="vlastni-termin" aria-labelledby="vlastni-termin-nadpis">
+        <h2 id="vlastni-termin-nadpis">Navrhnout vlastní termín</h2>
+        <p className="card-lead">
           Když se tým domluví jinde, jde termín zadat rovnou. Schvaluje ho
           moderátor.
         </p>
         <form action={proposeMatch}>
-          <div className="row-actions" style={{ alignItems: "flex-end" }}>
+          <div className="row-actions row-actions-end">
             <div className="field" style={{ marginBottom: 0 }}>
               <label htmlFor="match-start">Od</label>
               <input id="match-start" name="start" type="datetime-local" required />
@@ -501,43 +560,45 @@ export default async function TeamPage({
               <label htmlFor="match-note">Poznámka (nepovinné)</label>
               <input id="match-note" name="note" placeholder="Např. sraz na Discordu" />
             </div>
-            <button className="btn btn-accent" type="submit">
+            <SubmitButton
+              className="btn btn-accent"
+              pendingLabel="Navrhuji..."
+            >
               Navrhnout
-            </button>
+            </SubmitButton>
           </div>
         </form>
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Sestava</h2>
-        <table className="data">
+      <section className="card" id="sestava" aria-labelledby="sestava-nadpis">
+        <h2 id="sestava-nadpis">Sestava</h2>
+        {/* table-cards: pod 640 px se řádky rozpadnou na kartičky, jinak by
+            se "Monk - Brewmas..." uprostřed slova ořízlo. */}
+        <table className="data table-cards">
           <thead>
             <tr>
-              <th style={{ width: "30%" }}>Postava</th>
-              <th style={{ width: "34%" }}>Class / spec</th>
-              <th style={{ width: "18%" }}>Role</th>
-              <th>Zadaných časů</th>
+              <th scope="col" style={{ width: "30%" }}>Postava</th>
+              <th scope="col" style={{ width: "34%" }}>Class / spec</th>
+              <th scope="col" style={{ width: "18%" }}>Role</th>
+              <th scope="col">Zadaných časů</th>
             </tr>
           </thead>
           <tbody>
             {team.members.map((member) => (
               <tr key={member.id}>
-                <td>
+                <td data-label="Postava">
                   {member.character.characterName}
                   {member.characterId === character.id && (
-                    <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
-                      {" "}
-                      (ty)
-                    </span>
+                    <span className="meta"> (ty)</span>
                   )}
                 </td>
-                <td style={{ color: "var(--muted)" }}>
+                <td className="muted" data-label="Class / spec">
                   {member.character.wowSpec
                     ? `${member.character.class} - ${member.character.wowSpec}`
                     : member.character.class ?? "-"}
                 </td>
-                <td>{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
-                <td>
+                <td data-label="Role">{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
+                <td data-label="Zadaných časů">
                   {
                     availabilities.filter((a) => a.characterId === member.characterId)
                       .length
@@ -547,7 +608,7 @@ export default async function TeamPage({
             ))}
           </tbody>
         </table>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }

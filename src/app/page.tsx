@@ -5,7 +5,7 @@ import { getCurrentSeason } from "@/lib/season";
 import { getCurrentUser } from "@/lib/admin";
 import { computePoolStats, type SpecCount } from "@/lib/stats";
 import { SEASON_STATUS_LABELS, plural } from "@/lib/labels";
-import { SiteHeader } from "./site-header";
+import { PublicShell } from "./public-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ function SpecList({ role, specs }: { role: SpecRole; specs: SpecCount[] }) {
             <li key={`${spec.className}-${spec.specName}`}>
               <span>
                 {spec.specName}{" "}
-                <span style={{ color: "var(--muted)" }}>{spec.className}</span>
+                <span className="muted">{spec.className}</span>
               </span>
               <strong>{spec.count}×</strong>
             </li>
@@ -50,15 +50,33 @@ export default async function HomePage() {
 
   if (!season) {
     return (
-      <>
-        <SiteHeader />
-        <main className="site-main">
-          <h1>Mythic+ Wiper Contest</h1>
-          <p style={{ color: "var(--muted)" }}>
-            Zatím není založená žádná sezóna.
-          </p>
+      <PublicShell>
+        <main className="site-main" id="obsah">
+          <div className="hero">
+            <img src="/logo.png" alt="" width={140} height={140} />
+            <div>
+              <h1>Mythic+ Wiper Contest</h1>
+              <p className="hero-sub">Soutěž zatím neběží</p>
+            </div>
+          </div>
+
+          <div className="card">
+            <h2>Soutěž zatím neběží</h2>
+            <p className="card-lead">
+              Není vypsaná žádná sezóna. Jakmile se otevře registrace, objeví
+              se tady odkaz na přihlášku.
+            </p>
+            <div className="row-actions" style={{ flexWrap: "wrap" }}>
+              <Link className="btn btn-accent" href="/info/pravidla">
+                Pravidla soutěže
+              </Link>
+              <Link className="btn" href="/info">
+                Jak to probíhá
+              </Link>
+            </div>
+          </div>
         </main>
-      </>
+      </PublicShell>
     );
   }
 
@@ -92,32 +110,41 @@ export default async function HomePage() {
   const registraceOtevrena = season.status === "REGISTRATION_OPEN";
 
   return (
-    <>
-      <SiteHeader />
+    <PublicShell>
+      <main className="site-main site-main-wide" id="obsah">
+        {/* Název byl dřív jako h1 hned pod stejným názvem v liště. Tady ho
+            nese logo a nadpis říká, o kterou sezónu jde - stejná slova
+            dvakrát pod sebou vypadala jako chyba. */}
+        <div className="hero">
+          <img src="/logo.png" alt="" width={140} height={140} />
 
-      <main className="site-main site-main-wide">
-        <h1>Mythic+ Wiper Contest</h1>
-        <p className="admin-subtitle">
-          {season.name} - {SEASON_STATUS_LABELS[season.status]}
-        </p>
-
-        {registraceOtevrena && !user && (
-          <div className="card">
-            <h2>Registrace je otevřená</h2>
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
-              Přihlas se do sezóny {season.name}. Stačí odkaz na Raider.io profil
-              postavy, se kterou chceš hrát.
+          <div>
+            <h1>{season.name}</h1>
+            <p className="hero-sub">
+              Mythic+ Wiper Contest - {SEASON_STATUS_LABELS[season.status]}
             </p>
-            <Link className="btn btn-accent" href="/register">
-              Přihlásit se do soutěže
-            </Link>
-          </div>
-        )}
 
-        <div className="row-actions" style={{ marginBottom: "1.5rem" }}>
-          <Link className="btn" href="/leaderboard">
-            Žebříček týmů
-          </Link>
+            {registraceOtevrena && !user && (
+              <p className="hero-lead">
+                Registrace je otevřená. Stačí odkaz na Raider.io profil postavy,
+                se kterou chceš hrát.
+              </p>
+            )}
+
+            <div className="hero-actions">
+              {registraceOtevrena && !user && (
+                <Link className="btn btn-accent" href="/register">
+                  Přihlásit se do soutěže
+                </Link>
+              )}
+              <Link className="btn" href="/leaderboard">
+                Žebříček týmů
+              </Link>
+              <Link className="btn" href="/info/pravidla">
+                Pravidla
+              </Link>
+            </div>
+          </div>
         </div>
 
         <div className="stat-grid">
@@ -186,7 +213,7 @@ export default async function HomePage() {
                 <dd>
                   {stats.range.melee} / {stats.range.ranged}
                   {znamy > 0 && (
-                    <span style={{ color: "var(--muted)" }}> ({meleePct} % melee)</span>
+                    <span className="muted"> ({meleePct} % melee)</span>
                   )}
                 </dd>
                 <dt>Umí battle rez</dt>
@@ -239,6 +266,6 @@ export default async function HomePage() {
           </>
         )}
       </main>
-    </>
+    </PublicShell>
   );
 }

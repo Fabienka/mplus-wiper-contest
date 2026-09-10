@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NoSeason } from "../no-season";
 import type { RegistrationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
@@ -10,6 +11,10 @@ import {
 } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Registrace – administrace",
+};
 
 const FILTERS: { value: string; label: string }[] = [
   { value: "PENDING", label: "Čekající" },
@@ -36,8 +41,7 @@ export default async function RegistrationsPage({
   if (!season) {
     return (
       <>
-        <h1>Registrace</h1>
-        <p className="admin-subtitle">Zatím není založená žádná sezóna.</p>
+        <NoSeason title="Registrace" />
       </>
     );
   }
@@ -90,14 +94,14 @@ export default async function RegistrationsPage({
           <table className="data">
             <thead>
               <tr>
-                <th>Postava</th>
-                <th>Role</th>
-                <th>RIO</th>
-                <th>Discord</th>
-                <th>Přihlášeno</th>
-                <th>Stav</th>
-                <th>Zápisné</th>
-                <th />
+                <th scope="col">Postava</th>
+                <th scope="col">Role</th>
+                <th scope="col">RIO</th>
+                <th scope="col">Discord</th>
+                <th scope="col">Přihlášeno</th>
+                <th scope="col">Stav</th>
+                <th scope="col">Zápisné</th>
+                <th scope="col" />
               </tr>
             </thead>
             <tbody>
@@ -105,7 +109,7 @@ export default async function RegistrationsPage({
                 <tr key={registration.id}>
                   <td>
                     {registration.character.characterName}
-                    <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                    <div className="meta">
                       {registration.character.realm}
                       {registration.character.class
                         ? ` - ${registration.character.class}`

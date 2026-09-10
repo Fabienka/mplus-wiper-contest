@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { NoSeason } from "../no-season";
+import { SubmitButton } from "../../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import {
@@ -12,7 +14,7 @@ import {
 } from "@/lib/labels";
 import { parseMonthParam, type CalendarEvent } from "@/lib/calendar";
 import { MonthCalendar } from "../../month-calendar";
-import { ConfirmButton } from "../confirm-button";
+import { ActionNotice } from "../../action-notice";
 import {
   closeMatch,
   confirmMatch,
@@ -22,6 +24,10 @@ import {
 } from "./actions";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Termíny – administrace",
+};
 
 const FILTERS: { value: string; label: string }[] = [
   { value: "PROPOSED", label: "Ke schválení" },
@@ -46,8 +52,7 @@ export default async function MatchesPage({
   if (!season) {
     return (
       <>
-        <h1>Termíny</h1>
-        <p className="admin-subtitle">Zatím není založená žádná sezóna.</p>
+        <NoSeason title="Termíny" />
       </>
     );
   }
@@ -104,21 +109,10 @@ export default async function MatchesPage({
       <h1>Termíny</h1>
       <p className="admin-subtitle">{season.name}</p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.saved && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Uloženo.
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={searchParams.saved && "Termín uložený."}
+      />
 
       {pending > 0 && (
         <div className="card">
@@ -165,12 +159,12 @@ export default async function MatchesPage({
           <table className="data">
             <thead>
               <tr>
-                <th style={{ width: "16%" }}>Tým</th>
-                <th style={{ width: "26%" }}>Kdy</th>
-                <th style={{ width: "10%" }}>Délka</th>
-                <th style={{ width: "12%" }}>Stav</th>
-                <th style={{ width: "14%" }}>Navrhl</th>
-                <th />
+                <th scope="col" style={{ width: "16%" }}>Tým</th>
+                <th scope="col" style={{ width: "26%" }}>Kdy</th>
+                <th scope="col" style={{ width: "10%" }}>Délka</th>
+                <th scope="col" style={{ width: "12%" }}>Stav</th>
+                <th scope="col" style={{ width: "14%" }}>Navrhl</th>
+                <th scope="col" />
               </tr>
             </thead>
             <tbody>
@@ -180,7 +174,7 @@ export default async function MatchesPage({
                   <td>
                     {formatRange(match.windowStart, match.windowEnd)}
                     {match.note && (
-                      <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                      <div className="meta">
                         {match.note}
                       </div>
                     )}
@@ -191,7 +185,7 @@ export default async function MatchesPage({
                       {MATCH_STATUS_LABELS[match.status]}
                     </span>
                     {match.confirmedBy && (
-                      <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                      <div className="meta">
                         {match.confirmedBy.username}
                         {match.confirmedAt
                           ? `, ${formatDateTime(match.confirmedAt)}`
@@ -204,9 +198,12 @@ export default async function MatchesPage({
                     {match.status === "PROPOSED" && (
                       <form action={confirmMatch}>
                         <input type="hidden" name="matchId" value={match.id} />
-                        <button className="btn btn-accent" type="submit">
+                        <SubmitButton
+                          className="btn btn-accent"
+                          pendingLabel="Schvaluji..."
+                        >
                           Schválit
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
 
@@ -214,12 +211,15 @@ export default async function MatchesPage({
                       <div className="row-actions" style={{ flexWrap: "wrap" }}>
                         <form action={closeMatch}>
                           <input type="hidden" name="matchId" value={match.id} />
-                          <ConfirmButton
+                          <SubmitButton
+                            pendingLabel="Uzavírám..."
                             className="btn btn-accent"
-                            message="Uzavřít zápas? Tým už nebude moct nahrát další běh."
+                            confirmTitle="Uzavřít zápas?"
+                            confirm="Tým už k němu nenahraje další běh. Znovu otevřít ho půjde."
+                            confirmLabel="Uzavřít zápas"
                           >
                             Uzavřít
-                          </ConfirmButton>
+                          </SubmitButton>
                         </form>
 
                         {/* Zrušit schválení jde jen dokud u zápasu nejsou běhy -
@@ -227,12 +227,15 @@ export default async function MatchesPage({
                         {match.results.length === 0 && (
                           <form action={revokeMatch}>
                             <input type="hidden" name="matchId" value={match.id} />
-                            <ConfirmButton
+                            <SubmitButton
+                              pendingLabel="Ruším..."
                               className="btn btn-danger"
-                              message="Opravdu vrátit termín mezi návrhy?"
+                              confirmTitle="Zrušit schválení termínu?"
+                              confirm="Termín se vrátí mezi návrhy a bude čekat na nové schválení."
+                              confirmLabel="Zrušit schválení"
                             >
                               Zrušit schválení
-                            </ConfirmButton>
+                            </SubmitButton>
                           </form>
                         )}
                       </div>
@@ -241,12 +244,15 @@ export default async function MatchesPage({
                     {match.status === "COMPLETED" && (
                       <form action={reopenMatch}>
                         <input type="hidden" name="matchId" value={match.id} />
-                        <ConfirmButton
+                        <SubmitButton
+                          pendingLabel="Otevírám..."
                           className="btn"
-                          message="Znovu otevřít zápas, aby šly doplnit výsledky?"
+                          confirmTitle="Znovu otevřít zápas?"
+                          confirm="Tým bude moct doplnit další běhy a přepsat tím svůj nejlepší výsledek."
+                          confirmLabel="Otevřít zápas"
                         >
                           Znovu otevřít
-                        </ConfirmButton>
+                        </SubmitButton>
                       </form>
                     )}
                   </td>
@@ -288,11 +294,7 @@ export default async function MatchesPage({
                                       Neplatný
                                     </span>
                                     {result.invalidReason && (
-                                      <div
-                                        style={{
-                                          color: "var(--muted)",
-                                          fontSize: "0.76rem",
-                                        }}
+                                      <div className="meta"
                                       >
                                         {result.invalidReason}
                                       </div>

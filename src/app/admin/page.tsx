@@ -1,9 +1,20 @@
 import Link from "next/link";
+import { NoSeason } from "./no-season";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
-import { SEASON_STATUS_LABELS, formatDateTime } from "@/lib/labels";
+import {
+  SEASON_STATUS_LABELS,
+  auditActionLabel,
+  auditEntityLabel,
+  formatDateTime,
+  plural,
+} from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Přehled – administrace",
+};
 
 export default async function AdminOverviewPage() {
   const season = await getCurrentSeason();
@@ -11,11 +22,7 @@ export default async function AdminOverviewPage() {
   if (!season) {
     return (
       <>
-        <h1>Přehled</h1>
-        <p className="admin-subtitle">
-          Zatím není založená žádná sezóna. Založ ji seed skriptem
-          (<code>npm run prisma:seed</code>) nebo v Prisma Studiu.
-        </p>
+        <NoSeason title="Přehled" />
       </>
     );
   }
@@ -52,40 +59,43 @@ export default async function AdminOverviewPage() {
         {season.name} - {SEASON_STATUS_LABELS[season.status]}
       </p>
 
+      {/* Každé číslo vede tam, kde se s ním dá něco dělat - dřív to byly
+          mrtvé údaje a admin musel filtr hledat sám. */}
       <div className="stat-grid">
-        <div className="stat">
-          <div className="stat-value">{pending}</div>
-          <div className="stat-label">Čeká na schválení</div>
-        </div>
-        <div className="stat">
-          <div className="stat-value">{approved}</div>
-          <div className="stat-label">Schválených</div>
-        </div>
-        <div className="stat">
-          <div className="stat-value">{rejected}</div>
-          <div className="stat-label">Zamítnutých</div>
-        </div>
-        <div className="stat">
-          <div className="stat-value">{paid}</div>
-          <div className="stat-label">Zaplacené zápisné</div>
-        </div>
-        <div className="stat">
-          <div className="stat-value">{teams}</div>
-          <div className="stat-label">Týmů</div>
-        </div>
-        <div className="stat">
-          <div className="stat-value">{dungeons}</div>
-          <div className="stat-label">Aktivních dungeonů</div>
-        </div>
+        <Link className="stat stat-link" href="/admin/registrations?status=PENDING">
+          <span className="stat-value">{pending}</span>
+          <span className="stat-label">Čeká na schválení</span>
+        </Link>
+        <Link className="stat stat-link" href="/admin/registrations?status=APPROVED">
+          <span className="stat-value">{approved}</span>
+          <span className="stat-label">Schválených</span>
+        </Link>
+        <Link className="stat stat-link" href="/admin/registrations?status=REJECTED">
+          <span className="stat-value">{rejected}</span>
+          <span className="stat-label">Zamítnutých</span>
+        </Link>
+        <Link className="stat stat-link" href="/admin/registrations?status=UNPAID">
+          <span className="stat-value">{approved - paid}</span>
+          <span className="stat-label">Nezaplacené zápisné</span>
+        </Link>
+        <Link className="stat stat-link" href="/admin/teams">
+          <span className="stat-value">{teams}</span>
+          <span className="stat-label">{plural(teams, "tým", "týmy", "týmů")}</span>
+        </Link>
+        <Link className="stat stat-link" href="/admin/season">
+          <span className="stat-value">{dungeons}</span>
+          <span className="stat-label">Aktivních dungeonů</span>
+        </Link>
       </div>
 
       {pending > 0 && (
         <div className="card">
           <h2>Čeká na tebe</h2>
-          <p style={{ margin: "0 0 1rem", fontSize: "0.9rem" }}>
-            {pending === 1
-              ? "1 registrace čeká na schválení."
-              : `${pending} registrací čeká na schválení.`}
+          {/* plural() je v labels.ts kvůli tomu, aby "2 registrací čekají"
+              nevznikalo ručním if/else. */}
+          <p className="card-lead">
+            {pending} {plural(pending, "registrace čeká", "registrace čekají", "registrací čeká")}{" "}
+            na schválení.
           </p>
           <Link className="btn btn-accent" href="/admin/registrations">
             Zobrazit registrace
@@ -101,10 +111,10 @@ export default async function AdminOverviewPage() {
           <table className="data">
             <thead>
               <tr>
-                <th>Kdy</th>
-                <th>Kdo</th>
-                <th>Akce</th>
-                <th>Entita</th>
+                <th scope="col">Kdy</th>
+                <th scope="col">Kdo</th>
+                <th scope="col">Akce</th>
+                <th scope="col">Entita</th>
               </tr>
             </thead>
             <tbody>
@@ -112,8 +122,8 @@ export default async function AdminOverviewPage() {
                 <tr key={log.id}>
                   <td>{formatDateTime(log.createdAt)}</td>
                   <td>{log.actor.username}</td>
-                  <td>{log.actionType}</td>
-                  <td style={{ color: "var(--muted)" }}>{log.entityType}</td>
+                  <td>{auditActionLabel(log.actionType)}</td>
+                  <td className="muted">{auditEntityLabel(log.entityType)}</td>
                 </tr>
               ))}
             </tbody>

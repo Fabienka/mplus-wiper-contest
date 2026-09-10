@@ -64,5 +64,7 @@ export async function updateUserRole(formData: FormData) {
   });
 
   revalidatePath("/admin/users");
-  redirect("/admin/users?saved=1");
+  // Jméno se posílá do hlášky - v seznamu čtyřiceti řádků se stejným
+  // tlačítkem "Uložit" bylo pouhé "Role uložená." k ničemu.
+  redirect("/admin/users?saved=" + encodeURIComponent(user.username));
 }

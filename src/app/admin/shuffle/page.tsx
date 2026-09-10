@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { Notice } from "../../notice";
+import { NoSeason } from "../no-season";
+import { SubmitButton } from "../../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { SPEC_ROLE_LABELS, formatDateTime } from "@/lib/labels";
@@ -8,17 +11,21 @@ import type {
   StoredRuleViolations,
   StoredTeamAssignments,
 } from "@/lib/shuffle";
-import { ConfirmButton } from "../confirm-button";
 import { applyVariant, runShuffleForSeason } from "./actions";
+import { ActionNotice } from "../../action-notice";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Shuffle – administrace",
+};
 
 function MemberRow({ member }: { member: ShuffleMember }) {
   return (
     <tr>
       <td>{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
       <td>{member.characterName}</td>
-      <td style={{ color: "var(--muted)" }}>
+      <td className="muted">
         {member.wowSpec ? `${member.className} - ${member.wowSpec}` : member.className ?? "-"}
       </td>
       <td>{member.dpsBucket ?? "-"}</td>
@@ -37,8 +44,7 @@ export default async function ShufflePage({
   if (!season) {
     return (
       <>
-        <h1>Shuffle</h1>
-        <p className="admin-subtitle">Zatím není založená žádná sezóna.</p>
+        <NoSeason title="Shuffle" />
       </>
     );
   }
@@ -74,21 +80,13 @@ export default async function ShufflePage({
       <h1>Shuffle</h1>
       <p className="admin-subtitle">{season.name}</p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.applied && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Varianta byla použita - týmy a členství jsou založené.
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={
+          searchParams.applied &&
+          "Varianta byla použita - týmy a členství jsou založené."
+        }
+      />
 
       <div className="stat-grid">
         <div className="stat">
@@ -111,7 +109,7 @@ export default async function ShufflePage({
 
       <div className="card">
         <h2>Spustit shuffle</h2>
-        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-lead">
           Rozdělí schválené hráče do týmů po 5 a navrhne 3 varianty. Nic se tím
           nemění - týmy vzniknou až potvrzením vybrané varianty. Tabulka speců
           (ranged/melee, battle rez, bloodlust) byla naposledy ověřená{" "}
@@ -126,25 +124,29 @@ export default async function ShufflePage({
         ) : (
           <form action={runShuffleForSeason}>
             <input type="hidden" name="seasonId" value={season.id} />
-            <button className="btn btn-accent" type="submit">
+            <SubmitButton
+              className="btn btn-accent"
+              pendingLabel="Počítám varianty..."
+            >
               Spustit shuffle
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>
 
+      {/* Upozornění, ne běžná karta - je to překážka, o kterou se admin
+          zarazí až po spuštění shufflu, když bude chtít variantu použít. */}
       {existingMemberships > 0 && (
-        <div className="card">
-          <h2>Týmy už jsou rozdělené</h2>
-          <p style={{ margin: "0 0 1rem", fontSize: "0.9rem" }}>
-            Sezóna má {existingMemberships} členství. Rozdělení jde ručně
-            doladit nebo celé smazat na stránce Týmy - teprve pak půjde použít
-            jiná varianta. Přepsat ho rovnou by zahodilo i navázané zápasy.
+        <Notice kind="info" title="Týmy už jsou rozdělené">
+          Sezóna má {existingMemberships} členství. Rozdělení jde ručně doladit
+          nebo celé smazat na stránce Týmy - teprve pak půjde použít jiná
+          varianta. Přepsat ho rovnou by zahodilo i navázané zápasy.
+          <p style={{ margin: "0.75rem 0 0" }}>
+            <Link className="btn" href="/admin/teams">
+              Přejít na týmy
+            </Link>
           </p>
-          <Link className="btn" href="/admin/teams">
-            Přejít na týmy
-          </Link>
-        </div>
+        </Notice>
       )}
 
       {!latestRun ? (
@@ -206,7 +208,7 @@ export default async function ShufflePage({
                   {proposal.variantNumber === 1 && " - doporučená"}
                 </h2>
 
-                <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+                <p className="card-lead">
                   Skóre {Math.round(proposal.score)} (nižší je lepší).
                   {breakdown && (
                     <>
@@ -229,11 +231,11 @@ export default async function ShufflePage({
                     <table className="data" style={{ marginTop: "0.5rem" }}>
                       <thead>
                         <tr>
-                          <th style={{ width: "14%" }}>Role</th>
-                          <th style={{ width: "26%" }}>Postava</th>
-                          <th style={{ width: "34%" }}>Class / spec</th>
-                          <th style={{ width: "12%" }}>Koš</th>
-                          <th style={{ width: "14%" }}>RIO</th>
+                          <th scope="col" style={{ width: "14%" }}>Role</th>
+                          <th scope="col" style={{ width: "26%" }}>Postava</th>
+                          <th scope="col" style={{ width: "34%" }}>Class / spec</th>
+                          <th scope="col" style={{ width: "12%" }}>Koš</th>
+                          <th scope="col" style={{ width: "14%" }}>RIO</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -246,9 +248,8 @@ export default async function ShufflePage({
                     {team.violations.length > 0 && (
                       <ul style={{ margin: "0.5rem 0 0", paddingLeft: "1.2rem" }}>
                         {team.violations.map((violation) => (
-                          <li
+                          <li className="meta"
                             key={violation}
-                            style={{ fontSize: "0.82rem", color: "var(--muted)" }}
                           >
                             {violation}
                           </li>
@@ -266,11 +267,11 @@ export default async function ShufflePage({
                     <table className="data" style={{ marginTop: "0.5rem" }}>
                       <thead>
                         <tr>
-                          <th style={{ width: "14%" }}>Role</th>
-                          <th style={{ width: "26%" }}>Postava</th>
-                          <th style={{ width: "34%" }}>Class / spec</th>
-                          <th style={{ width: "12%" }}>Koš</th>
-                          <th style={{ width: "14%" }}>RIO</th>
+                          <th scope="col" style={{ width: "14%" }}>Role</th>
+                          <th scope="col" style={{ width: "26%" }}>Postava</th>
+                          <th scope="col" style={{ width: "34%" }}>Class / spec</th>
+                          <th scope="col" style={{ width: "12%" }}>Koš</th>
+                          <th scope="col" style={{ width: "14%" }}>RIO</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -287,13 +288,16 @@ export default async function ShufflePage({
                 {existingMemberships === 0 && (
                   <form>
                     <input type="hidden" name="proposalId" value={proposal.id} />
-                    <ConfirmButton
+                    <SubmitButton
+                      pendingLabel="Zakládám týmy..."
                       className="btn btn-accent"
-                      message={`Použít variantu ${proposal.variantNumber}? Založí se týmy a členství.`}
+                      confirmTitle={`Použít variantu ${proposal.variantNumber}?`}
+                      confirm="Podle ní se založí týmy a členství. Jinou variantu půjde použít, až tyhle týmy smažeš."
+                      confirmLabel="Použít variantu"
                       formAction={applyVariant}
                     >
                       Použít tuto variantu
-                    </ConfirmButton>
+                    </SubmitButton>
                   </form>
                 )}
               </div>

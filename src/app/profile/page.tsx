@@ -15,6 +15,10 @@ import { ChangePasswordForm } from "./password-form";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Můj profil",
+};
+
 export default async function ProfilePage({
   searchParams,
 }: {
@@ -48,7 +52,7 @@ export default async function ProfilePage({
   const membership = character?.teamMemberships[0] ?? null;
 
   return (
-    <main className="site-main">
+    <main className="site-main" id="obsah">
         <h1>Můj profil</h1>
         <p className="admin-subtitle">
           {user.name} - {USER_ROLE_LABELS[user.role]}
@@ -64,7 +68,7 @@ export default async function ProfilePage({
         {!character ? (
           <div className="card">
             <h2>Zatím nemáš přihlášku</h2>
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+            <p className="card-lead">
               K účtu není přiřazená žádná postava. Do soutěže se přihlásíš
               registračním formulářem.
             </p>
@@ -93,11 +97,10 @@ export default async function ProfilePage({
                 <dd>{character.rioScore ?? "-"}</dd>
                 <dt>Raider.io</dt>
                 <dd>
-                  <a
+                  <a className="link"
                     href={character.raiderioUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ color: "var(--accent)" }}
                   >
                     {character.raiderioUrl}
                   </a>
@@ -135,7 +138,7 @@ export default async function ProfilePage({
                         {registration.entryFeePaidAt ? "Zaplaceno" : "Nezaplaceno"}
                       </span>
                       {registration.entryFeePaidAt && (
-                        <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                        <span className="meta">
                           {" "}
                           potvrdil {registration.entryFeeConfirmedBy?.username ?? "-"},{" "}
                           {formatDateTime(registration.entryFeePaidAt)}
@@ -191,7 +194,7 @@ export default async function ProfilePage({
 
         <div className="card">
           <h2>Změna hesla</h2>
-          <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+          <p className="card-lead">
             Heslo si můžeš změnit kdykoliv. Zůstaneš přihlášený.
           </p>
           <ChangePasswordForm />
@@ -200,7 +203,7 @@ export default async function ProfilePage({
         {can(user.role, "accessAdmin") && (
           <div className="card">
             <h2>Administrace</h2>
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+            <p className="card-lead">
               Máš roli {USER_ROLE_LABELS[user.role]}.
             </p>
             <Link className="btn" href="/admin">

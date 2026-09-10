@@ -16,16 +16,25 @@ const LINKS: { href: string; label: string; permission: Permission }[] = [
   { href: "/admin/hesla", label: "Reset hesel", permission: "issuePasswordReset" },
 ];
 
+/**
+ * Přesná shoda by nezvýraznila nic na detailu registrace - "/admin" je navíc
+ * prefixem všech ostatních, takže se musí porovnávat celý úsek cesty.
+ */
+function isActive(pathname: string, href: string): boolean {
+  if (href === "/admin") return pathname === "/admin";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function AdminNav({ role }: { role: UserRole }) {
   const pathname = usePathname();
 
   return (
-    <nav className="admin-nav">
+    <nav className="admin-nav" aria-label="Administrace">
       {LINKS.filter((link) => can(role, link.permission)).map((link) => (
         <Link
           key={link.href}
           href={link.href}
-          aria-current={pathname === link.href ? "page" : undefined}
+          aria-current={isActive(pathname, link.href) ? "page" : undefined}
         >
           {link.label}
         </Link>
