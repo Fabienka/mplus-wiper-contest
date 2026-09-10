@@ -19,7 +19,7 @@ function MemberRow({ member }: { member: ShuffleMember }) {
     <tr>
       <td>{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
       <td>{member.characterName}</td>
-      <td style={{ color: "var(--muted)" }}>
+      <td className="muted">
         {member.wowSpec ? `${member.className} - ${member.wowSpec}` : member.className ?? "-"}
       </td>
       <td>{member.dpsBucket ?? "-"}</td>
@@ -104,7 +104,7 @@ export default async function ShufflePage({
 
       <div className="card">
         <h2>Spustit shuffle</h2>
-        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-lead">
           Rozdělí schválené hráče do týmů po 5 a navrhne 3 varianty. Nic se tím
           nemění - týmy vzniknou až potvrzením vybrané varianty. Tabulka speců
           (ranged/melee, battle rez, bloodlust) byla naposledy ověřená{" "}
@@ -202,7 +202,7 @@ export default async function ShufflePage({
                   {proposal.variantNumber === 1 && " - doporučená"}
                 </h2>
 
-                <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+                <p className="card-lead">
                   Skóre {Math.round(proposal.score)} (nižší je lepší).
                   {breakdown && (
                     <>
@@ -242,9 +242,8 @@ export default async function ShufflePage({
                     {team.violations.length > 0 && (
                       <ul style={{ margin: "0.5rem 0 0", paddingLeft: "1.2rem" }}>
                         {team.violations.map((violation) => (
-                          <li
+                          <li className="meta"
                             key={violation}
-                            style={{ fontSize: "0.82rem", color: "var(--muted)" }}
                           >
                             {violation}
                           </li>

@@ -88,11 +88,10 @@ export default async function RegistrationDetailPage({
           <dd>{character.faction ?? "-"}</dd>
           <dt>Raider.io</dt>
           <dd>
-            <a
+            <a className="link"
               href={character.raiderioUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ color: "var(--accent)" }}
             >
               {character.raiderioUrl}
             </a>
@@ -187,7 +186,7 @@ export default async function RegistrationDetailPage({
           </>
         ) : (
           <>
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+            <p className="card-lead">
               Zápisné se posílá ve hře, aplikace ho neumí ověřit sama. Potvrď ho,
               až zlato dorazí.
             </p>
@@ -267,7 +266,7 @@ export default async function RegistrationDetailPage({
         ) : (
           <form action={reopenRegistration}>
             <input type="hidden" name="registrationId" value={registration.id} />
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+            <p className="card-lead">
               Vrátí registraci mezi čekající, aby šla posoudit znovu.
             </p>
             <SubmitButton

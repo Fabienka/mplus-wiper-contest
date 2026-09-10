@@ -105,7 +105,7 @@ export default async function RegistrationsPage({
                 <tr key={registration.id}>
                   <td>
                     {registration.character.characterName}
-                    <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                    <div className="meta">
                       {registration.character.realm}
                       {registration.character.class
                         ? ` - ${registration.character.class}`

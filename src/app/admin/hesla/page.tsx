@@ -58,7 +58,7 @@ export default async function PasswordResetsPage() {
             jde použít jednou - pak propadne.
           </li>
         </ol>
-        <p style={{ margin: "0.9rem 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+        <p className="card-note">
           Heslo hráče nikdy nevidíš a nikde se nedá přečíst. Vydání i použití
           odkazu se zapisuje do auditu.
         </p>
@@ -87,22 +87,22 @@ export default async function PasswordResetsPage() {
                   <td>
                     {user.username}
                     {user.id === actor?.id && (
-                      <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                      <span className="meta">
                         {" "}
                         (ty)
                       </span>
                     )}
                   </td>
-                  <td style={{ color: "var(--muted)" }}>
+                  <td className="muted">
                     {user.character
                       ? `${user.character.characterName} - ${user.character.realm}`
                       : "-"}
                   </td>
-                  <td style={{ color: "var(--muted)" }}>{user.discordNick ?? "-"}</td>
+                  <td className="muted">{user.discordNick ?? "-"}</td>
                   <td>{USER_ROLE_LABELS[user.role]}</td>
                   <td>
                     {!allowed ? (
-                      <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
+                      <span className="meta">
                         {user.id === actor?.id
                           ? "Vlastní heslo si změň v profilu."
                           : "Na tuhle roli reset vydat nemůžeš."}

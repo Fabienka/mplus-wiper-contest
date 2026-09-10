@@ -90,11 +90,26 @@ body {
 .card-lead {
   margin: 0 0 1rem;
   font-size: 0.9rem;
+  line-height: 1.5;
   color: var(--muted);
 }
 
 .card-lead:last-child {
   margin-bottom: 0;
+}
+
+/* Odkaz uvnitř textu. Samotný <a> zdědí barvu textu a v odstavci se pak
+   nepozná od okolí - .btn odkazy proto barvu neberou plošně. */
+.link {
+  color: var(--accent);
+}
+
+/* Poznámka pod obsahem karty - vysvětlivka k tabulce nad ní. */
+.card-note {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--muted);
 }
 
 .auth-page {

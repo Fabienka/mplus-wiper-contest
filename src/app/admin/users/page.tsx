@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { SubmitButton } from "../../submit-button";
 import { getCurrentUser } from "@/lib/admin";
@@ -15,16 +16,39 @@ export const dynamic = "force-dynamic";
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: { error?: string; saved?: string };
+  searchParams: { error?: string; saved?: string; q?: string };
 }) {
   const currentUser = await getCurrentUser();
 
-  const users = await prisma.user.findMany({
-    orderBy: { username: "asc" },
-    include: {
-      character: { select: { characterName: true, realm: true } },
-    },
-  });
+  // Seznam má i na testovacích datech čtyřicet řádků a rostl by s každou
+  // sezónou. Hledá se přes jméno účtu, postavy i Discord nick - podle toho,
+  // co zrovna admin z Discordu opsal.
+  const query = searchParams.q?.trim() ?? "";
+
+  const where = query
+    ? {
+        OR: [
+          { username: { contains: query, mode: "insensitive" as const } },
+          { discordNick: { contains: query, mode: "insensitive" as const } },
+          {
+            character: {
+              characterName: { contains: query, mode: "insensitive" as const },
+            },
+          },
+        ],
+      }
+    : {};
+
+  const [users, totalUsers] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: { username: "asc" },
+      include: {
+        character: { select: { characterName: true, realm: true } },
+      },
+    }),
+    prisma.user.count(),
+  ]);
 
   users.sort(compareUsersByRole);
 
@@ -55,7 +79,39 @@ export default async function UsersPage({
       </div>
 
       <div className="card">
-        <h2>Seznam ({users.length})</h2>
+        <h2>
+          Seznam ({users.length}
+          {query && ` z ${totalUsers}`})
+        </h2>
+
+        {/* Obyčejný GET formulář - hledání zůstane v adrese, dá se poslat
+            odkazem a funguje bez JS. */}
+        <form className="row-actions" method="get" style={{ marginBottom: "1.25rem" }}>
+          <div className="field" style={{ marginBottom: 0, flex: 1 }}>
+            <label htmlFor="q">Hledat</label>
+            <input
+              id="q"
+              name="q"
+              type="search"
+              defaultValue={query}
+              placeholder="Jméno účtu, postavy nebo Discord nick"
+            />
+          </div>
+          <button className="btn" type="submit">
+            Hledat
+          </button>
+          {query && (
+            <Link className="btn" href="/admin/users">
+              Zrušit
+            </Link>
+          )}
+        </form>
+
+        {users.length === 0 ? (
+          <p className="empty-state">
+            Hledání „{query}" neodpovídá žádný uživatel.
+          </p>
+        ) : (
         <table className="data">
           <thead>
             <tr>
@@ -72,18 +128,18 @@ export default async function UsersPage({
                 <td>
                   {user.username}
                   {user.id === currentUser?.id && (
-                    <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                    <span className="meta">
                       {" "}
                       (ty)
                     </span>
                   )}
                 </td>
-                <td style={{ color: "var(--muted)" }}>
+                <td className="muted">
                   {user.character
                     ? `${user.character.characterName} - ${user.character.realm}`
                     : "-"}
                 </td>
-                <td style={{ color: "var(--muted)" }}>{user.discordNick ?? "-"}</td>
+                <td className="muted">{user.discordNick ?? "-"}</td>
                 <td>{formatDateTime(user.createdAt)}</td>
                 <td>
                   {/* Vlastní řádek nemá formulář - roli si admin měnit nemůže
@@ -121,6 +177,7 @@ export default async function UsersPage({
             ))}
           </tbody>
         </table>
+        )}
       </div>
     </>
   );

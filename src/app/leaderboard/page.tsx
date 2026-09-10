@@ -123,7 +123,7 @@ export default async function LeaderboardPage() {
                     <tr key={row.teamId}>
                       <td>
                         {row.rank === null ? (
-                          <span style={{ color: "var(--muted)" }}>-</span>
+                          <span className="muted">-</span>
                         ) : (
                           <strong>{row.rank}.</strong>
                         )}
@@ -131,7 +131,7 @@ export default async function LeaderboardPage() {
                       <td>
                         {row.teamName}
                         {sestava.length > 0 && (
-                          <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>
+                          <div className="meta">
                             {sestava
                               .map(
                                 (m) =>
@@ -146,12 +146,12 @@ export default async function LeaderboardPage() {
                           <>
                             {row.best.dungeonName}{" "}
                             <strong>+{row.best.keyLevel}</strong>
-                            <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>
+                            <div className="meta">
                               {formatDateTime(row.best.completedAt)}
                             </div>
                           </>
                         ) : (
-                          <span style={{ color: "var(--muted)" }}>
+                          <span className="muted">
                             zatím žádný platný běh
                           </span>
                         )}
@@ -166,7 +166,7 @@ export default async function LeaderboardPage() {
                           "-"
                         )}
                       </td>
-                      <td style={{ color: "var(--muted)" }}>
+                      <td className="muted">
                         {row.validRuns} / {row.totalRuns}
                       </td>
                     </tr>
@@ -175,7 +175,7 @@ export default async function LeaderboardPage() {
               </tbody>
             </table>
 
-            <p style={{ margin: "1rem 0 0", fontSize: "0.8rem", color: "var(--muted)" }}>
+            <p className="card-note">
               Sloupec „Běhů" ukazuje platné ze všech nahraných. Tým bez platného
               běhu zůstává v žebříčku bez pořadí.
             </p>

@@ -96,7 +96,7 @@ export default async function SeasonPage({
               defaultValue={season.raiderioSeasonSlug ?? ""}
               placeholder="season-mn-2"
             />
-            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+            <span className="meta">
               Najdeš ho v adrese běhu na Raider.io:
               raider.io/mythic-plus-runs/<b>season-mn-2</b>/...
             </span>
@@ -114,7 +114,7 @@ export default async function SeasonPage({
               defaultValue={scoring.minScoredKeyLevel}
               required
             />
-            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+            <span className="meta">
               Nižší klíče se nebodují vůbec, i když je tým stihne v limitu.
               Zároveň se od téhle výšky počítá skóre, takže nejnižší bodovaný
               klíč začíná na nule.
@@ -132,7 +132,7 @@ export default async function SeasonPage({
               defaultValue={scoring.pointsPerKeyLevel}
               required
             />
-            <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+            <span className="meta">
               Nesmí být pod 100 - časový bonus je až 100 bodů a vyšší klíč musí
               porazit nižší i při horším čase.
             </span>
@@ -170,7 +170,7 @@ export default async function SeasonPage({
           </span>
         </form>
 
-        <p style={{ margin: "0 0 1.25rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+        <p className="card-lead">
           <strong style={{ color: "var(--text)" }}>Násobitel bonusu</strong> je
           normálně <strong style={{ color: "var(--text)" }}>1</strong>. Zvýšením
           se dungeon zvýhodní - hodí se tam, kde tým část času neovlivní

@@ -147,7 +147,7 @@ export default async function RulesPage() {
           {`body = (výška klíče − ${config.minScoredKeyLevel}) × ${config.pointsPerKeyLevel}
        + ${MAX_TIME_BONUS} × (1 − čas běhu ÷ časový limit klíče)`}
         </pre>
-        <p style={{ margin: "0.75rem 0 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-note">
           Druhý řádek je procento limitu, které jste nevyčerpali. Díky tomu se
           srovnají různě dlouhé dungeony - ušetřená pětina času znamená všude
           totéž. Časový bonus je vždycky menší než {MAX_TIME_BONUS}, takže
@@ -157,7 +157,7 @@ export default async function RulesPage() {
 
       <div className="card">
         <h2>Uznání běhu</h2>
-        <p style={{ margin: "0 0 0.75rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-lead">
           Výsledek se nahrává odkazem na běh z Raider.io. Aby se uznal, musí
           platit všechno naráz:
         </p>
@@ -170,7 +170,7 @@ export default async function RulesPage() {
           </li>
           <li>klíč byl stihnutý a je aspoň +{config.minScoredKeyLevel}.</li>
         </ul>
-        <p style={{ margin: "0.75rem 0 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-note">
           Když něco nesedí, aplikace u běhu vypíše důvod. Poslední slovo má
           moderátor - běh může uznat i zneplatnit ručně.
         </p>
@@ -183,7 +183,7 @@ export default async function RulesPage() {
             {dungeons.map((dungeon) => (
               <li key={dungeon.dungeonName}>
                 {dungeon.dungeonName}{" "}
-                <span style={{ color: "var(--muted)" }}>
+                <span className="muted">
                   ({dungeon.abbreviation})
                 </span>
                 {dungeon.bonusMultiplier !== 1 && (
@@ -194,7 +194,7 @@ export default async function RulesPage() {
           </ul>
 
           {zvyhodnene.length > 0 && (
-            <p style={{ margin: "0.75rem 0 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+            <p className="card-note">
               Zvýhodnění dostávají dungeony, kde část času neovlivníte - typicky
               nucené čekání na NPC. Násobí se jím časový bonus, ale nikdy tolik,
               aby nižší klíč porazil vyšší.
@@ -205,7 +205,7 @@ export default async function RulesPage() {
 
       <div className="card">
         <h2>Něco není jasné?</h2>
-        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-lead">
           Spory o výsledek i technické problémy řeší pořadatel.
         </p>
         <Link className="btn" href="/info/kontakt">

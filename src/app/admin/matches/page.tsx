@@ -170,7 +170,7 @@ export default async function MatchesPage({
                   <td>
                     {formatRange(match.windowStart, match.windowEnd)}
                     {match.note && (
-                      <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                      <div className="meta">
                         {match.note}
                       </div>
                     )}
@@ -181,7 +181,7 @@ export default async function MatchesPage({
                       {MATCH_STATUS_LABELS[match.status]}
                     </span>
                     {match.confirmedBy && (
-                      <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                      <div className="meta">
                         {match.confirmedBy.username}
                         {match.confirmedAt
                           ? `, ${formatDateTime(match.confirmedAt)}`
@@ -284,11 +284,7 @@ export default async function MatchesPage({
                                       Neplatný
                                     </span>
                                     {result.invalidReason && (
-                                      <div
-                                        style={{
-                                          color: "var(--muted)",
-                                          fontSize: "0.76rem",
-                                        }}
+                                      <div className="meta"
                                       >
                                         {result.invalidReason}
                                       </div>

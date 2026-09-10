@@ -34,7 +34,7 @@ function MemberRows({
       {rows.map((row) => (
         <tr key={row.membershipId}>
           <td>{row.characterName}</td>
-          <td style={{ color: "var(--muted)" }}>
+          <td className="muted">
             {row.wowSpec ? `${row.className} - ${row.wowSpec}` : row.className ?? "-"}
           </td>
           <td>{row.rioScore === null ? "-" : Math.round(row.rioScore)}</td>
@@ -227,9 +227,8 @@ export default async function TeamsPage({
                   {violations.length > 0 && (
                     <ul style={{ margin: "0.75rem 0 0", paddingLeft: "1.2rem" }}>
                       {violations.map((violation) => (
-                        <li
+                        <li className="meta"
                           key={violation}
-                          style={{ fontSize: "0.82rem", color: "var(--muted)" }}
                         >
                           {violation}
                         </li>
@@ -288,7 +287,7 @@ export default async function TeamsPage({
           {withoutMembership.length > 0 && (
             <div className="card">
               <h2>Schválení bez zařazení ({withoutMembership.length})</h2>
-              <p style={{ margin: "0 0 1rem", fontSize: "0.85rem", color: "var(--muted)" }}>
+              <p className="card-lead">
                 Typicky hráči schválení až po rozdělení týmů. Přidají se mezi
                 náhradníky, odkud je jde přesunout do týmu.
               </p>
@@ -306,7 +305,7 @@ export default async function TeamsPage({
                   {withoutMembership.map((registration) => (
                     <tr key={registration.id}>
                       <td>{registration.character.characterName}</td>
-                      <td style={{ color: "var(--muted)" }}>
+                      <td className="muted">
                         {registration.character.wowSpec
                           ? `${registration.character.class} - ${registration.character.wowSpec}`
                           : registration.character.class ?? "-"}

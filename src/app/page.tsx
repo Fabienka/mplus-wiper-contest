@@ -34,7 +34,7 @@ function SpecList({ role, specs }: { role: SpecRole; specs: SpecCount[] }) {
             <li key={`${spec.className}-${spec.specName}`}>
               <span>
                 {spec.specName}{" "}
-                <span style={{ color: "var(--muted)" }}>{spec.className}</span>
+                <span className="muted">{spec.className}</span>
               </span>
               <strong>{spec.count}×</strong>
             </li>
@@ -54,7 +54,7 @@ export default async function HomePage() {
         <SiteHeader />
         <main className="site-main" id="obsah">
           <h1>Mythic+ Wiper Contest</h1>
-          <p style={{ color: "var(--muted)" }}>
+          <p className="muted">
             Zatím není založená žádná sezóna.
           </p>
         </main>
@@ -104,7 +104,7 @@ export default async function HomePage() {
         {registraceOtevrena && !user && (
           <div className="card">
             <h2>Registrace je otevřená</h2>
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+            <p className="card-lead">
               Přihlas se do sezóny {season.name}. Stačí odkaz na Raider.io profil
               postavy, se kterou chceš hrát.
             </p>
@@ -186,7 +186,7 @@ export default async function HomePage() {
                 <dd>
                   {stats.range.melee} / {stats.range.ranged}
                   {znamy > 0 && (
-                    <span style={{ color: "var(--muted)" }}> ({meleePct} % melee)</span>
+                    <span className="muted"> ({meleePct} % melee)</span>
                   )}
                 </dd>
                 <dt>Umí battle rez</dt>

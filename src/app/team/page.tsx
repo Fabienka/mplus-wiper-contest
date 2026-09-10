@@ -247,7 +247,7 @@ export default async function TeamPage({
 
       <section className="card" id="moje-casy" aria-labelledby="moje-casy-nadpis">
         <h2 id="moje-casy-nadpis">Kdy mám čas</h2>
-        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-lead">
           Zadej úseky, kdy se ti dá hrát. Ze zadaných časů celého týmu se pak
           vybere společný termín.
         </p>
@@ -269,7 +269,7 @@ export default async function TeamPage({
                 <tr key={slot.id}>
                   <td>{formatRange(slot.start, slot.end)}</td>
                   <td>{formatDuration(slot.start, slot.end)}</td>
-                  <td style={{ color: "var(--muted)" }}>{slot.note ?? "-"}</td>
+                  <td className="muted">{slot.note ?? "-"}</td>
                   <td>
                     <form action={deleteAvailability}>
                       <input type="hidden" name="availabilityId" value={slot.id} />
@@ -323,7 +323,7 @@ export default async function TeamPage({
         ) : (
           <>
             {overlapMissing > 0 && (
-              <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+              <p className="card-lead">
                 Termín, kdy může celý tým, se nenašel. Níže jsou nejbližší
                 možnosti, kde chybí nejvýš {overlapMissing} z týmu.
               </p>
@@ -351,7 +351,7 @@ export default async function TeamPage({
                       <td>
                         {overlap.characterIds.length} / {team.members.length}
                       </td>
-                      <td style={{ color: "var(--muted)" }}>
+                      <td className="muted">
                         {missing.length === 0 ? "nikdo" : missing.join(", ")}
                       </td>
                       <td>
@@ -405,7 +405,7 @@ export default async function TeamPage({
                   <td>
                     {formatRange(match.windowStart, match.windowEnd)}
                     {match.note && (
-                      <div style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
+                      <div className="meta">
                         {match.note}
                       </div>
                     )}
@@ -416,7 +416,7 @@ export default async function TeamPage({
                     </span>
                   </td>
                   <td>{match.proposedBy.characterName}</td>
-                  <td style={{ color: "var(--muted)" }}>
+                  <td className="muted">
                     {match.confirmedBy?.username ?? "-"}
                   </td>
                   <td>
@@ -442,7 +442,7 @@ export default async function TeamPage({
 
       <section className="card" id="vysledky" aria-labelledby="vysledky-nadpis">
         <h2 id="vysledky-nadpis">Výsledky</h2>
-        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-lead">
           Po odehrání vlož odkaz na běh z Raider.io. Čas i sestavu si aplikace
           stáhne sama, takže se nedá překlepnout. Počítá se jen nejlepší platný
           běh - neúspěšný pokus o vyšší klíč vás o dřívější výsledek nepřipraví.
@@ -494,7 +494,7 @@ export default async function TeamPage({
                               <>
                                 <span className="badge badge-rejected">Nepočítá se</span>
                                 {result.invalidReason && (
-                                  <div style={{ color: "var(--muted)", fontSize: "0.78rem" }}>
+                                  <div className="meta">
                                     {result.invalidReason}
                                   </div>
                                 )}
@@ -534,7 +534,7 @@ export default async function TeamPage({
 
       <section className="card" id="vlastni-termin" aria-labelledby="vlastni-termin-nadpis">
         <h2 id="vlastni-termin-nadpis">Navrhnout vlastní termín</h2>
-        <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
+        <p className="card-lead">
           Když se tým domluví jinde, jde termín zadat rovnou. Schvaluje ho
           moderátor.
         </p>

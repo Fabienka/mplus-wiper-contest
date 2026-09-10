@@ -46,8 +46,14 @@ export function ChangePasswordForm() {
           type="password"
           autoComplete="new-password"
           minLength={MIN_PASSWORD_LENGTH}
+          aria-describedby="new-password-hint"
           required
         />
+        {/* Požadavek byl jen v minLength, takže se o něm člověk dozvěděl
+            až když ho porušil. */}
+        <span className="field-hint" id="new-password-hint">
+          Aspoň {MIN_PASSWORD_LENGTH} znaků.
+        </span>
       </div>
 
       <div className="field">
