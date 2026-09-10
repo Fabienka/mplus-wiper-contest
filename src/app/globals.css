@@ -798,6 +798,77 @@ pre.json {
   padding-left: 0.32rem;
 }
 
+/* Nápověda k prázdnému měsíci. */
+.cal-empty {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.cal-empty a {
+  color: var(--accent);
+}
+
+/* ---------- Kalendář na úzkém displeji ----------
+   Seznam dnů místo mřížky. Na širokém displeji se nezobrazuje. */
+
+.cal-agenda,
+.cal-agenda-empty {
+  display: none;
+}
+
+.cal-agenda {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cal-agenda-day {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: inherit;
+  text-decoration: none;
+}
+
+.cal-agenda-today {
+  border-color: var(--accent);
+}
+
+.cal-agenda-date {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+}
+
+.cal-agenda-weekday {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+}
+
+.cal-agenda-events {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.cal-agenda-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 1rem 0;
+  text-align: center;
+}
+
 /* Den s událostmi je celý klikatelný. Odkaz vyplní buňku, aby se trefovalo
    i vedle textu, a dědí layout po .cal-day. */
 .cal-day-link {
@@ -922,8 +993,24 @@ pre.json {
 }
 
 @media (max-width: 720px) {
-  .cal-grid {
-    min-width: 620px;
+  /* Mřížka pryč, místo ní seznam dnů. Sedm sloupců se sem nevejde a
+     rolování do strany kvůli víkendu je otrava. */
+  .cal-grid-wrap {
+    display: none;
+  }
+
+  .cal-agenda {
+    display: flex;
+  }
+
+  .cal-agenda-empty {
+    display: block;
+  }
+
+  /* V seznamu se popisek události zalomí, místo aby se ořízl. */
+  .cal-agenda .cal-event {
+    white-space: normal;
+    overflow: visible;
   }
 
   /* Čtyři sloupce se na mobil nevejdou, detail se proto skládá pod sebe. */

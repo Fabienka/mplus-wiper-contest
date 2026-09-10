@@ -6,7 +6,10 @@ import {
   formatDayParam,
   formatMonthParam,
   isSameDay,
+  mondayFirstIndex,
+  monthHasEvents,
   monthTitle,
+  nearestEvent,
   parseDayParam,
   shiftMonth,
   startOfDay,
@@ -124,6 +127,19 @@ export function MonthCalendar({
 
   const selectedEvents = selectedDate ? eventsForDay(events, selectedDate) : [];
 
+  // Prázdný měsíc byl slepá ulička - mřížka bez jediné události a nikde
+  // nápověda, že se má listovat jinam. Kalendář se pořád otevírá na dnešku
+  // (to je předvídatelné), jen k prázdnu přidá odkaz tam, kde něco je.
+  const nearest = monthHasEvents(events, month) ? null : nearestEvent(events);
+
+  // Do seznamu jdou jen dny tohohle měsíce, ve kterých něco je. Dny ze
+  // sousedních měsíců by v seznamu bez mřížky mátly.
+  const agendaDays = weeks
+    .flat()
+    .filter((day) => day.isCurrentMonth)
+    .map((day) => ({ day, dayEvents: eventsForDay(events, day.date) }))
+    .filter(({ dayEvents }) => dayEvents.length > 0);
+
   return (
     <div>
       <div className="cal-header">
@@ -161,8 +177,30 @@ export function MonthCalendar({
         )}
       </div>
 
+      {nearest && (
+        <p className="cal-empty">
+          V tomto měsíci nic není. Nejbližší je{" "}
+          <Link
+            href={buildHref({
+              month: formatMonthParam({
+                year: nearest.start.getFullYear(),
+                month: nearest.start.getMonth(),
+              }),
+              day: formatDayParam(nearest.start),
+            })}
+          >
+            {nearest.start.toLocaleDateString("cs-CZ", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </Link>
+          .
+        </p>
+      )}
+
       {/* Scroll obaluje jen mřížku - detail dne se pod ní zalomí normálně. */}
-      <div className="cal-scroll">
+      <div className="cal-scroll cal-grid-wrap">
         <div className="cal-grid" role="grid">
           {CZECH_WEEKDAYS_SHORT.map((name) => (
             <div key={name} className="cal-weekday" role="columnheader">
@@ -233,6 +271,46 @@ export function MonthCalendar({
           })}
         </div>
       </div>
+
+      {/* Na telefonu se mřížka sedmi sloupců rolovala do strany a prázdné
+          buňky měly 155 px. Místo ní seznam dnů, ve kterých něco je - CSS
+          přepíná mezi oběma, takže to funguje i bez JavaScriptu. Skrytá
+          varianta je display:none, takže ji čtečka nečte dvakrát. */}
+      {agendaDays.length === 0 ? (
+        <p className="cal-agenda-empty">V tomto měsíci není žádná událost.</p>
+      ) : (
+        <ul className="cal-agenda">
+          {agendaDays.map(({ day, dayEvents }) => (
+            <li key={day.date.toISOString()}>
+              <Link
+                className={`cal-agenda-day${day.isToday ? " cal-agenda-today" : ""}`}
+                href={hrefForDay(day.date)}
+              >
+                <span className="cal-agenda-date">
+                  <strong>{day.dayOfMonth}.</strong>
+                  <span className="cal-agenda-weekday">
+                    {CZECH_WEEKDAYS_SHORT[mondayFirstIndex(day.date)]}
+                  </span>
+                </span>
+
+                <span className="cal-agenda-events">
+                  {dayEvents.map((event) => (
+                    <span
+                      key={`agenda-${event.id}`}
+                      className={KIND_CLASS[event.kind]}
+                    >
+                      <span className="cal-event-time">
+                        {timeLabel(event, day.date)}
+                      </span>{" "}
+                      {event.label}
+                    </span>
+                  ))}
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
 
       {selectedDate && (
         <div className="cal-detail">
