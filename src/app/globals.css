@@ -1032,11 +1032,18 @@ pre.json {
 /* ---------- Hlášení ---------- */
 
 /* Přepínač podstránek v informační části. */
-.info-nav {
+.info-nav,
+/* Rozcestník po sekcích dlouhé stránky (kotvy). */
+.section-nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 1.5rem;
+}
+
+/* Skok na kotvu nesmí nadpis zarazit těsně pod horní okraj. */
+[id] {
+  scroll-margin-top: 1rem;
 }
 
 /* Seznamy v pravidlech - odrážky se musí číst pohodlně i na mobilu. */
@@ -1266,6 +1273,49 @@ dl.detail dd {
 
   .site-account .btn {
     padding: 0.6rem 0.9rem;
+  }
+}
+
+/* Tabulka, která se na telefonu rozpadne na kartičky. Sloupce se vejdou
+   jen do rolování do strany a dlouhé hodnoty se ořezávaly uprostřed slova
+   ("Monk - Brewmas..."). Popisek sloupce nese data-label. */
+@media (max-width: 640px) {
+  table.data.table-cards,
+  table.data.table-cards thead,
+  table.data.table-cards tbody,
+  table.data.table-cards tr,
+  table.data.table-cards td {
+    display: block;
+    width: auto;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  table.data.table-cards thead {
+    /* Hlavičku nahradí data-label u každé buňky. */
+    display: none;
+  }
+
+  table.data.table-cards tr {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.6rem;
+    background: var(--bg);
+  }
+
+  table.data.table-cards td {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: 0.5rem;
+    padding: 0.22rem 0;
+    border-bottom: none;
+  }
+
+  table.data.table-cards td::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.78rem;
   }
 }
 

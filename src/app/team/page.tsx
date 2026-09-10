@@ -206,8 +206,31 @@ export default async function TeamPage({
         success={searchParams.saved && "Uloženo."}
       />
 
-      <div className="card">
-        <h2>Kalendář</h2>
+      {/* Stránka má sedm karet a přes 2 000 px - bez rozcestníku se ke
+          každé věci muselo dorolovat. Obyčejné kotvy, fungují bez JS. */}
+      <nav className="section-nav" aria-label="Sekce stránky">
+        <a className="btn" href="#kalendar">
+          Kalendář
+        </a>
+        <a className="btn" href="#moje-casy">
+          Kdy mám čas
+        </a>
+        <a className="btn" href="#casy-tymu">
+          Kdy může tým
+        </a>
+        <a className="btn" href="#terminy">
+          Termíny
+        </a>
+        <a className="btn" href="#vysledky">
+          Výsledky
+        </a>
+        <a className="btn" href="#sestava">
+          Sestava
+        </a>
+      </nav>
+
+      <section className="card" id="kalendar" aria-labelledby="kalendar-nadpis">
+        <h2 id="kalendar-nadpis">Kalendář</h2>
         <MonthCalendar
           month={month}
           events={calendarEvents}
@@ -220,10 +243,10 @@ export default async function TeamPage({
             { kind: "AVAILABILITY", label: "můj čas" },
           ]}
         />
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Kdy mám čas</h2>
+      <section className="card" id="moje-casy" aria-labelledby="moje-casy-nadpis">
+        <h2 id="moje-casy-nadpis">Kdy mám čas</h2>
         <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
           Zadej úseky, kdy se ti dá hrát. Ze zadaných časů celého týmu se pak
           vybere společný termín.
@@ -287,10 +310,10 @@ export default async function TeamPage({
             </SubmitButton>
           </div>
         </form>
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Kdy může tým</h2>
+      <section className="card" id="casy-tymu" aria-labelledby="casy-tymu-nadpis">
+        <h2 id="casy-tymu-nadpis">Kdy může tým</h2>
 
         {overlaps.length === 0 ? (
           <p className="empty-state">
@@ -358,10 +381,10 @@ export default async function TeamPage({
             </table>
           </>
         )}
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Termíny týmu</h2>
+      <section className="card" id="terminy" aria-labelledby="terminy-nadpis">
+        <h2 id="terminy-nadpis">Termíny týmu</h2>
 
         {matches.length === 0 ? (
           <p className="empty-state">Zatím není navržený žádný termín.</p>
@@ -415,10 +438,10 @@ export default async function TeamPage({
             </tbody>
           </table>
         )}
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Výsledky</h2>
+      <section className="card" id="vysledky" aria-labelledby="vysledky-nadpis">
+        <h2 id="vysledky-nadpis">Výsledky</h2>
         <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
           Po odehrání vlož odkaz na běh z Raider.io. Čas i sestavu si aplikace
           stáhne sama, takže se nedá překlepnout. Počítá se jen nejlepší platný
@@ -507,10 +530,10 @@ export default async function TeamPage({
               </div>
             ))
         )}
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Navrhnout vlastní termín</h2>
+      <section className="card" id="vlastni-termin" aria-labelledby="vlastni-termin-nadpis">
+        <h2 id="vlastni-termin-nadpis">Navrhnout vlastní termín</h2>
         <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
           Když se tým domluví jinde, jde termín zadat rovnou. Schvaluje ho
           moderátor.
@@ -537,11 +560,13 @@ export default async function TeamPage({
             </SubmitButton>
           </div>
         </form>
-      </div>
+      </section>
 
-      <div className="card">
-        <h2>Sestava</h2>
-        <table className="data">
+      <section className="card" id="sestava" aria-labelledby="sestava-nadpis">
+        <h2 id="sestava-nadpis">Sestava</h2>
+        {/* table-cards: pod 640 px se řádky rozpadnou na kartičky, jinak by
+            se "Monk - Brewmas..." uprostřed slova ořízlo. */}
+        <table className="data table-cards">
           <thead>
             <tr>
               <th scope="col" style={{ width: "30%" }}>Postava</th>
@@ -553,22 +578,19 @@ export default async function TeamPage({
           <tbody>
             {team.members.map((member) => (
               <tr key={member.id}>
-                <td>
+                <td data-label="Postava">
                   {member.character.characterName}
                   {member.characterId === character.id && (
-                    <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>
-                      {" "}
-                      (ty)
-                    </span>
+                    <span className="meta"> (ty)</span>
                   )}
                 </td>
-                <td style={{ color: "var(--muted)" }}>
+                <td className="muted" data-label="Class / spec">
                   {member.character.wowSpec
                     ? `${member.character.class} - ${member.character.wowSpec}`
                     : member.character.class ?? "-"}
                 </td>
-                <td>{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
-                <td>
+                <td data-label="Role">{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
+                <td data-label="Zadaných časů">
                   {
                     availabilities.filter((a) => a.characterId === member.characterId)
                       .length
@@ -578,7 +600,7 @@ export default async function TeamPage({
             ))}
           </tbody>
         </table>
-      </div>
+      </section>
     </main>
   );
 }
