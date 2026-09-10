@@ -371,14 +371,31 @@ button.primary:disabled {
 }
 
 .stat .stat-value {
+  display: block;
   font-size: 1.8rem;
   font-weight: 600;
 }
 
 .stat .stat-label {
+  display: block;
   color: var(--muted);
   font-size: 0.82rem;
   margin-top: 0.15rem;
+}
+
+/* Statistika, která vede na filtrovaný seznam. */
+.stat-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.stat-link:hover {
+  border-color: var(--accent);
+}
+
+.stat-link:hover .stat-label {
+  color: var(--text);
 }
 
 table.data {
@@ -643,6 +660,15 @@ pre.json {
   min-width: 9rem;
   text-align: center;
   text-transform: capitalize;
+}
+
+/* Šipky měsíců. Samotné "‹" je úzké, bez minimální šířky vyšel dotykový cíl
+   na 32 px - doporučené minimum je 44. */
+.cal-nav {
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .cal-legend {

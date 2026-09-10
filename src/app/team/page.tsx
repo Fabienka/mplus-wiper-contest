@@ -235,10 +235,10 @@ export default async function TeamPage({
           <table className="data">
             <thead>
               <tr>
-                <th style={{ width: "40%" }}>Kdy</th>
-                <th style={{ width: "14%" }}>Délka</th>
-                <th style={{ width: "30%" }}>Poznámka</th>
-                <th />
+                <th scope="col" style={{ width: "40%" }}>Kdy</th>
+                <th scope="col" style={{ width: "14%" }}>Délka</th>
+                <th scope="col" style={{ width: "30%" }}>Poznámka</th>
+                <th scope="col" />
               </tr>
             </thead>
             <tbody>
@@ -309,11 +309,11 @@ export default async function TeamPage({
             <table className="data">
               <thead>
                 <tr>
-                  <th style={{ width: "32%" }}>Kdy</th>
-                  <th style={{ width: "12%" }}>Délka</th>
-                  <th style={{ width: "12%" }}>Volných</th>
-                  <th style={{ width: "26%" }}>Chybí</th>
-                  <th />
+                  <th scope="col" style={{ width: "32%" }}>Kdy</th>
+                  <th scope="col" style={{ width: "12%" }}>Délka</th>
+                  <th scope="col" style={{ width: "12%" }}>Volných</th>
+                  <th scope="col" style={{ width: "26%" }}>Chybí</th>
+                  <th scope="col" />
                 </tr>
               </thead>
               <tbody>
@@ -369,11 +369,11 @@ export default async function TeamPage({
           <table className="data">
             <thead>
               <tr>
-                <th style={{ width: "32%" }}>Kdy</th>
-                <th style={{ width: "14%" }}>Stav</th>
-                <th style={{ width: "18%" }}>Navrhl</th>
-                <th style={{ width: "18%" }}>Schválil</th>
-                <th />
+                <th scope="col" style={{ width: "32%" }}>Kdy</th>
+                <th scope="col" style={{ width: "14%" }}>Stav</th>
+                <th scope="col" style={{ width: "18%" }}>Navrhl</th>
+                <th scope="col" style={{ width: "18%" }}>Schválil</th>
+                <th scope="col" />
               </tr>
             </thead>
             <tbody>
@@ -446,11 +446,11 @@ export default async function TeamPage({
                   <table className="data" style={{ marginTop: "0.5rem" }}>
                     <thead>
                       <tr>
-                        <th style={{ width: "30%" }}>Dungeon</th>
-                        <th style={{ width: "10%" }}>Klíč</th>
-                        <th style={{ width: "14%" }}>Čas</th>
-                        <th style={{ width: "14%" }}>Body</th>
-                        <th>Stav</th>
+                        <th scope="col" style={{ width: "30%" }}>Dungeon</th>
+                        <th scope="col" style={{ width: "10%" }}>Klíč</th>
+                        <th scope="col" style={{ width: "14%" }}>Čas</th>
+                        <th scope="col" style={{ width: "14%" }}>Body</th>
+                        <th scope="col">Stav</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -544,10 +544,10 @@ export default async function TeamPage({
         <table className="data">
           <thead>
             <tr>
-              <th style={{ width: "30%" }}>Postava</th>
-              <th style={{ width: "34%" }}>Class / spec</th>
-              <th style={{ width: "18%" }}>Role</th>
-              <th>Zadaných časů</th>
+              <th scope="col" style={{ width: "30%" }}>Postava</th>
+              <th scope="col" style={{ width: "34%" }}>Class / spec</th>
+              <th scope="col" style={{ width: "18%" }}>Role</th>
+              <th scope="col">Zadaných časů</th>
             </tr>
           </thead>
           <tbody>

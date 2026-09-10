@@ -69,11 +69,11 @@ export default async function PasswordResetsPage() {
         <table className="data">
           <thead>
             <tr>
-              <th style={{ width: "18%" }}>Uživatel</th>
-              <th style={{ width: "20%" }}>Postava</th>
-              <th style={{ width: "14%" }}>Discord</th>
-              <th style={{ width: "12%" }}>Role</th>
-              <th style={{ width: "36%" }}>Odkaz</th>
+              <th scope="col" style={{ width: "18%" }}>Uživatel</th>
+              <th scope="col" style={{ width: "20%" }}>Postava</th>
+              <th scope="col" style={{ width: "14%" }}>Discord</th>
+              <th scope="col" style={{ width: "12%" }}>Role</th>
+              <th scope="col" style={{ width: "36%" }}>Odkaz</th>
             </tr>
           </thead>
           <tbody>

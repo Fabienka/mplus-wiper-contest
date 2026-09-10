@@ -128,7 +128,7 @@ export function MonthCalendar({
     <div>
       <div className="cal-header">
         <Link
-          className="btn"
+          className="btn cal-nav"
           href={hrefForMonth(shiftMonth(month, -1))}
           aria-label="Předchozí měsíc"
         >
@@ -138,7 +138,7 @@ export function MonthCalendar({
         <strong className="cal-title">{monthTitle(month)}</strong>
 
         <Link
-          className="btn"
+          className="btn cal-nav"
           href={hrefForMonth(shiftMonth(month, 1))}
           aria-label="Další měsíc"
         >

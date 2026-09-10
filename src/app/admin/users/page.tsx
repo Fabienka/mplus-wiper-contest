@@ -59,11 +59,11 @@ export default async function UsersPage({
         <table className="data">
           <thead>
             <tr>
-              <th style={{ width: "22%" }}>Uživatel</th>
-              <th style={{ width: "24%" }}>Postava</th>
-              <th style={{ width: "16%" }}>Discord</th>
-              <th style={{ width: "16%" }}>Registrován</th>
-              <th style={{ width: "22%" }}>Role</th>
+              <th scope="col" style={{ width: "22%" }}>Uživatel</th>
+              <th scope="col" style={{ width: "24%" }}>Postava</th>
+              <th scope="col" style={{ width: "16%" }}>Discord</th>
+              <th scope="col" style={{ width: "16%" }}>Registrován</th>
+              <th scope="col" style={{ width: "22%" }}>Role</th>
             </tr>
           </thead>
           <tbody>
@@ -95,7 +95,11 @@ export default async function UsersPage({
                   ) : (
                     <form action={updateUserRole} className="row-actions">
                       <input type="hidden" name="userId" value={user.id} />
-                      <select name="role" defaultValue={user.role}>
+                      <select
+                        name="role"
+                        defaultValue={user.role}
+                        aria-label={`Role uživatele ${user.username}`}
+                      >
                         {(
                           Object.keys(USER_ROLE_LABELS) as (keyof typeof USER_ROLE_LABELS)[]
                         ).map((role) => (

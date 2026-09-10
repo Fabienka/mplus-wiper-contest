@@ -153,3 +153,66 @@ export function parseTimeLimit(value: string): number | null {
 
   return Number(match[1]) * 60 + Number(match[2] ?? 0);
 }
+
+/**
+ * Popisky záznamů v deníku změn.
+ *
+ * Přehled administrace vypisoval `actionType` a `entityType` tak, jak jsou
+ * v databázi - v jinak úplně české administraci trčelo "MATCH_RESULT_ADDED"
+ * a "MatchResult".
+ */
+export const AUDIT_ACTION_LABELS: Record<string, string> = {
+  DUNGEON_ADDED: "Přidán dungeon",
+  DUNGEON_DELETED: "Smazán dungeon",
+  DUNGEON_TIME_SYNCED: "Doplněny časy z Raider.io",
+  DUNGEON_UPDATED: "Upraveny dungeony",
+  ENTRY_FEE_CONFIRMED: "Potvrzeno zápisné",
+  ENTRY_FEE_REVOKED: "Zrušeno potvrzení zápisného",
+  MATCH_CLOSED: "Uzavřen zápas",
+  MATCH_CONFIRMATION_REVOKED: "Zrušeno schválení termínu",
+  MATCH_CONFIRMED: "Schválen termín",
+  MATCH_DELETED: "Smazán termín",
+  MATCH_PROPOSED: "Navržen termín",
+  MATCH_REOPENED: "Znovu otevřen zápas",
+  MATCH_RESULT_ADDED: "Nahrán výsledek běhu",
+  PASSWORD_CHANGED: "Změněno heslo",
+  PASSWORD_RESET_ISSUED: "Vydán odkaz na reset hesla",
+  PASSWORD_RESET_REVOKED: "Zneplatněn odkaz na reset hesla",
+  PASSWORD_RESET_USED: "Použit odkaz na reset hesla",
+  REGISTRATION_APPROVED: "Schválena registrace",
+  REGISTRATION_REJECTED: "Zamítnuta registrace",
+  REGISTRATION_REOPENED: "Registrace vrácena k posouzení",
+  SEASON_UPDATED: "Upraveno nastavení sezóny",
+  SHUFFLE_RUN: "Spuštěn shuffle",
+  SHUFFLE_VARIANT_APPLIED: "Použita varianta rozdělení",
+  TEAMS_DELETED: "Smazány týmy",
+  TEAM_MEMBERSHIP_ADDED: "Přidán člen týmu",
+  TEAM_MEMBERSHIP_UPDATED: "Upraveno členství v týmu",
+  TEAM_RENAMED: "Přejmenován tým",
+  USER_ROLE_CHANGED: "Změněna role uživatele",
+};
+
+export const AUDIT_ENTITY_LABELS: Record<string, string> = {
+  Match: "termín",
+  MatchResult: "výsledek běhu",
+  Season: "sezóna",
+  SeasonDungeon: "dungeon sezóny",
+  SeasonRegistration: "registrace",
+  ShuffleProposal: "varianta rozdělení",
+  ShuffleRun: "běh shuffle",
+  Team: "tým",
+  TeamMembership: "členství v týmu",
+  User: "uživatel",
+};
+
+/**
+ * Popisek pro deník. Neznámý typ se vypíše tak, jak přišel - lepší syrový
+ * řetězec než prázdná buňka, když někdo přidá novou akci a zapomene sem.
+ */
+export function auditActionLabel(actionType: string): string {
+  return AUDIT_ACTION_LABELS[actionType] ?? actionType;
+}
+
+export function auditEntityLabel(entityType: string): string {
+  return AUDIT_ENTITY_LABELS[entityType] ?? entityType;
+}

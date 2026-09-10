@@ -155,12 +155,12 @@ export default async function MatchesPage({
           <table className="data">
             <thead>
               <tr>
-                <th style={{ width: "16%" }}>Tým</th>
-                <th style={{ width: "26%" }}>Kdy</th>
-                <th style={{ width: "10%" }}>Délka</th>
-                <th style={{ width: "12%" }}>Stav</th>
-                <th style={{ width: "14%" }}>Navrhl</th>
-                <th />
+                <th scope="col" style={{ width: "16%" }}>Tým</th>
+                <th scope="col" style={{ width: "26%" }}>Kdy</th>
+                <th scope="col" style={{ width: "10%" }}>Délka</th>
+                <th scope="col" style={{ width: "12%" }}>Stav</th>
+                <th scope="col" style={{ width: "14%" }}>Navrhl</th>
+                <th scope="col" />
               </tr>
             </thead>
             <tbody>

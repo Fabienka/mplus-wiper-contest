@@ -187,12 +187,12 @@ export default async function SeasonPage({
             <table className="data">
               <thead>
                 <tr>
-                  <th style={{ width: "32%" }}>Název</th>
-                  <th style={{ width: "12%" }}>Zkratka</th>
-                  <th style={{ width: "14%" }}>Čas (mm:ss)</th>
-                  <th style={{ width: "14%" }}>Násobitel bonusu</th>
-                  <th style={{ width: "10%" }}>Aktivní</th>
-                  <th />
+                  <th scope="col" style={{ width: "32%" }}>Název</th>
+                  <th scope="col" style={{ width: "12%" }}>Zkratka</th>
+                  <th scope="col" style={{ width: "14%" }}>Čas (mm:ss)</th>
+                  <th scope="col" style={{ width: "14%" }}>Násobitel bonusu</th>
+                  <th scope="col" style={{ width: "10%" }}>Aktivní</th>
+                  <th scope="col" />
                 </tr>
               </thead>
               <tbody>

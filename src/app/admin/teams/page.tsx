@@ -39,7 +39,13 @@ function MemberRows({
           </td>
           <td>{row.rioScore === null ? "-" : Math.round(row.rioScore)}</td>
           <td>
-            <select name={`role-${row.membershipId}`} defaultValue={row.roleInTeam}>
+            {/* Bez popisku přečte čtečka v řádku jen "combobox" a není
+                poznat, ke kterému hráči patří. */}
+            <select
+              name={`role-${row.membershipId}`}
+              defaultValue={row.roleInTeam}
+              aria-label={`Role hráče ${row.characterName} v týmu`}
+            >
               {Object.entries(SPEC_ROLE_LABELS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
@@ -48,7 +54,11 @@ function MemberRows({
             </select>
           </td>
           <td>
-            <select name={`dest-${row.membershipId}`} defaultValue={row.destination}>
+            <select
+              name={`dest-${row.membershipId}`}
+              defaultValue={row.destination}
+              aria-label={`Zařazení hráče ${row.characterName}`}
+            >
               {teams.map((team) => (
                 <option key={team.id} value={`team:${team.id}`}>
                   {team.name}
@@ -69,11 +79,11 @@ function MemberTableHead() {
   return (
     <thead>
       <tr>
-        <th style={{ width: "22%" }}>Postava</th>
-        <th style={{ width: "26%" }}>Class / spec</th>
-        <th style={{ width: "10%" }}>RIO</th>
-        <th style={{ width: "18%" }}>Role v týmu</th>
-        <th style={{ width: "24%" }}>Zařazení</th>
+        <th scope="col" style={{ width: "22%" }}>Postava</th>
+        <th scope="col" style={{ width: "26%" }}>Class / spec</th>
+        <th scope="col" style={{ width: "10%" }}>RIO</th>
+        <th scope="col" style={{ width: "18%" }}>Role v týmu</th>
+        <th scope="col" style={{ width: "24%" }}>Zařazení</th>
       </tr>
     </thead>
   );
@@ -285,11 +295,11 @@ export default async function TeamsPage({
               <table className="data">
                 <thead>
                   <tr>
-                    <th style={{ width: "26%" }}>Postava</th>
-                    <th style={{ width: "30%" }}>Class / spec</th>
-                    <th style={{ width: "14%" }}>Role</th>
-                    <th style={{ width: "12%" }}>RIO</th>
-                    <th />
+                    <th scope="col" style={{ width: "26%" }}>Postava</th>
+                    <th scope="col" style={{ width: "30%" }}>Class / spec</th>
+                    <th scope="col" style={{ width: "14%" }}>Role</th>
+                    <th scope="col" style={{ width: "12%" }}>RIO</th>
+                    <th scope="col" />
                   </tr>
                 </thead>
                 <tbody>

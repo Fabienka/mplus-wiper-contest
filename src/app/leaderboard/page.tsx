@@ -107,12 +107,12 @@ export default async function LeaderboardPage() {
             <table className="data">
               <thead>
                 <tr>
-                  <th style={{ width: "8%" }}>#</th>
-                  <th style={{ width: "26%" }}>Tým</th>
-                  <th style={{ width: "26%" }}>Nejlepší běh</th>
-                  <th style={{ width: "12%" }}>Čas</th>
-                  <th style={{ width: "12%" }}>Body</th>
-                  <th>Běhů</th>
+                  <th scope="col" style={{ width: "8%" }}>#</th>
+                  <th scope="col" style={{ width: "26%" }}>Tým</th>
+                  <th scope="col" style={{ width: "26%" }}>Nejlepší běh</th>
+                  <th scope="col" style={{ width: "12%" }}>Čas</th>
+                  <th scope="col" style={{ width: "12%" }}>Body</th>
+                  <th scope="col">Běhů</th>
                 </tr>
               </thead>
               <tbody>

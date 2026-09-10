@@ -225,11 +225,11 @@ export default async function ShufflePage({
                     <table className="data" style={{ marginTop: "0.5rem" }}>
                       <thead>
                         <tr>
-                          <th style={{ width: "14%" }}>Role</th>
-                          <th style={{ width: "26%" }}>Postava</th>
-                          <th style={{ width: "34%" }}>Class / spec</th>
-                          <th style={{ width: "12%" }}>Koš</th>
-                          <th style={{ width: "14%" }}>RIO</th>
+                          <th scope="col" style={{ width: "14%" }}>Role</th>
+                          <th scope="col" style={{ width: "26%" }}>Postava</th>
+                          <th scope="col" style={{ width: "34%" }}>Class / spec</th>
+                          <th scope="col" style={{ width: "12%" }}>Koš</th>
+                          <th scope="col" style={{ width: "14%" }}>RIO</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -262,11 +262,11 @@ export default async function ShufflePage({
                     <table className="data" style={{ marginTop: "0.5rem" }}>
                       <thead>
                         <tr>
-                          <th style={{ width: "14%" }}>Role</th>
-                          <th style={{ width: "26%" }}>Postava</th>
-                          <th style={{ width: "34%" }}>Class / spec</th>
-                          <th style={{ width: "12%" }}>Koš</th>
-                          <th style={{ width: "14%" }}>RIO</th>
+                          <th scope="col" style={{ width: "14%" }}>Role</th>
+                          <th scope="col" style={{ width: "26%" }}>Postava</th>
+                          <th scope="col" style={{ width: "34%" }}>Class / spec</th>
+                          <th scope="col" style={{ width: "12%" }}>Koš</th>
+                          <th scope="col" style={{ width: "14%" }}>RIO</th>
                         </tr>
                       </thead>
                       <tbody>

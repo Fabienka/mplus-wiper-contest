@@ -90,14 +90,14 @@ export default async function RegistrationsPage({
           <table className="data">
             <thead>
               <tr>
-                <th>Postava</th>
-                <th>Role</th>
-                <th>RIO</th>
-                <th>Discord</th>
-                <th>Přihlášeno</th>
-                <th>Stav</th>
-                <th>Zápisné</th>
-                <th />
+                <th scope="col">Postava</th>
+                <th scope="col">Role</th>
+                <th scope="col">RIO</th>
+                <th scope="col">Discord</th>
+                <th scope="col">Přihlášeno</th>
+                <th scope="col">Stav</th>
+                <th scope="col">Zápisné</th>
+                <th scope="col" />
               </tr>
             </thead>
             <tbody>
