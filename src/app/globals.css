@@ -529,6 +529,19 @@ table.data select {
   align-items: center;
 }
 
+/* Řada, ve které je vedle tlačítka pole s popiskem nad ním. Pole je vyšší
+   (popisek + input), takže by se tlačítko při align-items: center srovnalo
+   na střed celého sloupce a viselo pod inputem. Zarovnává se proto na
+   spodní hranu. */
+.row-actions-end {
+  align-items: flex-end;
+}
+
+/* Hledání nad tabulkou. */
+.search-form {
+  margin-bottom: 1.25rem;
+}
+
 .empty-state {
   color: var(--muted);
   font-size: 0.9rem;

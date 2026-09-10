@@ -289,7 +289,7 @@ export default async function TeamPage({
         )}
 
         <form action={addAvailability} style={{ marginTop: "1.25rem" }}>
-          <div className="row-actions" style={{ alignItems: "flex-end" }}>
+          <div className="row-actions row-actions-end">
             <div className="field" style={{ marginBottom: 0 }}>
               <label htmlFor="start">Od</label>
               <input id="start" name="start" type="datetime-local" required />
@@ -509,7 +509,7 @@ export default async function TeamPage({
 
                 <form action={addRunResult} style={{ marginTop: "0.75rem" }}>
                   <input type="hidden" name="matchId" value={match.id} />
-                  <div className="row-actions" style={{ alignItems: "flex-end" }}>
+                  <div className="row-actions row-actions-end">
                     <div className="field" style={{ marginBottom: 0, flex: 1 }}>
                       <label htmlFor={`run-${match.id}`}>Odkaz na běh</label>
                       <input
@@ -539,7 +539,7 @@ export default async function TeamPage({
           moderátor.
         </p>
         <form action={proposeMatch}>
-          <div className="row-actions" style={{ alignItems: "flex-end" }}>
+          <div className="row-actions row-actions-end">
             <div className="field" style={{ marginBottom: 0 }}>
               <label htmlFor="match-start">Od</label>
               <input id="match-start" name="start" type="datetime-local" required />

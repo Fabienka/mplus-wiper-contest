@@ -86,7 +86,7 @@ export default async function UsersPage({
 
         {/* Obyčejný GET formulář - hledání zůstane v adrese, dá se poslat
             odkazem a funguje bez JS. */}
-        <form className="row-actions" method="get" style={{ marginBottom: "1.25rem" }}>
+        <form className="row-actions row-actions-end search-form" method="get">
           <div className="field" style={{ marginBottom: 0, flex: 1 }}>
             <label htmlFor="q">Hledat</label>
             <input
