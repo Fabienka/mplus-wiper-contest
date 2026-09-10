@@ -19,19 +19,29 @@ const EXPECTED: Record<UserRole, Permission[]> = {
     "confirmEntryFee",
     "approveMatchTerms",
     "manageSeason",
+    "configureSeason",
     "runShuffle",
     "manageTeams",
+    "deleteTeams",
+    "viewUsers",
     "manageUsers",
     "issuePasswordReset",
   ],
   // Moderátor smí vydat odkaz na reset hesla, ale jen běžnému uživateli - tuhle
   // část hlídá canIssueResetFor (npm run check:password-reset), sem se vejde
   // jen to, že na stránku vůbec smí.
+  // Sezónu a týmy moderátor vidí a upravuje, ale jen vratně: název sezóny,
+  // stav registrace, časy z Raider.io, přepínač Aktivní u dungeonu a přesuny
+  // v soupiskách. Pravidla bodování (configureSeason), mazání rozdělení
+  // (deleteTeams) i změny rolí (manageUsers) zůstávají adminovi.
   MODERATOR: [
     "accessAdmin",
     "confirmEntryFee",
     "approveMatchTerms",
     "issuePasswordReset",
+    "manageSeason",
+    "manageTeams",
+    "viewUsers",
   ],
   USER: [],
 };

@@ -12,7 +12,7 @@ const LINKS: { href: string; label: string; permission: Permission }[] = [
   { href: "/admin/shuffle", label: "Shuffle", permission: "runShuffle" },
   { href: "/admin/teams", label: "Týmy", permission: "manageTeams" },
   { href: "/admin/season", label: "Sezóna a dungeony", permission: "manageSeason" },
-  { href: "/admin/users", label: "Uživatelé", permission: "manageUsers" },
+  { href: "/admin/users", label: "Uživatelé", permission: "viewUsers" },
   { href: "/admin/hesla", label: "Reset hesel", permission: "issuePasswordReset" },
 ];
 

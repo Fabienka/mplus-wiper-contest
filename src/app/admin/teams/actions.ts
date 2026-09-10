@@ -50,6 +50,8 @@ function parseDestination(raw: string, teamIds: Set<string>): Destination | null
  *
  * Rozbité složení týmu (jiné než 1 tank + 1 healer + 3 DPS) se schválně
  * nezakazuje - admin může potřebovat mezikrok. Stránka takový tým označí.
+ *
+ * Smí i moderátor - nic se tu nemaže, všechny přesuny jdou vzít zpátky.
  */
 export async function updateTeams(formData: FormData) {
   const admin = await requirePermission("manageTeams");
@@ -207,7 +209,7 @@ export async function addAsSubstitute(formData: FormData) {
  * srozumitelnou hlášku.
  */
 export async function deleteAllTeams(formData: FormData) {
-  const admin = await requirePermission("manageTeams");
+  const admin = await requirePermission("deleteTeams");
   const seasonId = String(formData.get("seasonId"));
 
   const [teamCount, membershipCount, matchCount] = await Promise.all([

@@ -59,7 +59,11 @@ export function compareUsersByRole(
 /** Co která role smí - ukazuje se u výběru role, ať je to zřejmé. */
 export const USER_ROLE_HINTS: Record<UserRole, string> = {
   ADMIN: "Kompletní práva.",
-  MODERATOR: "Jako uživatel + potvrzuje zápisné a schvaluje termíny.",
+  MODERATOR:
+    "Jako uživatel + potvrzuje zápisné, schvaluje termíny, přesouvá hráče " +
+    "v týmech a mění název sezóny, stav registrace a aktivní dungeony. " +
+    "Nesmí schvalovat registrace, pouštět shuffle, měnit pravidla bodování " +
+    "ani nic mazat.",
   USER: "Běžný účastník, do administrace nemá přístup.",
 };
 
