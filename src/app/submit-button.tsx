@@ -128,14 +128,19 @@ export function SubmitButton({
             <p>{confirm}</p>
 
             <div className="confirm-dialog-actions">
-              {/* type="button" je nutné - uvnitř formuláře by výchozí
+              {/* "Zavřít", ne "Zrušit". Půlka potvrzovaných akcí se sama
+                  jmenuje "Zrušit něco" (návrh termínu, schválení termínu,
+                  potvrzení zápisného) - dvě tlačítka vedle sebe, kde jedno
+                  ruší akci a druhé ruší dialog, je past.
+
+                  type="button" je nutné - uvnitř formuláře by výchozí
                   "submit" odeslal formulář rovnou. */}
               <button
                 type="button"
                 className="btn"
                 onClick={() => setAsking(false)}
               >
-                Zrušit
+                Zavřít
               </button>
               <button
                 type="button"

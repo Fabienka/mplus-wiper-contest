@@ -106,7 +106,7 @@ export default async function UsersPage({
           </button>
           {query && (
             <Link className="btn" href="/admin/users">
-              Zrušit
+              Zrušit hledání
             </Link>
           )}
         </form>

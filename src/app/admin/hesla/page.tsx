@@ -118,7 +118,7 @@ export default async function PasswordResetsPage({
           </button>
           {query && (
             <Link className="btn" href="/admin/hesla">
-              Zrušit
+              Zrušit hledání
             </Link>
           )}
         </form>
