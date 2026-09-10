@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "../../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { SPEC_ROLE_LABELS, formatDateTime } from "@/lib/labels";
@@ -8,8 +9,8 @@ import type {
   StoredRuleViolations,
   StoredTeamAssignments,
 } from "@/lib/shuffle";
-import { ConfirmButton } from "../confirm-button";
 import { applyVariant, runShuffleForSeason } from "./actions";
+import { ActionNotice } from "../../action-notice";
 
 export const dynamic = "force-dynamic";
 
@@ -74,21 +75,13 @@ export default async function ShufflePage({
       <h1>Shuffle</h1>
       <p className="admin-subtitle">{season.name}</p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.applied && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Varianta byla použita - týmy a členství jsou založené.
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={
+          searchParams.applied &&
+          "Varianta byla použita - týmy a členství jsou založené."
+        }
+      />
 
       <div className="stat-grid">
         <div className="stat">
@@ -126,9 +119,12 @@ export default async function ShufflePage({
         ) : (
           <form action={runShuffleForSeason}>
             <input type="hidden" name="seasonId" value={season.id} />
-            <button className="btn btn-accent" type="submit">
+            <SubmitButton
+              className="btn btn-accent"
+              pendingLabel="Počítám varianty..."
+            >
               Spustit shuffle
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>
@@ -287,13 +283,14 @@ export default async function ShufflePage({
                 {existingMemberships === 0 && (
                   <form>
                     <input type="hidden" name="proposalId" value={proposal.id} />
-                    <ConfirmButton
+                    <SubmitButton
+                      pendingLabel="Zakládám týmy..."
                       className="btn btn-accent"
-                      message={`Použít variantu ${proposal.variantNumber}? Založí se týmy a členství.`}
+                      confirm={`Použít variantu ${proposal.variantNumber}? Založí se týmy a členství.`}
                       formAction={applyVariant}
                     >
                       Použít tuto variantu
-                    </ConfirmButton>
+                    </SubmitButton>
                   </form>
                 )}
               </div>

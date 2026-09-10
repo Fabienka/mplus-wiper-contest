@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SubmitButton } from "../../submit-button";
 import { getCurrentUser } from "@/lib/admin";
 import {
   USER_ROLE_HINTS,
@@ -7,6 +8,7 @@ import {
   formatDateTime,
 } from "@/lib/labels";
 import { updateUserRole } from "./actions";
+import { ActionNotice } from "../../action-notice";
 
 export const dynamic = "force-dynamic";
 
@@ -31,21 +33,12 @@ export default async function UsersPage({
       <h1>Uživatelé</h1>
       <p className="admin-subtitle">Role a oprávnění</p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.saved && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Role uložená.
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={
+          searchParams.saved && `Role uživatele ${searchParams.saved} uložená.`
+        }
+      />
 
       <div className="card">
         <h2>Co která role smí</h2>
@@ -111,9 +104,12 @@ export default async function UsersPage({
                           </option>
                         ))}
                       </select>
-                      <button className="btn" type="submit">
+                      <SubmitButton
+                        className="btn"
+                        pendingLabel="Ukládám..."
+                      >
                         Uložit
-                      </button>
+                      </SubmitButton>
                     </form>
                   )}
                 </td>

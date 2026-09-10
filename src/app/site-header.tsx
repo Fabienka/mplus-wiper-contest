@@ -50,10 +50,10 @@ export async function SiteHeader() {
               <span className="site-user" title={user.name ?? undefined}>
                 {user.name}
               </span>
-              {/* NextAuth má vlastní odhlašovací stránku, funguje i bez JS. */}
-              <a className="btn" href="/api/auth/signout">
+              {/* Vlastní potvrzovací stránka, odhlášení funguje i bez JS. */}
+              <Link className="btn" href="/odhlaseni">
                 Odhlásit se
-              </a>
+              </Link>
             </>
           ) : (
             <>

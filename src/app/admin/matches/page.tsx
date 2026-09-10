@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SubmitButton } from "../../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/lib/labels";
 import { parseMonthParam, type CalendarEvent } from "@/lib/calendar";
 import { MonthCalendar } from "../../month-calendar";
-import { ConfirmButton } from "../confirm-button";
+import { ActionNotice } from "../../action-notice";
 import {
   closeMatch,
   confirmMatch,
@@ -104,21 +105,10 @@ export default async function MatchesPage({
       <h1>Termíny</h1>
       <p className="admin-subtitle">{season.name}</p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.saved && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Uloženo.
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={searchParams.saved && "Termín uložený."}
+      />
 
       {pending > 0 && (
         <div className="card">
@@ -204,9 +194,12 @@ export default async function MatchesPage({
                     {match.status === "PROPOSED" && (
                       <form action={confirmMatch}>
                         <input type="hidden" name="matchId" value={match.id} />
-                        <button className="btn btn-accent" type="submit">
+                        <SubmitButton
+                          className="btn btn-accent"
+                          pendingLabel="Schvaluji..."
+                        >
                           Schválit
-                        </button>
+                        </SubmitButton>
                       </form>
                     )}
 
@@ -214,12 +207,13 @@ export default async function MatchesPage({
                       <div className="row-actions" style={{ flexWrap: "wrap" }}>
                         <form action={closeMatch}>
                           <input type="hidden" name="matchId" value={match.id} />
-                          <ConfirmButton
+                          <SubmitButton
+                            pendingLabel="Uzavírám..."
                             className="btn btn-accent"
-                            message="Uzavřít zápas? Tým už nebude moct nahrát další běh."
+                            confirm="Uzavřít zápas? Tým už nebude moct nahrát další běh."
                           >
                             Uzavřít
-                          </ConfirmButton>
+                          </SubmitButton>
                         </form>
 
                         {/* Zrušit schválení jde jen dokud u zápasu nejsou běhy -
@@ -227,12 +221,13 @@ export default async function MatchesPage({
                         {match.results.length === 0 && (
                           <form action={revokeMatch}>
                             <input type="hidden" name="matchId" value={match.id} />
-                            <ConfirmButton
+                            <SubmitButton
+                              pendingLabel="Ruším..."
                               className="btn btn-danger"
-                              message="Opravdu vrátit termín mezi návrhy?"
+                              confirm="Opravdu vrátit termín mezi návrhy?"
                             >
                               Zrušit schválení
-                            </ConfirmButton>
+                            </SubmitButton>
                           </form>
                         )}
                       </div>
@@ -241,12 +236,13 @@ export default async function MatchesPage({
                     {match.status === "COMPLETED" && (
                       <form action={reopenMatch}>
                         <input type="hidden" name="matchId" value={match.id} />
-                        <ConfirmButton
+                        <SubmitButton
+                          pendingLabel="Otevírám..."
                           className="btn"
-                          message="Znovu otevřít zápas, aby šly doplnit výsledky?"
+                          confirm="Znovu otevřít zápas, aby šly doplnit výsledky?"
                         >
                           Znovu otevřít
-                        </ConfirmButton>
+                        </SubmitButton>
                       </form>
                     )}
                   </td>

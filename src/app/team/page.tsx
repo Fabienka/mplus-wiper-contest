@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { SubmitButton } from "../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getMyTeamContext } from "@/lib/team";
 import { findOverlaps, type MemberSlots, type Overlap } from "@/lib/availability";
@@ -12,7 +14,7 @@ import {
   formatTimeLimit,
   toDateTimeLocal,
 } from "@/lib/labels";
-import { ConfirmButton } from "../admin/confirm-button";
+import { ActionNotice } from "../action-notice";
 import {
   addAvailability,
   addRunResult,
@@ -33,11 +35,21 @@ export default async function TeamPage({
 }) {
   const context = await getMyTeamContext();
 
+  // Prázdné stavy nesmí být slepá ulička - z každého vede odkaz na to,
+  // co má člověk udělat dál, nebo aspoň co se čeká.
   if (!context) {
     return (
       <main className="site-main" id="obsah">
         <h1>Můj tým</h1>
-        <p className="error-text">Nejsi přihlášený.</p>
+        <div className="card">
+          <h2>Nejsi přihlášený</h2>
+          <p className="card-lead">
+            Termíny týmu jsou jen pro přihlášené účastníky soutěže.
+          </p>
+          <Link className="btn btn-accent" href="/login">
+            Přihlásit se
+          </Link>
+        </div>
       </main>
     );
   }
@@ -48,23 +60,36 @@ export default async function TeamPage({
     return (
       <main className="site-main" id="obsah">
         <h1>Můj tým</h1>
-        <p className="empty-state">
-          K účtu není přiřazená žádná postava. Projdi nejdřív registrací.
-        </p>
+        <div className="card">
+          <h2>Zatím nemáš přihlášku</h2>
+          <p className="card-lead">
+            K účtu není přiřazená žádná postava. Do soutěže se přihlásíš
+            registračním formulářem.
+          </p>
+          <Link className="btn btn-accent" href="/register">
+            Přejít na registraci
+          </Link>
+        </div>
       </main>
     );
   }
 
   if (!membership?.team) {
+    const substitute = membership?.status === "SUBSTITUTE";
+
     return (
       <main className="site-main" id="obsah">
         <h1>Můj tým</h1>
         <div className="card">
-          <p className="empty-state" style={{ margin: 0 }}>
-            {membership?.status === "SUBSTITUTE"
-              ? "Jsi vedený jako náhradník, zatím nejsi v žádném týmu."
-              : "Ještě nejsi zařazený do týmu. Týmy vzniknou po rozdělení."}
+          <h2>{substitute ? "Jsi náhradník" : "Čeká se na rozdělení týmů"}</h2>
+          <p className="card-lead">
+            {substitute
+              ? "Zatím nejsi v žádném týmu. Když někdo vypadne, ozve se ti moderátor."
+              : "Až se registrace uzavře, admin rozdělí hráče do týmů a tahle stránka se naplní."}
           </p>
+          <Link className="btn" href="/profile">
+            Zpět na profil
+          </Link>
         </div>
       </main>
     );
@@ -176,21 +201,10 @@ export default async function TeamPage({
         {team.members.length} hráčů - hraješ {SPEC_ROLE_LABELS[membership.roleInTeam]}
       </p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.saved && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Uloženo.
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={searchParams.saved && "Uloženo."}
+      />
 
       <div className="card">
         <h2>Kalendář</h2>
@@ -236,9 +250,13 @@ export default async function TeamPage({
                   <td>
                     <form action={deleteAvailability}>
                       <input type="hidden" name="availabilityId" value={slot.id} />
-                      <button className="btn btn-danger" type="submit">
+                      <SubmitButton
+                        className="btn btn-danger"
+                        pendingLabel="Mažu..."
+                        confirm="Opravdu smazat tenhle zadaný čas?"
+                      >
                         Smazat
-                      </button>
+                      </SubmitButton>
                     </form>
                   </td>
                 </tr>
@@ -261,9 +279,12 @@ export default async function TeamPage({
               <label htmlFor="note">Poznámka (nepovinné)</label>
               <input id="note" name="note" placeholder="Např. po 22:00 už jen možná" />
             </div>
-            <button className="btn btn-accent" type="submit">
+            <SubmitButton
+              className="btn btn-accent"
+              pendingLabel="Přidávám..."
+            >
               Přidat
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </div>
@@ -322,9 +343,12 @@ export default async function TeamPage({
                             name="end"
                             value={toDateTimeLocal(overlap.end)}
                           />
-                          <button className="btn" type="submit">
+                          <SubmitButton
+                            className="btn"
+                            pendingLabel="Navrhuji..."
+                          >
                             Navrhnout termín
-                          </button>
+                          </SubmitButton>
                         </form>
                       </td>
                     </tr>
@@ -376,12 +400,13 @@ export default async function TeamPage({
                     {match.status === "PROPOSED" && (
                       <form action={deleteMatch}>
                         <input type="hidden" name="matchId" value={match.id} />
-                        <ConfirmButton
+                        <SubmitButton
+                          pendingLabel="Ruším..."
                           className="btn btn-danger"
-                          message="Opravdu zrušit tenhle návrh termínu?"
+                          confirm="Opravdu zrušit tenhle návrh termínu?"
                         >
                           Zrušit
-                        </ConfirmButton>
+                        </SubmitButton>
                       </form>
                     )}
                   </td>
@@ -471,9 +496,12 @@ export default async function TeamPage({
                         required
                       />
                     </div>
-                    <button className="btn btn-accent" type="submit">
+                    <SubmitButton
+                      className="btn btn-accent"
+                      pendingLabel="Stahuji běh z Raider.io..."
+                    >
                       Nahrát výsledek
-                    </button>
+                    </SubmitButton>
                   </div>
                 </form>
               </div>
@@ -501,9 +529,12 @@ export default async function TeamPage({
               <label htmlFor="match-note">Poznámka (nepovinné)</label>
               <input id="match-note" name="note" placeholder="Např. sraz na Discordu" />
             </div>
-            <button className="btn btn-accent" type="submit">
+            <SubmitButton
+              className="btn btn-accent"
+              pendingLabel="Navrhuji..."
+            >
               Navrhnout
-            </button>
+            </SubmitButton>
           </div>
         </form>
       </div>

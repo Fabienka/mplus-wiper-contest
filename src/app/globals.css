@@ -451,6 +451,10 @@ table.data select {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  /* Ve flexové řadě (.row-actions, buňka tabulky) se tlačítko nesmí smrsknout
+     pod svůj popisek - "Uložit" se jinak zalomí na "Ulo / žit". */
+  flex: 0 0 auto;
+  white-space: nowrap;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);

@@ -16,6 +16,9 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+    // Bez tohohle se odhlašuje přes výchozí stránku NextAuth - anglicky,
+    // v cizím vzhledu a bez možnosti couvnout.
+    signOut: "/odhlaseni",
   },
   providers: [
     CredentialsProvider({

@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { SubmitButton } from "../../submit-button";
 import { getCurrentSeason } from "@/lib/season";
 import { SEASON_STATUS_LABELS, formatTimeLimit } from "@/lib/labels";
 import { DEFAULT_SCORING_CONFIG, parseScoringConfig } from "@/lib/scoring";
-import { ConfirmButton } from "../confirm-button";
+import { ActionNotice } from "../../action-notice";
 import {
   addDungeon,
   deleteDungeon,
@@ -53,25 +54,18 @@ export default async function SeasonPage({
       <h1>Sezóna a dungeony</h1>
       <p className="admin-subtitle">{season.name}</p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.synced !== undefined && !searchParams.error && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            {synced === 0
-              ? "Časy dungeonů už odpovídaly Raider.io, nic se neměnilo."
-              : `Doplněno časů z Raider.io: ${synced}.`}
-            {searchParams.missing &&
-              ` Na Raider.io se nepodařilo najít: ${searchParams.missing}.`}
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={
+          searchParams.synced !== undefined &&
+          (synced === 0
+            ? "Časy dungeonů už odpovídaly Raider.io, nic se neměnilo."
+            : `Doplněno časů z Raider.io: ${synced}.`) +
+            (searchParams.missing
+              ? ` Na Raider.io se nepodařilo najít: ${searchParams.missing}.`
+              : "")
+        }
+      />
 
       <div className="card">
         <h2>Nastavení sezóny</h2>
@@ -144,9 +138,12 @@ export default async function SeasonPage({
             </span>
           </div>
 
-          <button className="btn btn-accent" type="submit">
+          <SubmitButton
+            className="btn btn-accent"
+            pendingLabel="Ukládám..."
+          >
             Uložit sezónu
-          </button>
+          </SubmitButton>
         </form>
       </div>
 
@@ -156,9 +153,12 @@ export default async function SeasonPage({
         {/* Vlastní formulář, aby stažení časů nezáviselo na validaci tabulky. */}
         <form action={syncDungeonTimes} style={{ marginBottom: "1.25rem" }}>
           <input type="hidden" name="seasonId" value={season.id} />
-          <button className="btn" type="submit">
+          <SubmitButton
+            className="btn"
+            pendingLabel="Stahuji z Raider.io..."
+          >
             Doplnit časy z Raider.io
-          </button>
+          </SubmitButton>
           <span
             style={{
               color: "var(--muted)",
@@ -243,14 +243,15 @@ export default async function SeasonPage({
                       />
                     </td>
                     <td>
-                      <ConfirmButton
+                      <SubmitButton
+                        pendingLabel="Mažu..."
                         form="delete-dungeon"
                         className="btn btn-danger"
-                        message={`Opravdu smazat dungeon "${dungeon.dungeonName}"?`}
+                        confirm={`Opravdu smazat dungeon "${dungeon.dungeonName}"?`}
                         formAction={deleteDungeon.bind(null, dungeon.id)}
                       >
                         Smazat
-                      </ConfirmButton>
+                      </SubmitButton>
                     </td>
                   </tr>
                 ))}
@@ -303,9 +304,12 @@ export default async function SeasonPage({
               color: "var(--text)",
             }}
           />
-          <button className="btn" type="submit">
+          <SubmitButton
+            className="btn"
+            pendingLabel="Přidávám..."
+          >
             Přidat
-          </button>
+          </SubmitButton>
         </form>
       </div>
     </>

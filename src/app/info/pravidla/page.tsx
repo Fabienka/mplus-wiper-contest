@@ -8,6 +8,7 @@ import {
   parseScoringConfig,
 } from "@/lib/scoring";
 import { ENTRY_FEE_RECIPIENT } from "@/lib/contest-info";
+import { Notice } from "../../notice";
 
 export const dynamic = "force-dynamic";
 
@@ -114,9 +115,9 @@ export default async function RulesPage() {
         <h2>Co se boduje</h2>
 
         {configBroken && (
-          <p className="error-text" style={{ marginTop: 0 }}>
-            Nastavení bodování sezóny je poškozené, níže jsou výchozí hodnoty.
-          </p>
+          <Notice kind="error" title="Nastavení bodování sezóny je poškozené">
+            Níže jsou výchozí hodnoty. Řekni o tom adminovi.
+          </Notice>
         )}
 
         <ul className="info-list">

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SubmitButton } from "../../submit-button";
 import { getCurrentUser } from "@/lib/admin";
 import {
   USER_ROLE_LABELS,
@@ -9,7 +10,6 @@ import {
   RESET_TOKEN_TTL_MINUTES,
   canIssueResetFor,
 } from "@/lib/password-rules";
-import { ConfirmButton } from "../confirm-button";
 import { IssueResetForm } from "./issue-form";
 import { revokePasswordReset } from "./actions";
 
@@ -135,12 +135,13 @@ export default async function PasswordResetsPage() {
                           {pending && (
                             <form action={revokePasswordReset}>
                               <input type="hidden" name="userId" value={user.id} />
-                              <ConfirmButton
+                              <SubmitButton
+                                pendingLabel="Zneplatňuji..."
                                 className="btn btn-danger"
-                                message="Zneplatnit vydaný odkaz? Hráč si přes něj heslo už nenastaví."
+                                confirm="Zneplatnit vydaný odkaz? Hráč si přes něj heslo už nenastaví."
                               >
                                 Zneplatnit
-                              </ConfirmButton>
+                              </SubmitButton>
                             </form>
                           )}
                         </IssueResetForm>

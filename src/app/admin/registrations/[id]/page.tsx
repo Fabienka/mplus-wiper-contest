@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { SubmitButton } from "../../../submit-button";
 import { notFound } from "next/navigation";
-import { ConfirmButton } from "../../confirm-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/admin";
 import { can } from "@/lib/permissions";
@@ -175,12 +175,13 @@ export default async function RegistrationDetailPage({
             {canConfirmFee && (
               <form action={revokeEntryFee}>
                 <input type="hidden" name="registrationId" value={registration.id} />
-                <ConfirmButton
+                <SubmitButton
+                  pendingLabel="Ruším..."
                   className="btn btn-danger"
-                  message="Opravdu zrušit potvrzení zápisného?"
+                  confirm="Opravdu zrušit potvrzení zápisného?"
                 >
                   Zrušit potvrzení
-                </ConfirmButton>
+                </SubmitButton>
               </form>
             )}
           </>
@@ -202,9 +203,12 @@ export default async function RegistrationDetailPage({
                     placeholder="Např. kolik a od koho přišlo"
                   />
                 </div>
-                <button className="btn btn-accent" type="submit">
+                <SubmitButton
+                  className="btn btn-accent"
+                  pendingLabel="Potvrzuji..."
+                >
                   Potvrdit zápisné
-                </button>
+                </SubmitButton>
               </form>
             ) : (
               <p className="empty-state">
@@ -223,9 +227,12 @@ export default async function RegistrationDetailPage({
           <>
             <form action={approveRegistration} style={{ marginBottom: "1.5rem" }}>
               <input type="hidden" name="registrationId" value={registration.id} />
-              <button className="btn btn-accent" type="submit">
+              <SubmitButton
+                className="btn btn-accent"
+                pendingLabel="Schvaluji..."
+              >
                 Schválit registraci
-              </button>
+              </SubmitButton>
             </form>
 
             <form action={rejectRegistration}>
@@ -249,9 +256,12 @@ export default async function RegistrationDetailPage({
                   }}
                 />
               </div>
-              <button className="btn btn-danger" type="submit">
+              <SubmitButton
+                className="btn btn-danger"
+                pendingLabel="Zamítám..."
+              >
                 Zamítnout registraci
-              </button>
+              </SubmitButton>
             </form>
           </>
         ) : (
@@ -260,9 +270,12 @@ export default async function RegistrationDetailPage({
             <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--muted)" }}>
               Vrátí registraci mezi čekající, aby šla posoudit znovu.
             </p>
-            <button className="btn" type="submit">
+            <SubmitButton
+              className="btn"
+              pendingLabel="Vracím..."
+            >
               Vrátit k posouzení
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>

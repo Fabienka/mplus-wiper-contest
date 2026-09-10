@@ -1,11 +1,12 @@
 import Link from "next/link";
+import { SubmitButton } from "../../submit-button";
 import type { SpecRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { SPEC_ROLE_LABELS, plural } from "@/lib/labels";
 import { describeTeamComposition } from "@/lib/shuffle";
-import { ConfirmButton } from "../confirm-button";
 import { addAsSubstitute, deleteAllTeams, updateTeams } from "./actions";
+import { ActionNotice } from "../../action-notice";
 
 export const dynamic = "force-dynamic";
 
@@ -150,29 +151,14 @@ export default async function TeamsPage({
       <h1>Týmy</h1>
       <p className="admin-subtitle">{season.name}</p>
 
-      {searchParams.error && (
-        <div className="card">
-          <p className="error-text" style={{ margin: 0 }}>
-            {searchParams.error}
-          </p>
-        </div>
-      )}
-
-      {searchParams.saved && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Změny uložené.
-          </p>
-        </div>
-      )}
-
-      {searchParams.deleted && (
-        <div className="card">
-          <p className="success-text" style={{ margin: 0 }}>
-            Týmy smazané. Nové rozdělení jde vytvořit na stránce Shuffle.
-          </p>
-        </div>
-      )}
+      <ActionNotice
+        error={searchParams.error}
+        success={
+          searchParams.deleted
+            ? "Týmy smazané. Nové rozdělení jde vytvořit na stránce Shuffle."
+            : searchParams.saved && "Změny v týmech uložené."
+        }
+      />
 
       {!hasAnything ? (
         <div className="card">
@@ -271,9 +257,12 @@ export default async function TeamsPage({
             )}
 
             <div className="card">
-              <button className="btn btn-accent" type="submit">
+              <SubmitButton
+                className="btn btn-accent"
+                pendingLabel="Ukládám..."
+              >
                 Uložit změny
-              </button>
+              </SubmitButton>
               <span
                 style={{
                   color: "var(--muted)",
@@ -326,9 +315,12 @@ export default async function TeamsPage({
                             name="characterId"
                             value={registration.characterId}
                           />
-                          <button className="btn" type="submit">
+                          <SubmitButton
+                            className="btn"
+                            pendingLabel="Přidávám..."
+                          >
                             Přidat mezi náhradníky
-                          </button>
+                          </SubmitButton>
                         </form>
                       </td>
                     </tr>
@@ -348,12 +340,13 @@ export default async function TeamsPage({
             </p>
             <form action={deleteAllTeams}>
               <input type="hidden" name="seasonId" value={season.id} />
-              <ConfirmButton
+              <SubmitButton
+                pendingLabel="Mažu..."
                 className="btn btn-danger"
-                message={`Opravdu smazat všechny týmy sezóny "${season.name}"? Nejde to vrátit.`}
+                confirm={`Opravdu smazat všechny týmy sezóny "${season.name}"? Nejde to vrátit.`}
               >
                 Smazat všechny týmy
-              </ConfirmButton>
+              </SubmitButton>
             </form>
           </div>
         </>
