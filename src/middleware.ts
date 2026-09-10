@@ -15,7 +15,7 @@ const ROUTE_PERMISSIONS: [string, Permission][] = [
   ["/admin/season", "manageSeason"],
   ["/admin/shuffle", "runShuffle"],
   ["/admin/teams", "manageTeams"],
-  ["/admin/users", "manageUsers"],
+  ["/admin/users", "viewUsers"],
   ["/admin", "accessAdmin"],
 ];
 

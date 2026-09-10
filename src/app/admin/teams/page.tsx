@@ -3,6 +3,8 @@ import { NoSeason } from "../no-season";
 import { SubmitButton } from "../../submit-button";
 import type { SpecRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getCurrentUser } from "@/lib/admin";
+import { can } from "@/lib/permissions";
 import { getCurrentSeason } from "@/lib/season";
 import { SPEC_ROLE_LABELS, plural } from "@/lib/labels";
 import { describeTeamComposition } from "@/lib/shuffle";
@@ -99,7 +101,11 @@ export default async function TeamsPage({
 }: {
   searchParams: { error?: string; saved?: string; deleted?: string };
 }) {
-  const season = await getCurrentSeason();
+  const [season, user] = await Promise.all([getCurrentSeason(), getCurrentUser()]);
+
+  // Přesuny v soupiskách zvládne i moderátor - nic se jimi nemaže a jdou
+  // vzít zpátky. Smazat celé rozdělení smí jen admin.
+  const canDelete = can(user?.role, "deleteTeams");
 
   if (!season) {
     return (
@@ -343,27 +349,29 @@ export default async function TeamsPage({
             </div>
           )}
 
-          <div className="card">
-            <h2>Smazat rozdělení</h2>
-            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem" }}>
-              Smaže všechny týmy a členství sezóny ({teams.length}{" "}
-              {plural(teams.length, "tým", "týmy", "týmů")}, {memberships.length}{" "}
-              členství). Použitý shuffle běh se vrátí mezi návrhy, takže půjde
-              použít jiná varianta. Nejde vzít zpět.
-            </p>
-            <form action={deleteAllTeams}>
-              <input type="hidden" name="seasonId" value={season.id} />
-              <SubmitButton
-                pendingLabel="Mažu..."
-                className="btn btn-danger"
-                confirmTitle="Smazat všechny týmy?"
-                confirm={`Zruší se všechny týmy sezóny "${season.name}" i členství v nich. Nejde to vrátit.`}
-                confirmLabel="Smazat všechny týmy"
-              >
-                Smazat všechny týmy
-              </SubmitButton>
-            </form>
-          </div>
+          {canDelete && (
+            <div className="card">
+              <h2>Smazat rozdělení</h2>
+              <p style={{ margin: "0 0 1rem", fontSize: "0.9rem" }}>
+                Smaže všechny týmy a členství sezóny ({teams.length}{" "}
+                {plural(teams.length, "tým", "týmy", "týmů")}, {memberships.length}{" "}
+                členství). Použitý shuffle běh se vrátí mezi návrhy, takže půjde
+                použít jiná varianta. Nejde vzít zpět.
+              </p>
+              <form action={deleteAllTeams}>
+                <input type="hidden" name="seasonId" value={season.id} />
+                <SubmitButton
+                  pendingLabel="Mažu..."
+                  className="btn btn-danger"
+                  confirmTitle="Smazat všechny týmy?"
+                  confirm={`Zruší se všechny týmy sezóny "${season.name}" i členství v nich. Nejde to vrátit.`}
+                  confirmLabel="Smazat všechny týmy"
+                >
+                  Smazat všechny týmy
+                </SubmitButton>
+              </form>
+            </div>
+          )}
         </>
       )}
     </>

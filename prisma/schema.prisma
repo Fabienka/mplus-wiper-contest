@@ -11,8 +11,10 @@ datasource db {
 
 enum UserRole {
   ADMIN
-  // Moderátor = běžný uživatel + potvrzování zápisného a schvalování termínů.
-  // Nesmí schvalovat/zamítat registrace ani sahat na sezónu, shuffle a týmy.
+  // Moderátor = běžný uživatel + provoz sezóny: zápisné, termíny, přesuny
+  // v týmech a vratné úpravy sezóny (název, stav registrace, aktivní dungeony).
+  // Nesmí schvalovat/zamítat registrace, pouštět shuffle, měnit pravidla
+  // bodování ani mazat. Přesnou matici drží src/lib/permissions.ts.
   MODERATOR
   USER
 }

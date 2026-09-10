@@ -4,8 +4,9 @@ import type { UserRole } from "@prisma/client";
  * Oprávnění podle role.
  *
  * - ADMIN     - kompletní práva
- * - MODERATOR - běžný uživatel + potvrzování zápisného a schvalování termínů;
- *               nesmí schvalovat registrace ani sahat na sezónu, shuffle a týmy
+ * - MODERATOR - běžný uživatel + provoz sezóny: zápisné, termíny, přesuny
+ *               v týmech a drobné úpravy sezóny. Nesmí schvalovat registrace,
+ *               pouštět shuffle, sahat na pravidla sezóny ani nic mazat.
  * - USER      - do administrace nemá přístup
  *
  * Soubor schválně nemá běhový import z Prisma klienta (jen typ), aby šel
@@ -26,9 +27,31 @@ export const PERMISSIONS = {
    * tohle je jen vstup na stránku.
    */
   issuePasswordReset: ["ADMIN", "MODERATOR"],
-  manageSeason: ["ADMIN"],
+  /**
+   * Stránka Sezóna a dungeony a její vratné úpravy - název sezóny, stav
+   * registrace, doplnění časů z Raider.io a přepínač Aktivní u dungeonu.
+   */
+  manageSeason: ["ADMIN", "MODERATOR"],
+  /**
+   * Pravidla sezóny, na kterých závisí bodování a už odehrané zápasy: slug
+   * Raider.io, nejnižší bodovaný klíč, body za úroveň klíče, názvy a časy
+   * dungeonů a přidávání/mazání dungeonů. Jen admin.
+   */
+  configureSeason: ["ADMIN"],
   runShuffle: ["ADMIN"],
-  manageTeams: ["ADMIN"],
+  /**
+   * Stránka Týmy a ruční úpravy soupisek - přesuny mezi týmy a náhradníky,
+   * role v týmu, název týmu. Nic z toho nemaže data.
+   */
+  manageTeams: ["ADMIN", "MODERATOR"],
+  /** Smazání celého rozdělení sezóny. Nevratné, proto jen admin. */
+  deleteTeams: ["ADMIN"],
+  /**
+   * Seznam uživatelů a detail jednoho z nich - kdo to je, jakou má postavu,
+   * v jakém je týmu, jestli má zaplacené zápisné a co odběhal. Jen čtení.
+   */
+  viewUsers: ["ADMIN", "MODERATOR"],
+  /** Změna role uživatele. */
   manageUsers: ["ADMIN"],
 } as const satisfies Record<string, readonly UserRole[]>;
 

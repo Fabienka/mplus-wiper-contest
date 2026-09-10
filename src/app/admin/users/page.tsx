@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { SubmitButton } from "../../submit-button";
 import { getCurrentUser } from "@/lib/admin";
+import { can } from "@/lib/permissions";
 import {
   USER_ROLE_HINTS,
   USER_ROLE_LABELS,
@@ -23,6 +24,9 @@ export default async function UsersPage({
   searchParams: { error?: string; saved?: string; q?: string };
 }) {
   const currentUser = await getCurrentUser();
+
+  // Moderátor seznam i detaily vidí, role ale mění jen admin.
+  const canManage = can(currentUser?.role, "manageUsers");
 
   // Seznam má i na testovacích datech čtyřicet řádků a rostl by s každou
   // sezónou. Hledá se přes jméno účtu, postavy i Discord nick - podle toho,
@@ -59,7 +63,9 @@ export default async function UsersPage({
   return (
     <>
       <h1>Uživatelé</h1>
-      <p className="admin-subtitle">Role a oprávnění</p>
+      <p className="admin-subtitle">
+        {canManage ? "Role a oprávnění" : "Přehled účastníků"}
+      </p>
 
       <ActionNotice
         error={searchParams.error}
@@ -130,7 +136,9 @@ export default async function UsersPage({
             {users.map((user) => (
               <tr key={user.id}>
                 <td>
-                  {user.username}
+                  <Link className="link" href={`/admin/users/${user.id}`}>
+                    {user.username}
+                  </Link>
                   {user.id === currentUser?.id && (
                     <span className="meta">
                       {" "}
@@ -147,8 +155,8 @@ export default async function UsersPage({
                 <td>{formatDateTime(user.createdAt)}</td>
                 <td>
                   {/* Vlastní řádek nemá formulář - roli si admin měnit nemůže
-                      a vypnuté tlačítko by jen mátlo. */}
-                  {user.id === currentUser?.id ? (
+                      a vypnuté tlačítko by jen mátlo. Moderátor role jen vidí. */}
+                  {!canManage || user.id === currentUser?.id ? (
                     <span className="badge badge-approved">
                       {USER_ROLE_LABELS[user.role]}
                     </span>

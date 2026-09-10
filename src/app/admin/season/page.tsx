@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NoSeason } from "../no-season";
+import { getCurrentUser } from "@/lib/admin";
+import { can } from "@/lib/permissions";
 import { SubmitButton } from "../../submit-button";
 import { getCurrentSeason } from "@/lib/season";
 import { SEASON_STATUS_LABELS, formatTimeLimit } from "@/lib/labels";
@@ -24,7 +26,12 @@ export default async function SeasonPage({
 }: {
   searchParams: { synced?: string; missing?: string; error?: string };
 }) {
-  const season = await getCurrentSeason();
+  const [season, user] = await Promise.all([getCurrentSeason(), getCurrentUser()]);
+
+  // Moderátor stránku vidí, ale mění jen název sezóny, stav registrace,
+  // časy z Raider.io a přepínač Aktivní. Zbytek jsou pravidla bodování,
+  // na kterých visí už spočtené výsledky - ta vidí jen pro informaci.
+  const canConfigure = can(user?.role, "configureSeason");
 
   if (!season) {
     return (
@@ -89,55 +96,68 @@ export default async function SeasonPage({
             </select>
           </div>
 
-          <div className="field">
-            <label htmlFor="raiderioSeasonSlug">Slug sezóny na Raider.io</label>
-            <input
-              id="raiderioSeasonSlug"
-              name="raiderioSeasonSlug"
-              defaultValue={season.raiderioSeasonSlug ?? ""}
-              placeholder="season-mn-2"
-            />
-            <span className="meta">
-              Najdeš ho v adrese běhu na Raider.io:
-              raider.io/mythic-plus-runs/<b>season-mn-2</b>/...
-            </span>
-          </div>
+          {canConfigure ? (
+            <>
+            <div className="field">
+              <label htmlFor="raiderioSeasonSlug">Slug sezóny na Raider.io</label>
+              <input
+                id="raiderioSeasonSlug"
+                name="raiderioSeasonSlug"
+                defaultValue={season.raiderioSeasonSlug ?? ""}
+                placeholder="season-mn-2"
+              />
+              <span className="meta">
+                Najdeš ho v adrese běhu na Raider.io:
+                raider.io/mythic-plus-runs/<b>season-mn-2</b>/...
+              </span>
+            </div>
 
-          <div className="field">
-            <label htmlFor="minScoredKeyLevel">Nejnižší bodovaný klíč</label>
-            <input
-              id="minScoredKeyLevel"
-              name="minScoredKeyLevel"
-              type="number"
-              min="2"
-              max="30"
-              step="1"
-              defaultValue={scoring.minScoredKeyLevel}
-              required
-            />
-            <span className="meta">
-              Nižší klíče se nebodují vůbec, i když je tým stihne v limitu.
-              Zároveň se od téhle výšky počítá skóre, takže nejnižší bodovaný
-              klíč začíná na nule.
-            </span>
-          </div>
+            <div className="field">
+              <label htmlFor="minScoredKeyLevel">Nejnižší bodovaný klíč</label>
+              <input
+                id="minScoredKeyLevel"
+                name="minScoredKeyLevel"
+                type="number"
+                min="2"
+                max="30"
+                step="1"
+                defaultValue={scoring.minScoredKeyLevel}
+                required
+              />
+              <span className="meta">
+                Nižší klíče se nebodují vůbec, i když je tým stihne v limitu.
+                Zároveň se od téhle výšky počítá skóre, takže nejnižší bodovaný
+                klíč začíná na nule.
+              </span>
+            </div>
 
-          <div className="field">
-            <label htmlFor="pointsPerKeyLevel">Body za úroveň klíče</label>
-            <input
-              id="pointsPerKeyLevel"
-              name="pointsPerKeyLevel"
-              type="number"
-              min="100"
-              step="10"
-              defaultValue={scoring.pointsPerKeyLevel}
-              required
-            />
-            <span className="meta">
-              Nesmí být pod 100 - časový bonus je až 100 bodů a vyšší klíč musí
-              porazit nižší i při horším čase.
-            </span>
-          </div>
+            <div className="field">
+              <label htmlFor="pointsPerKeyLevel">Body za úroveň klíče</label>
+              <input
+                id="pointsPerKeyLevel"
+                name="pointsPerKeyLevel"
+                type="number"
+                min="100"
+                step="10"
+                defaultValue={scoring.pointsPerKeyLevel}
+                required
+              />
+              <span className="meta">
+                Nesmí být pod 100 - časový bonus je až 100 bodů a vyšší klíč musí
+                porazit nižší i při horším čase.
+              </span>
+            </div>
+            </>
+          ) : (
+            <div className="field">
+              <span className="meta">
+                Slug Raider.io ({season.raiderioSeasonSlug ?? "nevyplněný"}), nejnižší
+                bodovaný klíč ({scoring.minScoredKeyLevel}) a body za úroveň klíče
+                ({scoring.pointsPerKeyLevel}) mění jen administrátor - závisí na nich
+                už spočtené výsledky.
+              </span>
+            </div>
+          )}
 
           <SubmitButton
             className="btn btn-accent"
@@ -201,39 +221,55 @@ export default async function SeasonPage({
                   <tr key={dungeon.id}>
                     <td>
                       <input type="hidden" name="dungeonId" value={dungeon.id} />
-                      <input
-                        name={`name-${dungeon.id}`}
-                        defaultValue={dungeon.dungeonName}
-                        required
-                      />
+                      {canConfigure ? (
+                        <input
+                          name={`name-${dungeon.id}`}
+                          defaultValue={dungeon.dungeonName}
+                          required
+                        />
+                      ) : (
+                        dungeon.dungeonName
+                      )}
                     </td>
                     <td>
-                      <input
-                        name={`abbr-${dungeon.id}`}
-                        defaultValue={dungeon.abbreviation}
-                        maxLength={8}
-                        required
-                      />
+                      {canConfigure ? (
+                        <input
+                          name={`abbr-${dungeon.id}`}
+                          defaultValue={dungeon.abbreviation}
+                          maxLength={8}
+                          required
+                        />
+                      ) : (
+                        dungeon.abbreviation
+                      )}
                     </td>
                     <td>
-                      <input
-                        name={`time-${dungeon.id}`}
-                        defaultValue={formatTimeLimit(dungeon.timeLimitSeconds)}
-                        placeholder="TBD"
-                        pattern="\d+(:[0-5]\d)?"
-                        title="Formát mm:ss, např. 33:00. Prázdné = zatím neurčeno."
-                      />
+                      {canConfigure ? (
+                        <input
+                          name={`time-${dungeon.id}`}
+                          defaultValue={formatTimeLimit(dungeon.timeLimitSeconds)}
+                          placeholder="TBD"
+                          pattern="\d+(:[0-5]\d)?"
+                          title="Formát mm:ss, např. 33:00. Prázdné = zatím neurčeno."
+                        />
+                      ) : (
+                        formatTimeLimit(dungeon.timeLimitSeconds) || "TBD"
+                      )}
                     </td>
                     <td>
-                      <input
-                        name={`mult-${dungeon.id}`}
-                        type="number"
-                        step="0.05"
-                        min="0.05"
-                        defaultValue={dungeon.bonusMultiplier}
-                        title="1 = bez zvýhodnění"
-                        required
-                      />
+                      {canConfigure ? (
+                        <input
+                          name={`mult-${dungeon.id}`}
+                          type="number"
+                          step="0.05"
+                          min="0.05"
+                          defaultValue={dungeon.bonusMultiplier}
+                          title="1 = bez zvýhodnění"
+                          required
+                        />
+                      ) : (
+                        dungeon.bonusMultiplier
+                      )}
                     </td>
                     <td>
                       <input
@@ -244,17 +280,19 @@ export default async function SeasonPage({
                       />
                     </td>
                     <td>
-                      <SubmitButton
-                        pendingLabel="Mažu..."
-                        form="delete-dungeon"
-                        className="btn btn-danger"
-                        confirmTitle="Smazat dungeon?"
-                        confirm={`"${dungeon.dungeonName}" zmizí z rotace sezóny. Běhy, které v něm už tým odehrál, zůstanou.`}
-                        confirmLabel="Smazat dungeon"
-                        formAction={deleteDungeon.bind(null, dungeon.id)}
-                      >
-                        Smazat
-                      </SubmitButton>
+                      {canConfigure && (
+                        <SubmitButton
+                          pendingLabel="Mažu..."
+                          form="delete-dungeon"
+                          className="btn btn-danger"
+                          confirmTitle="Smazat dungeon?"
+                          confirm={`"${dungeon.dungeonName}" zmizí z rotace sezóny. Běhy, které v něm už tým odehrál, zůstanou.`}
+                          confirmLabel="Smazat dungeon"
+                          formAction={deleteDungeon.bind(null, dungeon.id)}
+                        >
+                          Smazat
+                        </SubmitButton>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -276,37 +314,39 @@ export default async function SeasonPage({
         <form id="delete-dungeon" />
       </div>
 
-      <div className="card">
-        <h2>Přidat dungeon</h2>
-        <form action={addDungeon} className="row-actions">
-          <input type="hidden" name="seasonId" value={season.id} />
-          {/* Vzhled má .inline-input - je to stejné pole jako v tabulce výš,
-              jen tady není v <table class="data">, kde ho stylují ta pravidla. */}
-          <input
-            className="inline-input"
-            name="dungeonName"
-            placeholder="Název dungeonu"
-            aria-label="Název dungeonu"
-            required
-            style={{ flex: 1 }}
-          />
-          <input
-            className="inline-input"
-            name="abbreviation"
-            placeholder="ZKR"
-            aria-label="Zkratka dungeonu"
-            maxLength={8}
-            required
-            style={{ width: "100px" }}
-          />
-          <SubmitButton
-            className="btn"
-            pendingLabel="Přidávám..."
-          >
-            Přidat
-          </SubmitButton>
-        </form>
-      </div>
+      {canConfigure && (
+        <div className="card">
+          <h2>Přidat dungeon</h2>
+          <form action={addDungeon} className="row-actions">
+            <input type="hidden" name="seasonId" value={season.id} />
+            {/* Vzhled má .inline-input - je to stejné pole jako v tabulce výš,
+                jen tady není v <table class="data">, kde ho stylují ta pravidla. */}
+            <input
+              className="inline-input"
+              name="dungeonName"
+              placeholder="Název dungeonu"
+              aria-label="Název dungeonu"
+              required
+              style={{ flex: 1 }}
+            />
+            <input
+              className="inline-input"
+              name="abbreviation"
+              placeholder="ZKR"
+              aria-label="Zkratka dungeonu"
+              maxLength={8}
+              required
+              style={{ width: "100px" }}
+            />
+            <SubmitButton
+              className="btn"
+              pendingLabel="Přidávám..."
+            >
+              Přidat
+            </SubmitButton>
+          </form>
+        </div>
+      )}
     </>
   );
 }
