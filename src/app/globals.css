@@ -886,6 +886,154 @@ pre.json {
   max-width: 1100px;
 }
 
+/* ---------- Obal veřejné stránky ---------- */
+
+/* Sloupec přes celou výšku okna, aby patička držela dole i na krátké
+   stránce. Bez toho by na prázdném stavu skončila v půlce obrazovky. */
+.page-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.page-shell > main {
+  flex: 1;
+  width: 100%;
+}
+
+/* ---------- Úvodní blok ---------- */
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  margin-bottom: 2rem;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--brand) 30%, var(--surface));
+}
+
+.hero > img {
+  display: block;
+  flex: none;
+}
+
+.hero h1 {
+  margin: 0 0 0.35rem;
+}
+
+.hero-sub {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.hero-lead {
+  margin: 0.9rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  max-width: 46ch;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
+}
+
+/* Na telefonu se logo postaví nad text a všechno se srovná na střed. */
+@media (max-width: 640px) {
+  .hero {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.1rem;
+    padding: 1.5rem 1.25rem;
+  }
+
+  .hero > img {
+    width: 108px;
+    height: 108px;
+  }
+
+  .hero-lead {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-actions {
+    justify-content: center;
+  }
+}
+
+/* ---------- Patička ---------- */
+
+.site-footer {
+  margin-top: 3rem;
+  background: var(--brand);
+  border-top: 2px solid var(--accent-strong);
+}
+
+.site-footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+}
+
+.site-footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.site-footer-brand img {
+  display: block;
+  flex: none;
+}
+
+.site-footer-brand > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-footer-org {
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+  font-size: 0.8rem;
+}
+
+.site-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.site-footer-nav a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.site-footer-nav a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+}
+
+@media (max-width: 640px) {
+  .site-footer-inner {
+    padding: 1.1rem 1rem;
+  }
+}
+
 /* ---------- Měsíční kalendář ---------- */
 
 .cal-header {

@@ -1,4 +1,4 @@
-import { SiteHeader } from "../site-header";
+import { PublicShell } from "../public-shell";
 
 /**
  * Lišta patří do layoutu, ne do stránky - stránka ji jinak musela vykreslit
@@ -10,9 +10,6 @@ export default function LeaderboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <SiteHeader />
-      {children}
-    </>
+    <PublicShell>{children}</PublicShell>
   );
 }

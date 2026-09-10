@@ -1,10 +1,7 @@
-import { SiteHeader } from "../site-header";
+import { PublicShell } from "../public-shell";
 
 export default function ProfileLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <SiteHeader />
-      {children}
-    </>
+    <PublicShell>{children}</PublicShell>
   );
 }
