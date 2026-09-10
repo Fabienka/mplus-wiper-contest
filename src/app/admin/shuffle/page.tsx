@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Notice } from "../../notice";
 import { NoSeason } from "../no-season";
 import { SubmitButton } from "../../submit-button";
 import { prisma } from "@/lib/prisma";
@@ -133,18 +134,19 @@ export default async function ShufflePage({
         )}
       </div>
 
+      {/* Upozornění, ne běžná karta - je to překážka, o kterou se admin
+          zarazí až po spuštění shufflu, když bude chtít variantu použít. */}
       {existingMemberships > 0 && (
-        <div className="card">
-          <h2>Týmy už jsou rozdělené</h2>
-          <p style={{ margin: "0 0 1rem", fontSize: "0.9rem" }}>
-            Sezóna má {existingMemberships} členství. Rozdělení jde ručně
-            doladit nebo celé smazat na stránce Týmy - teprve pak půjde použít
-            jiná varianta. Přepsat ho rovnou by zahodilo i navázané zápasy.
+        <Notice kind="info" title="Týmy už jsou rozdělené">
+          Sezóna má {existingMemberships} členství. Rozdělení jde ručně doladit
+          nebo celé smazat na stránce Týmy - teprve pak půjde použít jiná
+          varianta. Přepsat ho rovnou by zahodilo i navázané zápasy.
+          <p style={{ margin: "0.75rem 0 0" }}>
+            <Link className="btn" href="/admin/teams">
+              Přejít na týmy
+            </Link>
           </p>
-          <Link className="btn" href="/admin/teams">
-            Přejít na týmy
-          </Link>
-        </div>
+        </Notice>
       )}
 
       {!latestRun ? (

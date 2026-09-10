@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { buildLeaderboard } from "@/lib/leaderboard";
+import { getMyTeamId } from "@/lib/team";
 import {
   SEASON_STATUS_LABELS,
   SPEC_ROLE_LABELS,
@@ -16,8 +17,15 @@ export const metadata = {
   title: "Žebříček",
 };
 
+/** Kolik řádků je zhruba vidět bez rolování - podle toho se rozhoduje,
+ *  jestli se nad tabulku vypíše, kde je tvůj tým. */
+const RADKU_BEZ_ROLOVANI = 5;
+
 export default async function LeaderboardPage() {
-  const season = await getCurrentSeason();
+  const [season, myTeamId] = await Promise.all([
+    getCurrentSeason(),
+    getMyTeamId(),
+  ]);
 
   if (!season) {
     return (
@@ -75,6 +83,12 @@ export default async function LeaderboardPage() {
   const odehrali = rows.filter((row) => row.totalRuns > 0);
   const cekaji = rows.filter((row) => row.totalRuns === 0);
 
+  // Pozice v tabulce, ne pořadí v soutěži - podle ní se pozná, jestli je
+  // vlastní tým vidět bez rolování.
+  const mujIndex = odehrali.findIndex((row) => row.teamId === myTeamId);
+  const mujRadek = mujIndex >= 0 ? odehrali[mujIndex] : null;
+  const mujPoradi = mujIndex + 1;
+
   const sestavaTymu = new Map(
     teams.map((team) => [
       team.id,
@@ -103,6 +117,21 @@ export default async function LeaderboardPage() {
         </p>
       </div>
 
+      {mujRadek && mujPoradi > RADKU_BEZ_ROLOVANI && (
+        <p className="rank-mine-summary">
+          Tvůj tým <strong>{mujRadek.teamName}</strong> je{" "}
+          {mujRadek.rank === null ? (
+            "zatím bez pořadí"
+          ) : (
+            <>
+              <strong>{mujRadek.rank}.</strong> se{" "}
+              <strong>{mujRadek.best?.points?.toFixed(1)}</strong> body
+            </>
+          )}
+          .
+        </p>
+      )}
+
       {odehrali.length === 0 ? (
         <div className="card">
           <p className="empty-state" style={{ margin: 0 }}>
@@ -126,18 +155,31 @@ export default async function LeaderboardPage() {
             <tbody>
               {odehrali.map((row) => {
                 const sestava = sestavaTymu.get(row.teamId) ?? [];
+                const jeMuj = row.teamId === myTeamId;
+                // Stupně vítězů jen pro tři nejlepší, a jen když opravdu
+                // mají pořadí - tým bez platného běhu má rank null.
+                const medaile =
+                  row.rank !== null && row.rank <= 3 ? `rank-${row.rank}` : "";
 
                 return (
-                  <tr key={row.teamId}>
+                  <tr
+                    key={row.teamId}
+                    className={[medaile, jeMuj ? "rank-mine" : ""]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
                     <td>
                       {row.rank === null ? (
                         <span className="muted">-</span>
+                      ) : medaile ? (
+                        <span className="rank-medal">{row.rank}.</span>
                       ) : (
                         <strong>{row.rank}.</strong>
                       )}
                     </td>
                     <td>
                       {row.teamName}
+                      {jeMuj && <span className="rank-mine-tag">tvůj tým</span>}
                       {sestava.length > 0 && (
                         <div className="meta">
                           {sestava

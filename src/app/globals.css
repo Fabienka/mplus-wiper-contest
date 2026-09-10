@@ -41,6 +41,13 @@
      polovinu zbytku palety, a vedle zlaté proto vypadala jako šedá. */
   --ice: #2fc0d8;
 
+  /* Stupně vítězů. Zlato je rovnou accent; stříbro a bronz jsou dopočítané
+     do stejné rodiny. Pořadí se nepozná podle jasu (stříbro je světlejší než
+     zlato, jako v reálu), ale podle odstínu - a první místo má navíc sytější
+     podklad řádku. */
+  --silver: #c3c8d2;
+  --bronze: #c98a5c;
+
   --danger: #ef6b62;
   --success: #34c96f;
 
@@ -91,6 +98,39 @@ h1 {
 .stat-label,
 .admin-sidebar h2 {
   letter-spacing: 0.02em;
+}
+
+/* Nic v aplikaci nemělo přechod, takže hover skákal skokem. Jen barvy -
+   posuny a měnění velikosti by u tabulek spíš rušily. */
+a,
+button,
+.btn,
+.card,
+.stat-link,
+.cal-day-link,
+input,
+select,
+textarea,
+table.data tbody tr {
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease,
+    color 0.14s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a,
+  button,
+  .btn,
+  .card,
+  .stat-link,
+  .cal-day-link,
+  input,
+  select,
+  textarea,
+  table.data tbody tr {
+    transition: none;
+  }
 }
 
 /* Jeden focus prstenec pro všechno. Dřív ho měla jen formulářová pole a dny
@@ -408,9 +448,12 @@ button.primary:disabled {
   background: var(--bg);
 }
 
+/* Zlatý proužek u kraje - samotná zlatá barva textu se v seznamu odkazů
+   ztrácela. */
 .admin-nav a[aria-current="page"] {
   background: var(--bg);
   color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .admin-main {
@@ -438,10 +481,13 @@ button.primary:disabled {
   margin-bottom: 1.25rem;
 }
 
+/* Nadpisy karet schválně nejsou zlaté. Je jich v aplikaci přes šedesát a
+   když je zlaté všechno, není zlaté nic - zlatá zůstává tlačítkům, číslům,
+   odkazům a aktivní položce navigace. */
 .card h2 {
   font-size: 1rem;
   margin: 0 0 1rem;
-  color: var(--accent);
+  color: var(--text);
 }
 
 .stat-grid {
@@ -515,6 +561,11 @@ table.data tr:last-child td {
   border-bottom: none;
 }
 
+/* U čtyřiceti řádků oko na dlouhém řádku ujede o patro. */
+table.data tbody tr:hover {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
 table.data input,
 table.data select {
   background: var(--bg);
@@ -539,27 +590,33 @@ table.data select {
   min-width: 0;
 }
 
+/* Tónovaná výplň místo holého textu v rámečku - se sytější paletou drží
+   odznak tvar i v hustém řádku tabulky. */
 .badge {
   display: inline-block;
   padding: 0.2rem 0.55rem;
   border-radius: 999px;
   font-size: 0.75rem;
   border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
   color: var(--muted);
 }
 
 .badge-pending {
   color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
   border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
 }
 
 .badge-approved {
   color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
   border-color: color-mix(in srgb, var(--success) 40%, var(--border));
 }
 
 .badge-rejected {
   color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
   border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
 }
 
@@ -1791,6 +1848,96 @@ dl.detail dd {
   .btn {
     padding: 0.45rem 0.7rem;
   }
+}
+
+/* ---------- Stupně vítězů v žebříčku ----------
+
+   První tři místa nesla dřív jen pořadové číslo v běžné barvě, takže vítěz
+   vypadal stejně jako osmý. Podklad řádku je tónovaný barvou kovu a levý
+   proužek ji opakuje - v soutěži je tohle ta obrazovka, kvůli které lidi
+   přijdou. */
+
+.rank-1 td,
+.rank-2 td,
+.rank-3 td {
+  border-bottom-color: transparent;
+}
+
+.rank-1 {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.rank-2 {
+  background: color-mix(in srgb, var(--silver) 8%, transparent);
+  box-shadow: inset 3px 0 0 var(--silver);
+}
+
+.rank-3 {
+  background: color-mix(in srgb, var(--bronze) 9%, transparent);
+  box-shadow: inset 3px 0 0 var(--bronze);
+}
+
+/* Zvýrazněný řádek nesmí hover shodit zpátky do šeda. */
+.rank-1:hover,
+.rank-2:hover,
+.rank-3:hover {
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+}
+
+/* Pořadové číslo v barvě kovu, o něco větší než u zbytku tabulky. */
+.rank-medal {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.rank-1 .rank-medal {
+  color: var(--accent);
+}
+
+.rank-2 .rank-medal {
+  color: var(--silver);
+}
+
+.rank-3 .rank-medal {
+  color: var(--bronze);
+}
+
+/* Řádek přihlášeného hráče. Zlatá je zabraná prvním místem, proto tyrkysová
+   - a přerušovaný proužek, aby se nepletl s medailí. */
+.rank-mine {
+  box-shadow: inset 3px 0 0 var(--ice);
+}
+
+.rank-1.rank-mine,
+.rank-2.rank-mine,
+.rank-3.rank-mine {
+  box-shadow:
+    inset 3px 0 0 var(--ice),
+    inset 6px 0 0 var(--surface);
+}
+
+.rank-mine-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ice) 16%, transparent);
+  color: var(--ice);
+  font-size: 0.7rem;
+  vertical-align: 0.1em;
+}
+
+/* Shrnutí nad tabulkou, když je vlastní tým mimo první obrazovku. */
+.rank-mine-summary {
+  margin: 0 0 1.25rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--ice) 35%, var(--border));
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ice) 8%, var(--surface));
+  font-size: 0.9rem;
 }
 
 /* ---------- Statistiky na úvodní stránce ---------- */
