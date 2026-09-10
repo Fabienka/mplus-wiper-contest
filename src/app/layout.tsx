@@ -1,24 +1,44 @@
 import type { Metadata } from "next";
-import { Cinzel } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "./providers";
 
 /**
- * Nadpisové písmo. Cinzel je římská kapitálka - stejný rod jako nápis
- * v logu, takže hlavičky a název sedí k sobě místo systémového bezpatkového
- * fontu, který nepatří nikam.
+ * Nadpisové písmo Marcellus.
  *
- * Běžný text zůstává systémový: je čitelnější v malých velikostech, načte se
- * okamžitě a v tabulkách administrace není důvod ho měnit.
+ * Soubory jsou v repozitáři schválně, ne přes next/font/google. Stahování
+ * z Google Fonts při buildu tiše selhávalo - Node se nedokáže ověřit vůči
+ * jejich certifikátu (UNABLE_TO_VERIFY_LEAF_SIGNATURE, typické za proxy
+ * s TLS inspekcí) a next/font místo chyby jen sáhne po náhradě. Aplikace
+ * se pak na dev serveru vykreslovala v Times New Roman a nikde to nebylo
+ * vidět jinak než v logu. Takhle build na síti nezávisí vůbec.
  *
- * latin-ext je nutný kvůli diakritice - bez něj by "Žebříček" a "Sezóna"
- * vypadaly půl na půl z jiného písma.
+ * Dva soubory, protože základní latinka a písmena s háčky jsou u Google
+ * Fonts rozdělená. Prohlížeč skládá text po znacích: co nenajde v prvním
+ * souboru, vezme z druhého - obojí je stejné písmo, takže se to nepozná.
+ * Kdyby tu byl jen "latin", zůstalo by ze "Žebříčku" torzo.
+ *
+ * adjustFontFallback: false je tu nutnost, ne optimalizace. Next jinak za
+ * každé písmo vloží do rodiny ještě náhradní systémové - a to by se v pořadí
+ * ocitlo PŘED druhým souborem Marcellu. Písmena bez háčků by se pak brala
+ * ze systémové patky a "Žebříček" by byl půl na půl ze dvou písem.
  */
-const cinzel = Cinzel({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "600"],
-  variable: "--font-display",
+const marcellusExt = localFont({
+  src: "./fonts/marcellus-latin-ext.woff2",
+  weight: "400",
+  style: "normal",
   display: "swap",
+  adjustFontFallback: false,
+  variable: "--font-display-ext",
+});
+
+const marcellus = localFont({
+  src: "./fonts/marcellus-latin.woff2",
+  weight: "400",
+  style: "normal",
+  display: "swap",
+  adjustFontFallback: false,
+  variable: "--font-display",
 });
 
 export const metadata: Metadata = {
@@ -69,7 +89,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="cs" className={cinzel.variable}>
+    <html lang="cs" className={`${marcellus.variable} ${marcellusExt.variable}`}>
       <body>
         <Providers>{children}</Providers>
       </body>

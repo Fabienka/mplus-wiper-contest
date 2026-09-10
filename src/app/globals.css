@@ -70,17 +70,28 @@ body {
 
 /* ---------- Typografie ----------
 
-   Nadpisové písmo je Cinzel - římská kapitálka ze stejného rodu jako nápis
-   v logu. Nese ho jen to, co je vidět jako první: název v liště, nadpis
-   stránky a velká čísla. Běžný text a tabulky zůstávají systémové, tam jde
-   o čitelnost, ne o charakter. */
+   Nadpisové písmo je Marcellus - římský tvar navazující na nápis v logu,
+   ale s tenčími tahy, takže s ním nesoupeří. Nese ho jen to, co je vidět
+   jako první: název v liště, nadpis stránky a velká čísla. Běžný text a
+   tabulky zůstávají systémové, tam jde o čitelnost, ne o charakter.
+
+   Dvě proměnné, protože písmena s háčky jsou v druhém souboru; prohlížeč
+   si text poskládá po znacích. Pořadí je nutné dodržet: -ext první, jinak
+   by háčky vzal z náhradního patkového písma.
+
+   Marcellus má jen jeden řez. Tučná varianta se proto nenastavuje - písmo
+   by ji prohlížeč dopočítal sám a takové tučné vypadá rozmazaně. */
 
 h1,
 .site-brand,
 .stat-value,
 .cal-title {
-  font-family: var(--font-display), Georgia, "Times New Roman", serif;
-  font-weight: 600;
+  font-family:
+    var(--font-display-ext),
+    var(--font-display),
+    Georgia,
+    serif;
+  font-weight: 400;
   letter-spacing: 0.01em;
 }
 
@@ -506,8 +517,7 @@ button.primary:disabled {
 
 .stat .stat-value {
   display: block;
-  font-size: 1.9rem;
-  font-weight: 600;
+  font-size: 2rem;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
 }
@@ -1040,6 +1050,18 @@ pre.json {
   margin-top: 3rem;
   background: var(--brand);
   border-top: 2px solid var(--accent-strong);
+}
+
+/* V administraci na ni navazuje shell, který si bere zbytek výšky, takže
+   odsazení navíc jen dělá mezeru. Obsah patičky se tu neomezuje na 1100 px:
+   administrace jde přes celou šířku a vycentrovaný pruh by pod postranní
+   navigací visel mimo osu zbytku stránky. */
+.admin-page > .site-footer {
+  margin-top: 0;
+}
+
+.admin-page > .site-footer .site-footer-inner {
+  max-width: none;
 }
 
 .site-footer-inner {
@@ -1887,9 +1909,8 @@ dl.detail dd {
 
 /* Pořadové číslo v barvě kovu, o něco větší než u zbytku tabulky. */
 .rank-medal {
-  font-family: var(--font-display), Georgia, serif;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-family: var(--font-display-ext), var(--font-display), Georgia, serif;
+  font-size: 1.3rem;
 }
 
 .rank-1 .rank-medal {

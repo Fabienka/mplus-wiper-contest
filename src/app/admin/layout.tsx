@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { SiteHeader } from "../site-header";
+import { SiteFooter } from "../site-footer";
 import { AdminNav } from "./nav";
 
 export default async function AdminLayout({
@@ -29,6 +30,8 @@ export default async function AdminLayout({
         </aside>
         <main className="admin-main" id="obsah">{children}</main>
       </div>
+
+      <SiteFooter />
     </div>
   );
 }
