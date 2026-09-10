@@ -1,6 +1,10 @@
 import Link from "next/link";
 import { CONTACTS } from "@/lib/contest-info";
 
+export const metadata = {
+  title: "Kontakt",
+};
+
 export default function ContactPage() {
   return (
     <>

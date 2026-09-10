@@ -8,7 +8,16 @@ export const metadata: Metadata = {
    * proměnné jako odkazy na reset hesla - jiná veřejná adresa aplikace není.
    */
   metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
-  title: "Mythic+ Wiper Contest",
+  /**
+   * Šablona doplní název aplikace za titulek stránky, takže si stránka
+   * nastavuje jen to svoje. Bez toho se každá karta prohlížeče jmenovala
+   * stejně a admin s otevřenými Registracemi, Termíny a Uživateli je od
+   * sebe nerozeznal.
+   */
+  title: {
+    default: "Mythic+ Wiper Contest",
+    template: "%s · Mythic+ Wiper Contest",
+  },
   description: "Evidence týmů a zápasů pro M+ soutěž",
   icons: {
     /**

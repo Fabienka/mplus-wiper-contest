@@ -125,8 +125,8 @@ body {
   padding: 2rem;
 }
 
-/* Značka nad kartou - zároveň jediná cesta zpátky na veřejnou část. */
-.auth-brand {
+/* Značka nad kartou - na obrazovkách bez lišty jediná cesta zpátky. */
+.brand-mark {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -136,7 +136,7 @@ body {
   font-size: 1rem;
 }
 
-.auth-brand img {
+.brand-mark img {
   display: block;
 }
 

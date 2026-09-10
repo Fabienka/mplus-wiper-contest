@@ -10,6 +10,10 @@ import { ResetPasswordForm } from "./reset-form";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Nastavení nového hesla",
+};
+
 /**
  * Stránka pro nastavení hesla z jednorázového odkazu.
  *

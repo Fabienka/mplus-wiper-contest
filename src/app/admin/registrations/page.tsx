@@ -11,6 +11,10 @@ import {
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Registrace – administrace",
+};
+
 const FILTERS: { value: string; label: string }[] = [
   { value: "PENDING", label: "Čekající" },
   { value: "APPROVED", label: "Schválené" },

@@ -12,6 +12,10 @@ import { Notice } from "../../notice";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Pravidla soutěže",
+};
+
 export default async function RulesPage() {
   const season = await getCurrentSeason();
 

@@ -24,6 +24,10 @@ import {
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Termíny – administrace",
+};
+
 const FILTERS: { value: string; label: string }[] = [
   { value: "PROPOSED", label: "Ke schválení" },
   { value: "CONFIRMED", label: "Schválené" },

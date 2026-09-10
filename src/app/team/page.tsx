@@ -25,6 +25,10 @@ import {
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Můj tým",
+};
+
 /** Nejdřív se hledá termín pro celý tým, pak se povolí chybějící hráči. */
 const FALLBACK_STEPS = [0, 1, 2];
 

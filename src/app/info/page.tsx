@@ -4,6 +4,10 @@ import { SEASON_STATUS_LABELS } from "@/lib/labels";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Informace",
+};
+
 export default async function InfoPage() {
   const season = await getCurrentSeason();
 

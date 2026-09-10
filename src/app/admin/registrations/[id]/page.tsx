@@ -20,6 +20,10 @@ import {
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Detail registrace – administrace",
+};
+
 /** Odpovědi z formuláře jsou volný JSON - vykreslí se, co v nich zrovna je. */
 function formatAnswer(value: unknown) {
   if (value === null || value === undefined || value === "") return "-";

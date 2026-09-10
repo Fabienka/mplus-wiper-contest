@@ -5,6 +5,10 @@ import { RegisterForm } from "./register-form";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Registrace",
+};
+
 export default async function RegisterPage() {
   const session = await getServerSession(authOptions);
 

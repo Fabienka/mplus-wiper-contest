@@ -14,6 +14,10 @@ import { ActionNotice } from "../../action-notice";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Shuffle – administrace",
+};
+
 function MemberRow({ member }: { member: ShuffleMember }) {
   return (
     <tr>

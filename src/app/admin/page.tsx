@@ -11,6 +11,10 @@ import {
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Přehled – administrace",
+};
+
 export default async function AdminOverviewPage() {
   const season = await getCurrentSeason();
 

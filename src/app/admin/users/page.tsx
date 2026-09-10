@@ -13,6 +13,10 @@ import { ActionNotice } from "../../action-notice";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Uživatelé – administrace",
+};
+
 export default async function UsersPage({
   searchParams,
 }: {

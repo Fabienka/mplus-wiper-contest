@@ -12,6 +12,10 @@ import { SiteHeader } from "../site-header";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Žebříček",
+};
+
 export default async function LeaderboardPage() {
   const season = await getCurrentSeason();
 

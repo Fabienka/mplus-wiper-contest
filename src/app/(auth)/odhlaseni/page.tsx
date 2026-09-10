@@ -3,9 +3,13 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { AuthBrand } from "../auth-brand";
+import { BrandMark } from "../../brand-mark";
 
 export const dynamic = "force-dynamic";
+
+export const metadata = {
+  title: "Odhlášení",
+};
 
 /**
  * Jméno cookie s CSRF tokenem. NextAuth ho na HTTPS předsazuje `__Host-`,
@@ -38,7 +42,7 @@ export default async function SignOutPage() {
 
   return (
     <div className="auth-page">
-      <AuthBrand />
+      <BrandMark />
 
       <div className="auth-card">
         <h1>Odhlášení</h1>

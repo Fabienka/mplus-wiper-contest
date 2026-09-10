@@ -5,7 +5,7 @@ import Link from "next/link";
 import { specsForRole } from "@/lib/wow-specs";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-rules";
 import { Notice } from "../../notice";
-import { AuthBrand } from "../auth-brand";
+import { BrandMark } from "../../brand-mark";
 
 /** Minimální délka uživatelského jména - stejná hodnota hlídá i server. */
 const MIN_USERNAME_LENGTH = 3;
@@ -102,7 +102,7 @@ export function RegisterForm() {
   if (seasonError) {
     return (
       <div className="auth-page">
-        <AuthBrand />
+        <BrandMark />
 
         <div className="auth-card">
           <h1>Registrace momentálně není otevřená</h1>
@@ -121,7 +121,7 @@ export function RegisterForm() {
   if (success) {
     return (
       <div className="auth-page">
-        <AuthBrand />
+        <BrandMark />
 
         <div className="auth-card">
           <h1>Registrace odeslána</h1>
@@ -139,7 +139,7 @@ export function RegisterForm() {
 
   return (
     <div className="auth-page">
-      <AuthBrand />
+      <BrandMark />
 
       <form className="auth-card auth-card-wide" onSubmit={handleSubmit}>
         <h1>{season ? `Registrace - ${season.name}` : "Registrace"}</h1>

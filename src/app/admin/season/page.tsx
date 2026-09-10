@@ -14,6 +14,10 @@ import {
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Sezóna a dungeony – administrace",
+};
+
 export default async function SeasonPage({
   searchParams,
 }: {

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Notice } from "../../notice";
-import { AuthBrand } from "../auth-brand";
+import { BrandMark } from "../../brand-mark";
 
 /** Kam se jde po úspěšném přihlášení. */
 const AFTER_LOGIN = "/profile?prihlaseno=1";
@@ -115,7 +115,7 @@ export function LoginForm({
 
   return (
     <div className="auth-page">
-      <AuthBrand />
+      <BrandMark />
 
       <form className="auth-card" onSubmit={handleSubmit}>
         <h1>Přihlášení</h1>

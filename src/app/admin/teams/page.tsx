@@ -10,6 +10,10 @@ import { ActionNotice } from "../../action-notice";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Týmy – administrace",
+};
+
 const ROLE_ORDER: Record<SpecRole, number> = { TANK: 0, HEALER: 1, DPS: 2 };
 
 interface Row {

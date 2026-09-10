@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { SubmitButton } from "../../submit-button";
 import { getCurrentUser } from "@/lib/admin";
@@ -15,13 +16,41 @@ import { revokePasswordReset } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function PasswordResetsPage() {
+export const metadata = {
+  title: "Reset hesel – administrace",
+};
+
+export default async function PasswordResetsPage({
+  searchParams,
+}: {
+  searchParams: { q?: string };
+}) {
   const actor = await getCurrentUser();
 
+  // Celý postup začíná tím, že někdo na Discordu píše o reset - hledá se
+  // proto i podle nicku a jména postavy, ne jen podle jména účtu.
+  const query = searchParams.q?.trim() ?? "";
+
+  // Moderátor smí resetovat jen běžné uživatele, takže ostatní účty ani
+  // nevidí - je to srozumitelnější než tlačítko, které vypíše chybu.
+  const roleFilter = actor?.role === "ADMIN" ? {} : { role: "USER" as const };
+
+  const searchFilter = query
+    ? {
+        OR: [
+          { username: { contains: query, mode: "insensitive" as const } },
+          { discordNick: { contains: query, mode: "insensitive" as const } },
+          {
+            character: {
+              characterName: { contains: query, mode: "insensitive" as const },
+            },
+          },
+        ],
+      }
+    : {};
+
   const users = await prisma.user.findMany({
-    // Moderátor smí resetovat jen běžné uživatele, takže ostatní účty ani
-    // nevidí - je to srozumitelnější než tlačítko, které vypíše chybu.
-    where: actor?.role === "ADMIN" ? {} : { role: "USER" },
+    where: { AND: [roleFilter, searchFilter] },
     orderBy: { username: "asc" },
     include: {
       character: { select: { characterName: true, realm: true } },
@@ -33,6 +62,8 @@ export default async function PasswordResetsPage() {
       },
     },
   });
+
+  const totalUsers = await prisma.user.count({ where: roleFilter });
 
   users.sort(compareUsersByRole);
 
@@ -65,7 +96,38 @@ export default async function PasswordResetsPage() {
       </div>
 
       <div className="card">
-        <h2>Uživatelé ({users.length})</h2>
+        <h2>
+          Uživatelé ({users.length}
+          {query && ` z ${totalUsers}`})
+        </h2>
+
+        {/* Obyčejný GET formulář - hledání zůstane v adrese a funguje bez JS. */}
+        <form className="row-actions row-actions-end search-form" method="get">
+          <div className="field" style={{ marginBottom: 0, flex: 1 }}>
+            <label htmlFor="q">Hledat</label>
+            <input
+              id="q"
+              name="q"
+              type="search"
+              defaultValue={query}
+              placeholder="Jméno účtu, postavy nebo Discord nick"
+            />
+          </div>
+          <button className="btn" type="submit">
+            Hledat
+          </button>
+          {query && (
+            <Link className="btn" href="/admin/hesla">
+              Zrušit
+            </Link>
+          )}
+        </form>
+
+        {users.length === 0 ? (
+          <p className="empty-state">
+            Hledání „{query}" neodpovídá žádný uživatel.
+          </p>
+        ) : (
         <table className="data">
           <thead>
             <tr>
@@ -153,6 +215,7 @@ export default async function PasswordResetsPage() {
             })}
           </tbody>
         </table>
+        )}
       </div>
     </>
   );

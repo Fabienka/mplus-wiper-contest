@@ -15,6 +15,10 @@ import { ChangePasswordForm } from "./password-form";
 
 export const dynamic = "force-dynamic";
 
+export const metadata = {
+  title: "Můj profil",
+};
+
 export default async function ProfilePage({
   searchParams,
 }: {
