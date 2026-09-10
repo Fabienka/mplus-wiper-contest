@@ -31,14 +31,22 @@
   --brand: #5a0101;
   --brand-line: #7c1c14;
 
-  /* Ledová modrá z nápisu MYTHIC. Druhý akcent - překryvy v kalendáři,
-     role tank v grafech. Na zlatou navazuje, ale nepere se s ní. */
-  --ice: #a7d0d2;
-  --ice-strong: #6fa8ad;
+  /* Tyrkysová - druhý akcent (překryvy v kalendáři, role tank, informační
+     hlášky). Odstín drží u ledové modré z nápisu MYTHIC, ale sytější:
+     přímo ta z loga je světlá a v ploše se rozpadne do šedé.
+
+     Stavové barvy jsou schválně v jedné rodině se zlatou: světlost 74-77
+     a barevnost (chroma v OKLCH) 0,12-0,18, stejně jako accent. Předchozí
+     zelená a tyrkysová z ní vypadávaly - tyrkysová měla chroma 0,06, ani ne
+     polovinu zbytku palety, a vedle zlaté proto vypadala jako šedá. */
+  --ice: #2fc0d8;
 
   --danger: #ef6b62;
-  --success: #4fb87a;
-  --warning: #e2ae52;
+  --success: #34c96f;
+
+  /* Odstín 68 místo 79. Varovná měla prakticky stejný odstín jako accent
+     (80), takže odznak "Čeká" splýval se zlatou všude kolem. */
+  --warning: #f59f2b;
 }
 
 * {
@@ -1171,8 +1179,8 @@ pre.json {
 
 .cal-kind-overlap {
   background: #1f2c2d;
-  background: color-mix(in srgb, var(--ice-strong) 22%, transparent);
-  border-left-color: var(--ice-strong);
+  background: color-mix(in srgb, var(--ice) 22%, transparent);
+  border-left-color: var(--ice);
 }
 
 .cal-kind-availability {
@@ -1509,9 +1517,9 @@ pre.json {
 }
 
 .notice-info {
-  border-left-color: var(--ice-strong);
+  border-left-color: var(--ice);
   background: #1d2426;
-  background: color-mix(in srgb, var(--ice-strong) 10%, var(--surface));
+  background: color-mix(in srgb, var(--ice) 10%, var(--surface));
 }
 
 .notice-detail {
@@ -1864,10 +1872,12 @@ dl.detail dd {
   display: inline-block;
 }
 
-/* Tank ledová, healer zelená, DPS měděná - tři odstíny z okolí loga,
-   které jdou od sebe rozeznat i vedle sebe v jednom pruhu. */
+/* Tank tyrkysová, healer zelená, DPS oranžová. Všechny tři mají stejnou
+   světlost (74) a podobnou barevnost, takže v jednom pruhu nesou stejnou
+   váhu - dřívější měď byla o deset stupňů tmavší a vedle ostatních dvou
+   vypadala jako pozadí. */
 .split-tank {
-  background: var(--ice-strong);
+  background: var(--ice);
 }
 
 .split-healer {
@@ -1875,5 +1885,5 @@ dl.detail dd {
 }
 
 .split-dps {
-  background: #c8763c;
+  background: #ee8b3a;
 }
