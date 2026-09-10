@@ -1,28 +1,44 @@
+/* ---------- Barvy ----------
+
+   Odvozené z loga. Vytažené z něj měřením, ne od oka:
+   vínová #5a0101 zabírá pětinu plochy štítu, zlatá obruba má medián
+   #af802d a nápis MYTHIC je #a7d0d2.
+
+   Podklad zůstává tmavý a skoro neutrální (jen teplý, do hněda), aby se
+   dlouhé tabulky v administraci daly číst. Vínová se objevuje jako
+   značka - lišta, patička - a zlatá dělá tlačítka a odkazy. */
+
 :root {
-  /* Nativní ovládací prvky (výběr data, rozbalený select, scrollbary, autofill)
-     se kreslí podle color-scheme, ne podle našeho CSS. Bez tohohle řádku je
-     prohlížeč vykreslí ve světlé variantě - ikona kalendáře v datetime-local
-     poli pak byla tmavá na tmavém a nebyla vidět. */
+  /* Nativní prvky (výběr data, select, scrollbar, autofill) se kreslí podle
+     color-scheme, ne podle našeho CSS. */
   color-scheme: dark;
 
-  --bg: #0f1115;
-  --surface: #171a21;
-  --text: #e8e6e3;
-  --muted: #8b8f98;
+  /* Teplý uhel místo neutrální šedi - drží pohromadě s vínovou a zlatou. */
+  --bg: #12100f;
+  --surface: #1c1918;
+  --border: #302b28;
+  --text: #ece7e1;
+  --muted: #a09890;
 
-  /* Dvě modré schválně. --accent je na text a odkazy na tmavém pozadí
-     (kontrast 6,0:1), s bílým textem by ale měla jen 3,2:1 - pod hranicí
-     WCAG AA. Na výplň tlačítek s bílým popiskem je proto tmavší
-     --accent-strong (4,6:1 s bílou). */
-  --accent: #5b8cff;
-  --accent-strong: #3f6fe0;
+  /* Zlatá z obruby loga. --accent na text a odkazy, --accent-strong pod
+     výplň tlačítek. Zlatá je světlá, takže na ní není bílý, ale tmavý
+     popisek (--accent-ink) - bílá by měla kontrast 1,8:1. */
+  --accent: #d9a441;
+  --accent-strong: #c08f2f;
+  --accent-ink: #17130f;
 
-  --danger: #ef5f63;
-  --border: #262a33;
+  /* Vínová ze štítu. Jen jako značka, ne jako podklad obsahu. */
+  --brand: #5a0101;
+  --brand-line: #7c1c14;
 
-  /* Barvy stavů. Dřív byly rozsypané jako literály po celém souboru. */
-  --success: #4caf6d;
-  --warning: #e0b341;
+  /* Ledová modrá z nápisu MYTHIC. Druhý akcent - překryvy v kalendáři,
+     role tank v grafech. Na zlatou navazuje, ale nepere se s ní. */
+  --ice: #a7d0d2;
+  --ice-strong: #6fa8ad;
+
+  --danger: #ef6b62;
+  --success: #4fb87a;
+  --warning: #e2ae52;
 }
 
 * {
@@ -34,6 +50,39 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+/* ---------- Typografie ----------
+
+   Nadpisové písmo je Cinzel - římská kapitálka ze stejného rodu jako nápis
+   v logu. Nese ho jen to, co je vidět jako první: název v liště, nadpis
+   stránky a velká čísla. Běžný text a tabulky zůstávají systémové, tam jde
+   o čitelnost, ne o charakter. */
+
+h1,
+.site-brand,
+.stat-value,
+.cal-title {
+  font-family: var(--font-display), Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Cinzel je opticky větší než systémový font, takže výchozí 2em byly na
+   telefonu tři řádky. clamp drží nadpis v rozumné velikosti na obou koncích. */
+h1 {
+  font-size: clamp(1.45rem, 2.2vw + 0.9rem, 1.9rem);
+  line-height: 1.2;
+  margin: 0 0 0.4rem;
+}
+
+/* Nadpisy karet nejsou displejové, ale ani obyčejný tučný text - drobné
+   prostrkání je odliší od obsahu pod nimi. */
+.card h2,
+.stat-label,
+.admin-sidebar h2 {
+  letter-spacing: 0.02em;
 }
 
 /* Jeden focus prstenec pro všechno. Dřív ho měla jen formulářová pole a dny
@@ -125,19 +174,25 @@ body {
   padding: 2rem;
 }
 
-/* Značka nad kartou - na obrazovkách bez lišty jediná cesta zpátky. */
+/* Značka nad kartou - na obrazovkách bez lišty jediná cesta zpátky.
+   Logo se tu ukazuje celé, název nese ono. */
 .brand-mark {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  color: var(--text);
-  text-decoration: none;
-  font-weight: 600;
-  font-size: 1rem;
+  display: block;
+  line-height: 0;
+  border-radius: 50%;
 }
 
 .brand-mark img {
   display: block;
+  width: 132px;
+  height: 132px;
+}
+
+@media (max-width: 640px) {
+  .brand-mark img {
+    width: 104px;
+    height: 104px;
+  }
 }
 
 .auth-card {
@@ -155,8 +210,8 @@ body {
 }
 
 .auth-card h1 {
-  font-size: 1.25rem;
-  margin-bottom: 1.5rem;
+  font-size: 1.4rem;
+  margin: 0 0 1.5rem;
 }
 
 .auth-notice {
@@ -265,7 +320,8 @@ body {
 button.primary {
   width: 100%;
   background: var(--accent-strong);
-  color: white;
+  color: var(--accent-ink);
+  font-weight: 500;
   border: none;
   border-radius: 8px;
   padding: 0.7rem;
@@ -356,8 +412,8 @@ button.primary:disabled {
 }
 
 .admin-main h1 {
-  font-size: 1.35rem;
-  margin: 0 0 0.35rem;
+  font-size: 1.5rem;
+  margin: 0 0 0.4rem;
 }
 
 .admin-subtitle {
@@ -377,6 +433,7 @@ button.primary:disabled {
 .card h2 {
   font-size: 1rem;
   margin: 0 0 1rem;
+  color: var(--accent);
 }
 
 .stat-grid {
@@ -395,8 +452,10 @@ button.primary:disabled {
 
 .stat .stat-value {
   display: block;
-  font-size: 1.8rem;
+  font-size: 1.9rem;
   font-weight: 600;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
 }
 
 .stat .stat-label {
@@ -483,17 +542,17 @@ table.data select {
 
 .badge-pending {
   color: var(--warning);
-  border-color: #5a4a1e;
+  border-color: color-mix(in srgb, var(--warning) 40%, var(--border));
 }
 
 .badge-approved {
   color: var(--success);
-  border-color: #235437;
+  border-color: color-mix(in srgb, var(--success) 40%, var(--border));
 }
 
 .badge-rejected {
   color: var(--danger);
-  border-color: #5c2528;
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
 }
 
 /* Používá se na <button> i na <a>. Odkaz si bez text-decoration nese výchozí
@@ -532,16 +591,18 @@ table.data select {
 .btn-accent {
   background: var(--accent-strong);
   border-color: var(--accent-strong);
-  color: white;
+  color: var(--accent-ink);
+  font-weight: 500;
 }
 
 .btn-accent:hover:not(:disabled) {
+  background: var(--accent);
   border-color: var(--accent);
 }
 
 .btn-danger {
   color: var(--danger);
-  border-color: #5c2528;
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
 }
 
 .row-actions {
@@ -706,25 +767,26 @@ pre.json {
 
 /* ---------- Veřejná lišta ---------- */
 
+/* Vínová plocha se zlatou linkou dole - obojí přímo z loga. Je to jediné
+   místo, kde značkové barvy nesou plochu; obsah pod tím zůstává na uhlu. */
 .site-header {
   position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.9rem 1.5rem;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 1.5rem;
+  background: var(--brand);
+  border-bottom: 2px solid var(--accent-strong);
 }
 
 .site-brand {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.6rem;
   color: var(--text);
   text-decoration: none;
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   white-space: nowrap;
 }
 
@@ -757,6 +819,11 @@ pre.json {
   color: var(--accent);
 }
 
+/* Na vínové je potřeba světlejší potlačená barva než --muted na uhlu. */
+.site-header .site-user {
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+}
+
 /* Účet je oddělený svislou linkou, ať se jméno a odhlášení nepletou
    s odkazy na stránky. */
 .site-account {
@@ -764,8 +831,25 @@ pre.json {
   align-items: center;
   gap: 0.6rem;
   padding-left: 1.5rem;
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--brand-line);
   font-size: 0.9rem;
+}
+
+/* Tlačítka v liště sedí na vínové, ne na uhlu. */
+.site-account .btn {
+  background: color-mix(in srgb, #000 22%, transparent);
+  border-color: var(--brand-line);
+  color: var(--text);
+}
+
+.site-account .btn:hover {
+  border-color: var(--accent);
+}
+
+.site-account .btn-accent {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--accent-ink);
 }
 
 .site-user {
@@ -781,9 +865,9 @@ pre.json {
   display: none;
   align-items: center;
   gap: 0.45rem;
-  background: var(--bg);
+  background: color-mix(in srgb, #000 22%, transparent);
   color: var(--text);
-  border: 1px solid var(--border);
+  border: 1px solid var(--brand-line);
   border-radius: 8px;
   padding: 0.5rem 0.75rem;
   font: inherit;
@@ -887,7 +971,7 @@ pre.json {
 /* Dny sousedního měsíce jsou potlačené, ale pořád se musí dát přečíst -
    na 55 % měly kontrast 2,9:1. */
 .cal-day-outside .cal-daynum {
-  color: #767a83;
+  color: #7d766f;
   color: color-mix(in srgb, var(--muted) 80%, transparent);
 }
 
@@ -927,20 +1011,20 @@ pre.json {
 
 .cal-kind-confirmed {
   background: #1d3a2c;
-  background: color-mix(in srgb, #30a46c 22%, transparent);
-  border-left-color: #30a46c;
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+  border-left-color: var(--success);
 }
 
 .cal-kind-proposed {
   background: #3d3320;
-  background: color-mix(in srgb, #f5a524 20%, transparent);
-  border-left-color: #f5a524;
+  background: color-mix(in srgb, var(--warning) 22%, transparent);
+  border-left-color: var(--warning);
 }
 
 .cal-kind-overlap {
-  background: #22283c;
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
-  border-left-color: var(--accent);
+  background: #1f2c2d;
+  background: color-mix(in srgb, var(--ice-strong) 22%, transparent);
+  border-left-color: var(--ice-strong);
 }
 
 .cal-kind-availability {
@@ -1053,7 +1137,7 @@ pre.json {
    v mřížce vypadaly stejně. */
 .cal-day-selected {
   box-shadow: inset 0 0 0 2px var(--accent);
-  background: #1e2433;
+  background: #2a2318;
   background: color-mix(in srgb, var(--accent) 14%, var(--surface));
 }
 
@@ -1265,9 +1349,9 @@ pre.json {
 }
 
 .notice-success {
-  border-left-color: #30a46c;
-  background: #1a2721;
-  background: color-mix(in srgb, #30a46c 10%, var(--surface));
+  border-left-color: var(--success);
+  background: #1e2620;
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
 }
 
 .notice-error {
@@ -1277,9 +1361,9 @@ pre.json {
 }
 
 .notice-info {
-  border-left-color: var(--accent);
-  background: #1b2030;
-  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border-left-color: var(--ice-strong);
+  background: #1d2426;
+  background: color-mix(in srgb, var(--ice-strong) 10%, var(--surface));
 }
 
 .notice-detail {
@@ -1399,9 +1483,9 @@ dl.detail dd {
     flex-direction: column;
     align-items: stretch;
     gap: 0;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+    background: var(--brand);
+    border-bottom: 2px solid var(--accent-strong);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.55);
   }
 
   .site-menu-open {
@@ -1417,7 +1501,7 @@ dl.detail dd {
 
   .site-nav a {
     padding: 0.85rem 1rem;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--brand-line);
   }
 
   .site-account {
@@ -1425,7 +1509,7 @@ dl.detail dd {
     gap: 0.6rem;
     padding: 0.85rem 1rem;
     border-left: none;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--brand-line);
   }
 
   .site-account .btn {
@@ -1592,7 +1676,7 @@ dl.detail dd {
 .bar > span {
   display: block;
   height: 100%;
-  background: var(--accent);
+  background: var(--accent-strong);
   border-radius: 3px;
 }
 
@@ -1632,14 +1716,16 @@ dl.detail dd {
   display: inline-block;
 }
 
+/* Tank ledová, healer zelená, DPS měděná - tři odstíny z okolí loga,
+   které jdou od sebe rozeznat i vedle sebe v jednom pruhu. */
 .split-tank {
-  background: #6e9fff;
+  background: var(--ice-strong);
 }
 
 .split-healer {
-  background: #46c08a;
+  background: var(--success);
 }
 
 .split-dps {
-  background: #e0834a;
+  background: #c8763c;
 }

@@ -1,6 +1,25 @@
 import type { Metadata } from "next";
+import { Cinzel } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+
+/**
+ * Nadpisové písmo. Cinzel je římská kapitálka - stejný rod jako nápis
+ * v logu, takže hlavičky a název sedí k sobě místo systémového bezpatkového
+ * fontu, který nepatří nikam.
+ *
+ * Běžný text zůstává systémový: je čitelnější v malých velikostech, načte se
+ * okamžitě a v tabulkách administrace není důvod ho měnit.
+ *
+ * latin-ext je nutný kvůli diakritice - bez něj by "Žebříček" a "Sezóna"
+ * vypadaly půl na půl z jiného písma.
+ */
+const cinzel = Cinzel({
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "600"],
+  variable: "--font-display",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   /**
@@ -39,7 +58,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Mythic+ Wiper Contest",
     description: "Evidence týmů a zápasů pro M+ soutěž",
-    images: [{ url: "/logo.png", width: 212, height: 183 }],
+    images: [{ url: "/logo.png", width: 500, height: 500 }],
     type: "website",
   },
 };
@@ -50,7 +69,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="cs">
+    <html lang="cs" className={cinzel.variable}>
       <body>
         <Providers>{children}</Providers>
       </body>

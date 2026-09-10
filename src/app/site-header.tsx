@@ -19,9 +19,10 @@ export async function SiteHeader() {
       </a>
 
       <Link className="site-brand" href="/">
-        {/* Výřez hlavy berana z loga - celé logo je s nápisem a v téhle
-            velikosti by z něj byla šmouha. */}
-        <img src="/icon-64.png" alt="" width={28} height={28} />
+        {/* Logo je kulatý štít, takže i ve 40 px nese beran a zlatá obruba.
+            Nápis v něm se v téhle velikosti přečíst nedá - proto vedle něj
+            ještě text. */}
+        <img src="/logo.png" alt="" width={40} height={40} />
         Mythic+ Wiper Contest
       </Link>
 
