@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NoSeason } from "../no-season";
 import { SubmitButton } from "../../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
@@ -42,8 +43,7 @@ export default async function ShufflePage({
   if (!season) {
     return (
       <>
-        <h1>Shuffle</h1>
-        <p className="admin-subtitle">Zatím není založená žádná sezóna.</p>
+        <NoSeason title="Shuffle" />
       </>
     );
   }
@@ -289,7 +289,9 @@ export default async function ShufflePage({
                     <SubmitButton
                       pendingLabel="Zakládám týmy..."
                       className="btn btn-accent"
-                      confirm={`Použít variantu ${proposal.variantNumber}? Založí se týmy a členství.`}
+                      confirmTitle={`Použít variantu ${proposal.variantNumber}?`}
+                      confirm="Podle ní se založí týmy a členství. Jinou variantu půjde použít, až tyhle týmy smažeš."
+                      confirmLabel="Použít variantu"
                       formAction={applyVariant}
                     >
                       Použít tuto variantu

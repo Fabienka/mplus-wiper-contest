@@ -200,7 +200,9 @@ export default async function PasswordResetsPage({
                               <SubmitButton
                                 pendingLabel="Zneplatňuji..."
                                 className="btn btn-danger"
-                                confirm="Zneplatnit vydaný odkaz? Hráč si přes něj heslo už nenastaví."
+                                confirmTitle="Zneplatnit vydaný odkaz?"
+                                confirm="Hráč si přes něj heslo už nenastaví. Když ho pořád potřebuje, vydej mu nový."
+                                confirmLabel="Zneplatnit odkaz"
                               >
                                 Zneplatnit
                               </SubmitButton>

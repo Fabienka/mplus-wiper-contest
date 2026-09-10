@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { NoSeason } from "../no-season";
 import { SubmitButton } from "../../submit-button";
 import { getCurrentSeason } from "@/lib/season";
 import { SEASON_STATUS_LABELS, formatTimeLimit } from "@/lib/labels";
@@ -28,11 +29,7 @@ export default async function SeasonPage({
   if (!season) {
     return (
       <>
-        <h1>Sezóna a dungeony</h1>
-        <p className="admin-subtitle">
-          Zatím není založená žádná sezóna. Založ ji seed skriptem
-          (<code>npm run prisma:seed</code>).
-        </p>
+        <NoSeason title="Sezóna a dungeony" />
       </>
     );
   }
@@ -251,7 +248,9 @@ export default async function SeasonPage({
                         pendingLabel="Mažu..."
                         form="delete-dungeon"
                         className="btn btn-danger"
-                        confirm={`Opravdu smazat dungeon "${dungeon.dungeonName}"?`}
+                        confirmTitle="Smazat dungeon?"
+                        confirm={`"${dungeon.dungeonName}" zmizí z rotace sezóny. Běhy, které v něm už tým odehrál, zůstanou.`}
+                        confirmLabel="Smazat dungeon"
                         formAction={deleteDungeon.bind(null, dungeon.id)}
                       >
                         Smazat
@@ -281,32 +280,24 @@ export default async function SeasonPage({
         <h2>Přidat dungeon</h2>
         <form action={addDungeon} className="row-actions">
           <input type="hidden" name="seasonId" value={season.id} />
+          {/* Vzhled má .inline-input - je to stejné pole jako v tabulce výš,
+              jen tady není v <table class="data">, kde ho stylují ta pravidla. */}
           <input
+            className="inline-input"
             name="dungeonName"
             placeholder="Název dungeonu"
+            aria-label="Název dungeonu"
             required
-            style={{
-              flex: 1,
-              background: "var(--bg)",
-              border: "1px solid var(--border)",
-              borderRadius: "6px",
-              padding: "0.45rem 0.6rem",
-              color: "var(--text)",
-            }}
+            style={{ flex: 1 }}
           />
           <input
+            className="inline-input"
             name="abbreviation"
             placeholder="ZKR"
+            aria-label="Zkratka dungeonu"
             maxLength={8}
             required
-            style={{
-              width: "100px",
-              background: "var(--bg)",
-              border: "1px solid var(--border)",
-              borderRadius: "6px",
-              padding: "0.45rem 0.6rem",
-              color: "var(--text)",
-            }}
+            style={{ width: "100px" }}
           />
           <SubmitButton
             className="btn"

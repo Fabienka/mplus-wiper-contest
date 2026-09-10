@@ -54,9 +54,22 @@ export default async function HomePage() {
         <SiteHeader />
         <main className="site-main" id="obsah">
           <h1>Mythic+ Wiper Contest</h1>
-          <p className="muted">
-            Zatím není založená žádná sezóna.
-          </p>
+
+          <div className="card">
+            <h2>Soutěž zatím neběží</h2>
+            <p className="card-lead">
+              Není vypsaná žádná sezóna. Jakmile se otevře registrace, objeví
+              se tady odkaz na přihlášku.
+            </p>
+            <div className="row-actions" style={{ flexWrap: "wrap" }}>
+              <Link className="btn btn-accent" href="/info/pravidla">
+                Pravidla soutěže
+              </Link>
+              <Link className="btn" href="/info">
+                Jak to probíhá
+              </Link>
+            </div>
+          </div>
         </main>
       </>
     );

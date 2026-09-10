@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NoSeason } from "../no-season";
 import { SubmitButton } from "../../submit-button";
 import type { SpecRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -103,8 +104,7 @@ export default async function TeamsPage({
   if (!season) {
     return (
       <>
-        <h1>Týmy</h1>
-        <p className="admin-subtitle">Zatím není založená žádná sezóna.</p>
+        <NoSeason title="Týmy" />
       </>
     );
   }
@@ -356,7 +356,9 @@ export default async function TeamsPage({
               <SubmitButton
                 pendingLabel="Mažu..."
                 className="btn btn-danger"
-                confirm={`Opravdu smazat všechny týmy sezóny "${season.name}"? Nejde to vrátit.`}
+                confirmTitle="Smazat všechny týmy?"
+                confirm={`Zruší se všechny týmy sezóny "${season.name}" i členství v nich. Nejde to vrátit.`}
+                confirmLabel="Smazat všechny týmy"
               >
                 Smazat všechny týmy
               </SubmitButton>

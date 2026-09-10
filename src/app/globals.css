@@ -239,17 +239,25 @@ body {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.6rem 0.75rem;
   color: var(--text);
   font-size: 0.95rem;
+  font-family: inherit;
+}
+
+/* Textarea se roztahuje jen svisle - vodorovně by přerostla kartu. */
+.field textarea {
+  resize: vertical;
 }
 
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
@@ -448,7 +456,20 @@ table.data select {
   padding: 0.4rem 0.5rem;
   color: var(--text);
   font-size: 0.88rem;
+  font-family: inherit;
   width: 100%;
+}
+
+/* Totéž pole, ale mimo tabulku (formulář v řadě pod ní). */
+.inline-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45rem 0.6rem;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-family: inherit;
+  min-width: 0;
 }
 
 .badge {
@@ -540,6 +561,114 @@ table.data select {
 /* Hledání nad tabulkou. */
 .search-form {
   margin-bottom: 1.25rem;
+}
+
+/* ---------- Kostra při načítání ---------- */
+
+.skeleton {
+  background: var(--surface);
+  border-radius: 6px;
+  /* Pruh světla přejíždí zleva doprava, ať je poznat, že se čeká. */
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--muted) 18%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+.card .skeleton {
+  background-color: var(--bg);
+}
+
+.skeleton-title {
+  height: 1.9rem;
+  width: 40%;
+  max-width: 18rem;
+  margin-bottom: 0.6rem;
+}
+
+.skeleton-subtitle {
+  height: 0.9rem;
+  width: 25%;
+  max-width: 12rem;
+  margin-bottom: 2rem;
+}
+
+.skeleton-heading {
+  height: 1rem;
+  width: 30%;
+  max-width: 12rem;
+  margin-bottom: 1rem;
+}
+
+.skeleton-line {
+  height: 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.skeleton-line-short {
+  width: 60%;
+  margin-bottom: 0;
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Kdo má vypnuté animace, uvidí klidné obdélníky. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* ---------- Potvrzovací dialog ---------- */
+
+/* Nahrazuje window.confirm - ten vypadá jako systémové okno z jiné doby
+   a na mobilu ukazuje adresu stránky. <dialog> si sám hlídá focus,
+   Escape i překryv. */
+.confirm-dialog {
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.confirm-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.confirm-dialog-body {
+  padding: 1.4rem 1.5rem 1.5rem;
+}
+
+.confirm-dialog h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.05rem;
+}
+
+.confirm-dialog p {
+  margin: 0 0 1.4rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.confirm-dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .empty-state {

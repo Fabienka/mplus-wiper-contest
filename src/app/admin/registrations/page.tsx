@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NoSeason } from "../no-season";
 import type { RegistrationStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
@@ -40,8 +41,7 @@ export default async function RegistrationsPage({
   if (!season) {
     return (
       <>
-        <h1>Registrace</h1>
-        <p className="admin-subtitle">Zatím není založená žádná sezóna.</p>
+        <NoSeason title="Registrace" />
       </>
     );
   }

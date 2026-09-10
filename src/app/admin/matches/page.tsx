@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NoSeason } from "../no-season";
 import { SubmitButton } from "../../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
@@ -51,8 +52,7 @@ export default async function MatchesPage({
   if (!season) {
     return (
       <>
-        <h1>Termíny</h1>
-        <p className="admin-subtitle">Zatím není založená žádná sezóna.</p>
+        <NoSeason title="Termíny" />
       </>
     );
   }
@@ -214,7 +214,9 @@ export default async function MatchesPage({
                           <SubmitButton
                             pendingLabel="Uzavírám..."
                             className="btn btn-accent"
-                            confirm="Uzavřít zápas? Tým už nebude moct nahrát další běh."
+                            confirmTitle="Uzavřít zápas?"
+                            confirm="Tým už k němu nenahraje další běh. Znovu otevřít ho půjde."
+                            confirmLabel="Uzavřít zápas"
                           >
                             Uzavřít
                           </SubmitButton>
@@ -228,7 +230,9 @@ export default async function MatchesPage({
                             <SubmitButton
                               pendingLabel="Ruším..."
                               className="btn btn-danger"
-                              confirm="Opravdu vrátit termín mezi návrhy?"
+                              confirmTitle="Zrušit schválení termínu?"
+                              confirm="Termín se vrátí mezi návrhy a bude čekat na nové schválení."
+                              confirmLabel="Zrušit schválení"
                             >
                               Zrušit schválení
                             </SubmitButton>
@@ -243,7 +247,9 @@ export default async function MatchesPage({
                         <SubmitButton
                           pendingLabel="Otevírám..."
                           className="btn"
-                          confirm="Znovu otevřít zápas, aby šly doplnit výsledky?"
+                          confirmTitle="Znovu otevřít zápas?"
+                          confirm="Tým bude moct doplnit další běhy a přepsat tím svůj nejlepší výsledek."
+                          confirmLabel="Otevřít zápas"
                         >
                           Znovu otevřít
                         </SubmitButton>

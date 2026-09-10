@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NoSeason } from "./no-season";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import {
@@ -21,11 +22,7 @@ export default async function AdminOverviewPage() {
   if (!season) {
     return (
       <>
-        <h1>Přehled</h1>
-        <p className="admin-subtitle">
-          Zatím není založená žádná sezóna. Založ ji seed skriptem
-          (<code>npm run prisma:seed</code>) nebo v Prisma Studiu.
-        </p>
+        <NoSeason title="Přehled" />
       </>
     );
   }

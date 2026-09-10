@@ -181,7 +181,9 @@ export default async function RegistrationDetailPage({
                 <SubmitButton
                   pendingLabel="Ruším..."
                   className="btn btn-danger"
-                  confirm="Opravdu zrušit potvrzení zápisného?"
+                  confirmTitle="Zrušit potvrzení zápisného?"
+                  confirm="Přihláška se vrátí mezi nezaplacené a hráč to uvidí na svém profilu."
+                  confirmLabel="Zrušit potvrzení"
                 >
                   Zrušit potvrzení
                 </SubmitButton>
@@ -247,21 +249,14 @@ export default async function RegistrationDetailPage({
                   name="rejectionReason"
                   rows={3}
                   required
-                  style={{
-                    background: "var(--bg)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "8px",
-                    padding: "0.6rem 0.75rem",
-                    color: "var(--text)",
-                    fontSize: "0.9rem",
-                    fontFamily: "inherit",
-                    resize: "vertical",
-                  }}
                 />
               </div>
               <SubmitButton
                 className="btn btn-danger"
                 pendingLabel="Zamítám..."
+                confirmTitle="Zamítnout registraci?"
+                confirm="Hráč uvidí na svém profilu zamítnutí i důvod. Vrátit ji mezi čekající půjde."
+                confirmLabel="Zamítnout registraci"
               >
                 Zamítnout registraci
               </SubmitButton>

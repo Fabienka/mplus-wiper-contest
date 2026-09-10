@@ -280,7 +280,9 @@ export default async function TeamPage({
                       <SubmitButton
                         className="btn btn-danger"
                         pendingLabel="Mažu..."
-                        confirm="Opravdu smazat tenhle zadaný čas?"
+                        confirmTitle="Smazat zadaný čas?"
+                        confirm="Přestane se počítat do společných termínů týmu. Zadat si ho znovu můžeš kdykoliv."
+                        confirmLabel="Smazat čas"
                       >
                         Smazat
                       </SubmitButton>
@@ -430,7 +432,9 @@ export default async function TeamPage({
                         <SubmitButton
                           pendingLabel="Ruším..."
                           className="btn btn-danger"
-                          confirm="Opravdu zrušit tenhle návrh termínu?"
+                          confirmTitle="Zrušit návrh termínu?"
+                          confirm="Zmizí i ostatním v týmu a moderátor ho už neschválí."
+                          confirmLabel="Zrušit návrh"
                         >
                           Zrušit
                         </SubmitButton>
