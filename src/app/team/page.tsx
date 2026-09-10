@@ -35,10 +35,10 @@ export default async function TeamPage({
 
   if (!context) {
     return (
-      <div className="site-main">
+      <main className="site-main" id="obsah">
         <h1>Můj tým</h1>
         <p className="error-text">Nejsi přihlášený.</p>
-      </div>
+      </main>
     );
   }
 
@@ -46,18 +46,18 @@ export default async function TeamPage({
 
   if (!character) {
     return (
-      <div className="site-main">
+      <main className="site-main" id="obsah">
         <h1>Můj tým</h1>
         <p className="empty-state">
           K účtu není přiřazená žádná postava. Projdi nejdřív registrací.
         </p>
-      </div>
+      </main>
     );
   }
 
   if (!membership?.team) {
     return (
-      <div className="site-main">
+      <main className="site-main" id="obsah">
         <h1>Můj tým</h1>
         <div className="card">
           <p className="empty-state" style={{ margin: 0 }}>
@@ -66,7 +66,7 @@ export default async function TeamPage({
               : "Ještě nejsi zařazený do týmu. Týmy vzniknou po rozdělení."}
           </p>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -170,7 +170,7 @@ export default async function TeamPage({
       .map((m) => m.character.characterName);
 
   return (
-    <div className="site-main site-main-wide">
+    <main className="site-main site-main-wide" id="obsah">
       <h1>{team.name}</h1>
       <p className="admin-subtitle">
         {team.members.length} hráčů - hraješ {SPEC_ROLE_LABELS[membership.roleInTeam]}
@@ -548,6 +548,6 @@ export default async function TeamPage({
           </tbody>
         </table>
       </div>
-    </div>
+    </main>
   );
 }

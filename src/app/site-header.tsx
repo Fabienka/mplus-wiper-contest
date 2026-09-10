@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { SiteNavLink } from "./site-nav-link";
+import { SiteMenu } from "./site-menu";
 
 /** Lišta pro veřejné stránky - odkazy se řídí tím, kdo je přihlášený. */
 export async function SiteHeader() {
@@ -11,38 +12,61 @@ export async function SiteHeader() {
 
   return (
     <header className="site-header">
+      {/* Přeskočení navigace. Vidět je až po zaostření tabulátorem, cíl je
+          #obsah na každé stránce. */}
+      <a className="skip-link" href="#obsah">
+        Přeskočit na obsah
+      </a>
+
       <Link className="site-brand" href="/">
+        {/* Výřez hlavy berana z loga - celé logo je s nápisem a v téhle
+            velikosti by z něj byla šmouha. */}
+        <img src="/icon-64.png" alt="" width={28} height={28} />
         Mythic+ Wiper Contest
       </Link>
 
-      <nav className="site-nav">
-        <SiteNavLink href="/leaderboard">Žebříček</SiteNavLink>
-        <SiteNavLink href="/info">Informace</SiteNavLink>
+      <SiteMenu>
+        <nav className="site-nav" aria-label="Hlavní navigace">
+          <SiteNavLink href="/leaderboard">Žebříček</SiteNavLink>
+          <SiteNavLink href="/info">Informace</SiteNavLink>
 
-        {user && (
-          <>
-            <SiteNavLink href="/profile">Můj profil</SiteNavLink>
-            <SiteNavLink href="/team">Můj tým</SiteNavLink>
-          </>
-        )}
+          {user && (
+            <>
+              <SiteNavLink href="/profile">Můj profil</SiteNavLink>
+              <SiteNavLink href="/team">Můj tým</SiteNavLink>
+            </>
+          )}
 
-        {can(user?.role, "accessAdmin") && (
-          <SiteNavLink href="/admin">Administrace</SiteNavLink>
-        )}
+          {can(user?.role, "accessAdmin") && (
+            <SiteNavLink href="/admin">Administrace</SiteNavLink>
+          )}
+        </nav>
 
-        {user ? (
-          <>
-            <span className="site-user">{user.name}</span>
-            {/* NextAuth má vlastní odhlašovací stránku, funguje i bez JS. */}
-            <a href="/api/auth/signout">Odhlásit se</a>
-          </>
-        ) : (
-          <>
-            <Link href="/login">Přihlásit se</Link>
-            <Link href="/register">Registrace</Link>
-          </>
-        )}
-      </nav>
+        {/* Účet je oddělený od navigace. Dřív bylo jméno jen šedý text mezi
+            odkazy, takže vypadalo jako zakázaný odkaz. */}
+        <div className="site-account">
+          {user ? (
+            <>
+              <span className="site-user" title={user.name ?? undefined}>
+                {user.name}
+              </span>
+              {/* NextAuth má vlastní odhlašovací stránku, funguje i bez JS. */}
+              <a className="btn" href="/api/auth/signout">
+                Odhlásit se
+              </a>
+            </>
+          ) : (
+            <>
+              <Link className="btn" href="/login">
+                Přihlásit se
+              </Link>
+              <Link className="btn btn-accent" href="/register">
+                Registrace
+              </Link>
+            </>
+          )}
+        </div>
+      </SiteMenu>
     </header>
   );
 }

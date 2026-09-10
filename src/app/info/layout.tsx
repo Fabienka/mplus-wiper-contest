@@ -10,7 +10,7 @@ export default function InfoLayout({ children }: { children: React.ReactNode }) 
   return (
     <>
       <SiteHeader />
-      <main className="site-main">
+      <main className="site-main" id="obsah">
         <InfoNav />
         {children}
       </main>

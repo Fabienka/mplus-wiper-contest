@@ -1,11 +1,28 @@
 :root {
+  /* Nativní ovládací prvky (výběr data, rozbalený select, scrollbary, autofill)
+     se kreslí podle color-scheme, ne podle našeho CSS. Bez tohohle řádku je
+     prohlížeč vykreslí ve světlé variantě - ikona kalendáře v datetime-local
+     poli pak byla tmavá na tmavém a nebyla vidět. */
+  color-scheme: dark;
+
   --bg: #0f1115;
   --surface: #171a21;
   --text: #e8e6e3;
   --muted: #8b8f98;
+
+  /* Dvě modré schválně. --accent je na text a odkazy na tmavém pozadí
+     (kontrast 6,0:1), s bílým textem by ale měla jen 3,2:1 - pod hranicí
+     WCAG AA. Na výplň tlačítek s bílým popiskem je proto tmavší
+     --accent-strong (4,6:1 s bílou). */
   --accent: #5b8cff;
-  --danger: #e5484d;
+  --accent-strong: #3f6fe0;
+
+  --danger: #ef5f63;
   --border: #262a33;
+
+  /* Barvy stavů. Dřív byly rozsypané jako literály po celém souboru. */
+  --success: #4caf6d;
+  --warning: #e0b341;
 }
 
 * {
@@ -19,15 +36,93 @@ body {
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+/* Jeden focus prstenec pro všechno. Dřív ho měla jen formulářová pole a dny
+   v kalendáři, zbytek spoléhal na výchozí prstenec prohlížeče - ten je na
+   tmavém pozadí sotva vidět. :focus-visible schválně: myš ho nevyvolá. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Přeskočení lišty rovnou na obsah. Vidět je až po zaostření tabulátorem. */
+.skip-link {
+  position: absolute;
+  left: 0.5rem;
+  top: -3rem;
+  z-index: 100;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  padding: 0.55rem 0.9rem;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: top 0.12s ease-out;
+}
+
+.skip-link:focus {
+  top: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
+}
+
+/* ---------- Drobné utility ----------
+   Nahrazují opakované inline style={{ ... }} - stejný text měl na různých
+   místech mírně jinou velikost, protože se hodnoty přepisovaly ručně. */
+
+/* Vedlejší text v odstavci nebo buňce tabulky. */
+.muted {
+  color: var(--muted);
+}
+
+/* Doplňující údaj pod hlavní hodnotou (druhý řádek v buňce tabulky). */
+.meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+/* Úvodní odstavec karty - vysvětluje, k čemu formulář pod ním je. */
+.card-lead {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.card-lead:last-child {
+  margin-bottom: 0;
+}
+
 .auth-page {
   min-height: 100vh;
   /* Na iOS Safari 100vh počítá i s lištou prohlížeče, která se při rolování
      skrývá - obsah pak končí pod ní. dvh měří skutečně viditelnou výšku. */
   min-height: 100dvh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1.25rem;
   padding: 2rem;
+}
+
+/* Značka nad kartou - zároveň jediná cesta zpátky na veřejnou část. */
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.auth-brand img {
+  display: block;
 }
 
 .auth-card {
@@ -39,9 +134,49 @@ body {
   padding: 2rem;
 }
 
+/* Registrace má polí dvakrát tolik než přihlášení a snese víc místa. */
+.auth-card-wide {
+  max-width: 520px;
+}
+
 .auth-card h1 {
   font-size: 1.25rem;
   margin-bottom: 1.5rem;
+}
+
+.auth-notice {
+  margin: 1.25rem 0;
+}
+
+.auth-hint {
+  margin: 1.25rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.auth-hint + .auth-hint {
+  margin-top: 0.5rem;
+}
+
+.auth-hint a {
+  color: var(--accent);
+}
+
+/* Oddíl formuláře (Účet / Postava). fieldset má výchozí rámeček a odsazení,
+   které se sem nehodí - používá se kvůli legend a čtečkám. */
+.field-group {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0 0 1.5rem;
+  padding: 1rem 0 0;
+}
+
+.field-group > legend {
+  padding: 0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
 }
 
 .field {
@@ -54,6 +189,38 @@ body {
 .field label {
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+/* Vysvětlivka pod polem. Váže se přes aria-describedby, takže ji čtečka
+   přečte spolu s popiskem. */
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+/* Zaškrtávátko má popisek vedle sebe, ne nad sebou. */
+.field-check > label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.field-check input[type="checkbox"] {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0.1rem 0 0;
+  accent-color: var(--accent-strong);
+  cursor: pointer;
+}
+
+.field-check a {
+  color: var(--accent);
 }
 
 .field input,
@@ -74,7 +241,7 @@ body {
 
 button.primary {
   width: 100%;
-  background: var(--accent);
+  background: var(--accent-strong);
   color: white;
   border: none;
   border-radius: 8px;
@@ -96,7 +263,7 @@ button.primary:disabled {
 }
 
 .success-text {
-  color: #4caf6d;
+  color: var(--success);
   font-size: 0.85rem;
   margin-top: 0.75rem;
 }
@@ -262,12 +429,12 @@ table.data select {
 }
 
 .badge-pending {
-  color: #e0b341;
+  color: var(--warning);
   border-color: #5a4a1e;
 }
 
 .badge-approved {
-  color: #4caf6d;
+  color: var(--success);
   border-color: #235437;
 }
 
@@ -276,13 +443,23 @@ table.data select {
   border-color: #5c2528;
 }
 
+/* Používá se na <button> i na <a>. Odkaz si bez text-decoration nese výchozí
+   podtržení prohlížeče, takže odkaz stylovaný jako tlačítko vypadal jinak než
+   skutečné tlačítko vedle něj. */
 .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 0.45rem 0.8rem;
   font-size: 0.85rem;
+  font-family: inherit;
+  line-height: 1.4;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -296,9 +473,13 @@ table.data select {
 }
 
 .btn-accent {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
   color: white;
+}
+
+.btn-accent:hover:not(:disabled) {
+  border-color: var(--accent);
 }
 
 .btn-danger {
@@ -348,6 +529,7 @@ pre.json {
 /* ---------- Veřejná lišta ---------- */
 
 .site-header {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -358,10 +540,27 @@ pre.json {
 }
 
 .site-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   color: var(--text);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.site-brand img {
+  display: block;
+  flex: none;
+}
+
+/* Navigace + účet dohromady. Na širokém displeji je to prostě řádek,
+   pod 720 px se to skládá pod lištu a otevírá tlačítkem (viz níž). */
+.site-menu {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
 }
 
 .site-nav {
@@ -380,8 +579,38 @@ pre.json {
   color: var(--accent);
 }
 
+/* Účet je oddělený svislou linkou, ať se jméno a odhlášení nepletou
+   s odkazy na stránky. */
+.site-account {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
 .site-user {
   color: var(--muted);
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Tlačítko menu je jen pro úzký displej. */
+.site-menu-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
 
 .site-main {
@@ -468,9 +697,11 @@ pre.json {
   background: var(--bg);
 }
 
+/* Dny sousedního měsíce jsou potlačené, ale pořád se musí dát přečíst -
+   na 55 % měly kontrast 2,9:1. */
 .cal-day-outside .cal-daynum {
-  color: #5a5e66;
-  color: color-mix(in srgb, var(--muted) 55%, transparent);
+  color: #767a83;
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
 }
 
 .cal-day-weekend .cal-daynum {
@@ -793,10 +1024,12 @@ pre.json {
   color: var(--muted);
 }
 
-/* Odkaz na aktuální stránku v horní liště. */
+/* Odkaz na aktuální stránku v horní liště. Podtržení samo o sobě splývá
+   s ostatními odkazy, proto ještě accent barva. */
 .site-nav a[aria-current="page"] {
-  color: var(--text);
+  color: var(--accent);
   text-decoration: underline;
+  text-underline-offset: 0.3em;
 }
 
 /* ---------- Responzivita ---------- */
@@ -867,17 +1100,65 @@ dl.detail dd {
   }
 }
 
-@media (max-width: 640px) {
-  .site-header {
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    padding: 0.8rem 1rem;
+/* Lišta na úzkém displeji: odkazy se schovají pod tlačítko Menu a rozbalí
+   se pod lištu. Sedm odkazů vedle sebe se zalomilo do dvou řádků a lišta pak
+   zabírala skoro třetinu obrazovky telefonu. */
+@media (max-width: 720px) {
+  .site-menu-toggle {
+    display: inline-flex;
+  }
+
+  .site-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.45);
+  }
+
+  .site-menu-open {
+    display: flex;
   }
 
   .site-nav {
-    gap: 0.9rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    font-size: 0.95rem;
+  }
+
+  .site-nav a {
+    padding: 0.85rem 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .site-account {
     flex-wrap: wrap;
-    font-size: 0.85rem;
+    gap: 0.6rem;
+    padding: 0.85rem 1rem;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+
+  .site-account .btn {
+    padding: 0.6rem 0.9rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-header {
+    padding: 0.8rem 1rem;
+  }
+
+  .site-brand {
+    font-size: 0.9rem;
   }
 
   .site-main {
@@ -885,9 +1166,9 @@ dl.detail dd {
   }
 
   .auth-page {
-    padding: 1rem;
-    align-items: flex-start;
-    padding-top: 3rem;
+    padding: 1rem 1rem 3rem;
+    justify-content: flex-start;
+    padding-top: 2rem;
   }
 
   .auth-card {

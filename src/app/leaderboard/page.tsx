@@ -19,7 +19,7 @@ export default async function LeaderboardPage() {
     return (
       <>
         <SiteHeader />
-        <main className="site-main">
+        <main className="site-main" id="obsah">
           <h1>Žebříček</h1>
           <p className="empty-state">Zatím není založená žádná sezóna.</p>
         </main>
@@ -80,7 +80,7 @@ export default async function LeaderboardPage() {
     <>
       <SiteHeader />
 
-      <main className="site-main site-main-wide">
+      <main className="site-main site-main-wide" id="obsah">
         <h1>Žebříček</h1>
         <p className="admin-subtitle">
           {season.name} - {SEASON_STATUS_LABELS[season.status]}

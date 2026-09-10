@@ -48,7 +48,7 @@ export default async function ProfilePage({
   const membership = character?.teamMemberships[0] ?? null;
 
   return (
-    <main className="site-main">
+    <main className="site-main" id="obsah">
         <h1>Můj profil</h1>
         <p className="admin-subtitle">
           {user.name} - {USER_ROLE_LABELS[user.role]}

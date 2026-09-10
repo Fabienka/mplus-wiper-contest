@@ -52,7 +52,7 @@ export default async function HomePage() {
     return (
       <>
         <SiteHeader />
-        <main className="site-main">
+        <main className="site-main" id="obsah">
           <h1>Mythic+ Wiper Contest</h1>
           <p style={{ color: "var(--muted)" }}>
             Zatím není založená žádná sezóna.
@@ -95,7 +95,7 @@ export default async function HomePage() {
     <>
       <SiteHeader />
 
-      <main className="site-main site-main-wide">
+      <main className="site-main site-main-wide" id="obsah">
         <h1>Mythic+ Wiper Contest</h1>
         <p className="admin-subtitle">
           {season.name} - {SEASON_STATUS_LABELS[season.status]}

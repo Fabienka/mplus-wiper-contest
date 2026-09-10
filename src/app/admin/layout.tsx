@@ -27,7 +27,7 @@ export default async function AdminLayout({
           <h2>Administrace</h2>
           <AdminNav role={session!.user.role} />
         </aside>
-        <main className="admin-main">{children}</main>
+        <main className="admin-main" id="obsah">{children}</main>
       </div>
     </div>
   );
