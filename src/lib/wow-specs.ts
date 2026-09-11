@@ -143,3 +143,40 @@ export function specsForClass(className: string | null | undefined): WowSpec[] {
 }
 
 export const WOW_CLASSES = [...new Set(WOW_SPECS.map((spec) => spec.className))].sort();
+
+/**
+ * Barvy tříd, jak je používá hra - jména v chatu a v raid rámečcích.
+ *
+ * Tři oficiální odstíny jsou na tmavém pozadí karet příliš tmavé na text:
+ * Death Knight (#C41E3A), Demon Hunter (#A330C9) a Shaman (#0070DD) vycházejí
+ * kolem 3 : 1, běžný text potřebuje 4,5 : 1. Ty jsou o kus zesvětlené, pořád
+ * ale poznat. Kontrast hlídá scripts/check-class-colors.ts.
+ */
+export const CLASS_COLORS: Record<string, string> = {
+  "Death Knight": "#E4506A",
+  "Demon Hunter": "#BC62DE",
+  Druid: "#FF7C0A",
+  Evoker: "#33937F",
+  Hunter: "#AAD372",
+  Mage: "#3FC7EB",
+  Monk: "#00FF98",
+  Paladin: "#F48CBA",
+  Priest: "#FFFFFF",
+  Rogue: "#FFF468",
+  Shaman: "#2E86E8",
+  Warlock: "#8788EE",
+  Warrior: "#C69B6D",
+};
+
+const COLOR_BY_CLASS = new Map(
+  Object.entries(CLASS_COLORS).map(([className, color]) => [className.toLowerCase(), color])
+);
+
+/**
+ * Barva classy pro text. Neznámá nebo chybějící classa vrátí null - text pak
+ * zůstane v barvě stránky.
+ */
+export function classColor(className: string | null | undefined): string | null {
+  if (!className) return null;
+  return COLOR_BY_CLASS.get(className.trim().toLowerCase()) ?? null;
+}

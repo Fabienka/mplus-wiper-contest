@@ -26,6 +26,7 @@ const KIND_CLASS: Record<CalendarEvent["kind"], string> = {
   MATCH_PROPOSED: "cal-event cal-kind-proposed",
   OVERLAP: "cal-event cal-kind-overlap",
   AVAILABILITY: "cal-event cal-kind-availability",
+  TEAMMATE_AVAILABILITY: "cal-event cal-kind-teammate",
 };
 
 /** Čtvereček v legendě - jen barva, ne celá událost. */
@@ -34,6 +35,7 @@ const KIND_SWATCH: Record<CalendarEvent["kind"], string> = {
   MATCH_PROPOSED: "cal-swatch cal-kind-proposed",
   OVERLAP: "cal-swatch cal-kind-overlap",
   AVAILABILITY: "cal-swatch cal-kind-availability",
+  TEAMMATE_AVAILABILITY: "cal-swatch cal-kind-teammate",
 };
 
 /** Popisek druhu v detailu dne, když ho stránka nemá ve své legendě. */
@@ -42,7 +44,20 @@ const KIND_FALLBACK_LABEL: Record<CalendarEvent["kind"], string> = {
   MATCH_PROPOSED: "navržený termín",
   OVERLAP: "může celý tým",
   AVAILABILITY: "zadaný čas",
+  TEAMMATE_AVAILABILITY: "čas spoluhráče",
 };
+
+/**
+ * Popisek události. Jméno postavy nese barvu její classy, stejně jako
+ * všude jinde na webu - bez tučného řezu, v buňce kalendáře není místo.
+ */
+function labelOf(event: CalendarEvent) {
+  return event.labelColor ? (
+    <span style={{ color: event.labelColor }}>{event.label}</span>
+  ) : (
+    event.label
+  );
+}
 
 function hhmm(date: Date): string {
   return date.toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
@@ -238,7 +253,7 @@ export function MonthCalendar({
                     <span className="cal-event-time">
                       {timeLabel(event, day.date)}
                     </span>{" "}
-                    {event.label}
+                    {labelOf(event)}
                   </div>
                 ))}
 
@@ -302,7 +317,7 @@ export function MonthCalendar({
                       <span className="cal-event-time">
                         {timeLabel(event, day.date)}
                       </span>{" "}
-                      {event.label}
+                      {labelOf(event)}
                     </span>
                   ))}
                 </span>
@@ -347,7 +362,7 @@ export function MonthCalendar({
                   </span>
 
                   <span className="cal-detail-body">
-                    <strong>{event.label}</strong>
+                    <strong>{labelOf(event)}</strong>
                     <span className="cal-detail-kind">{kindLabel(event.kind)}</span>
                     {event.detail && (
                       <span className="cal-detail-note">{event.detail}</span>

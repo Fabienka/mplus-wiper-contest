@@ -13,6 +13,7 @@ import {
 } from "@/lib/password-rules";
 import { IssueResetForm } from "./issue-form";
 import { revokePasswordReset } from "./actions";
+import { CharacterName } from "../../character-name";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export default async function PasswordResetsPage({
     where: { AND: [roleFilter, searchFilter] },
     orderBy: { username: "asc" },
     include: {
-      character: { select: { characterName: true, realm: true } },
+      character: { select: { characterName: true, realm: true, class: true } },
       passwordResets: {
         where: { usedAt: null, expiresAt: { gt: new Date() } },
         orderBy: { createdAt: "desc" },
@@ -156,9 +157,17 @@ export default async function PasswordResetsPage({
                     )}
                   </td>
                   <td className="muted">
-                    {user.character
-                      ? `${user.character.characterName} - ${user.character.realm}`
-                      : "-"}
+                    {user.character ? (
+                      <>
+                        <CharacterName
+                          name={user.character.characterName}
+                          wowClass={user.character.class}
+                        />{" "}
+                        - {user.character.realm}
+                      </>
+                    ) : (
+                      "-"
+                    )}
                   </td>
                   <td className="muted">{user.discordNick ?? "-"}</td>
                   <td>{USER_ROLE_LABELS[user.role]}</td>

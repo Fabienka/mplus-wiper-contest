@@ -160,6 +160,11 @@ npm run build
   schválně nic nevymýšlí, ať lidi nepíšou někam, kde je nikdo nečte.
 - **`NEXTAUTH_URL` musí sedět na veřejnou adresu.** Sestavují se z ní odkazy na
   reset hesla, takže při špatné hodnotě vydáš odkaz, který nikam nevede.
+- **Velikost požadavku na proxy.** Ručně zadaný běh nahrává screenshot až
+  8 MB (aplikace sama pouští 10 MB, viz `next.config.mjs`). nginx má výchozí
+  `client_max_body_size` jen 1 MB - nastav ho aspoň na `10m`, jinak nahrání
+  spadne na proxy dřív, než se k aplikaci vůbec dostane. Screenshoty leží
+  v databázi, takže jedou se zálohou `pg_dump` a na disk serveru nic nepíšou.
 - **Omezení pokusů** o přihlášení i registraci se počítá podle IP z hlavičky
   `X-Forwarded-For`. Nastav proxy tak, aby ji posílala pravdivě, jinak budou
   všechny požadavky vypadat jako jedna adresa.
@@ -172,8 +177,13 @@ Projekt zatím nemá test runner, logika se ověřuje samostatnými skripty:
 npm run check:shuffle         # rozdělení do týmů
 npm run check:scoring         # bodování běhů
 npm run check:match-result    # ověření běhu proti zápasu
+npm run check:manual-result   # ručně zadaný běh a screenshot
+npm run check:time-budget     # časový limit zápasu
+npm run check:match-timer     # časovač zápasu a kontrola proti zapsaným běhům
 npm run check:availability    # překryvy dostupností
 npm run check:calendar        # měsíční mřížka
+npm run check:datetime-input  # čtení dne a času z výběru termínu
+npm run check:class-colors    # barvy tříd a jejich čitelnost
 npm run check:permissions     # matice oprávnění
 npm run check:stats           # statistiky na úvodní stránce
 npm run check:leaderboard     # žebříček týmů
@@ -181,10 +191,11 @@ npm run check:rate-limit      # omezení počtu pokusů
 npm run check:password-reset  # platnost odkazu, kdo komu smí reset vydat
 npm run check:discord         # tvar zpráv pro Discord
 npm run check:result-flow:test  # celý zápis výsledku proti reálnému běhu
+npm run check:manual-flow:test  # ruční běh se screenshotem až po ověření
 ```
 
-Poslední jmenovaný sahá na testovací databázi a na Raider.io, ostatní běží
-bez obojího.
+`check:result-flow:test` sahá na testovací databázi a na Raider.io,
+`check:manual-flow:test` jen na testovací databázi. Ostatní běží bez obojího.
 
 ## Testovací databáze
 
@@ -194,6 +205,15 @@ Testovací data nepatří do ostré databáze, takže projekt má druhou databá
 
 Ten webhook musí mířit **do testovacího kanálu, nebo být prázdný** - nikdy do
 ostrého. Testovací data jinak skončí tam, kde je uvidí účastníci soutěže.
+
+Antivirus, který kontroluje HTTPS (na vývojovém stroji AVG), podepisuje
+spojení vlastním certifikátem a Node mu sám od sebe nevěří - volání Raider.io
+pak padá na `fetch failed` (`UNABLE_TO_VERIFY_LEAF_SIGNATURE`). Proto má
+`.env.test` řádek `NODE_USE_SYSTEM_CA=1`: `dev:test` spouští Next přes
+`dotenv`, takže Node proměnnou dostane ještě před startem a použije úložiště
+certifikátů Windows, kam si antivirus svůj certifikát instaluje. Obyčejný
+`npm run dev` si `.env` načítá až po startu Node - tam musí proměnná přijít
+z prostředí (terminál ji má, server spuštěný odjinud nemusí).
 
 ```bash
 npm run dev:test              # appka proti testovací DB

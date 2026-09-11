@@ -12,6 +12,8 @@ import {
   formatDateTime,
   formatTimeLimit,
 } from "@/lib/labels";
+import { isAwaitingVerification } from "@/lib/manual-result";
+import { CharacterName } from "../../../character-name";
 
 export const dynamic = "force-dynamic";
 
@@ -98,7 +100,10 @@ export default async function UserDetailPage({
     })
     .flatMap((match) => match.results.map((result) => ({ ...result, match })));
 
-  const validRuns = runs.filter((run) => run.isValid);
+  // Uznaný = platný a v herním čase zápasu (nebo přes něj uznaný moderátorem).
+  const validRuns = runs.filter(
+    (run) => run.isValid && (!run.overTimeLimit || run.timeLimitOverride)
+  );
   const bestKeyLevel = validRuns.reduce(
     (best, run) => Math.max(best, run.keyLevel),
     0
@@ -168,7 +173,8 @@ export default async function UserDetailPage({
           <dl className="detail">
             <dt>Jméno a realm</dt>
             <dd>
-              {character.characterName} - {character.realm}
+              <CharacterName name={character.characterName} wowClass={character.class} /> -{" "}
+              {character.realm}
             </dd>
             <dt>Class / spec</dt>
             <dd>
@@ -301,13 +307,38 @@ export default async function UserDetailPage({
                 <tr key={run.id}>
                   <td>
                     {run.dungeonName}
-                    {!run.isValid && (
+                    {/* Ručně zadaný běh bez rozhodnutí moderátora není
+                        "neuznaný" - jen se na něj ještě nikdo nepodíval. */}
+                    {run.abandoned ? (
                       <span
                         className="badge badge-rejected"
                         style={{ marginLeft: "0.4rem" }}
                       >
-                        Neuznáno
+                        Vzdáno
                       </span>
+                    ) : run.overTimeLimit && !run.timeLimitOverride ? (
+                      <span
+                        className="badge badge-rejected"
+                        style={{ marginLeft: "0.4rem" }}
+                      >
+                        Přes herní čas
+                      </span>
+                    ) : isAwaitingVerification(run) ? (
+                      <span
+                        className="badge badge-pending"
+                        style={{ marginLeft: "0.4rem" }}
+                      >
+                        Čeká na ověření
+                      </span>
+                    ) : (
+                      !run.isValid && (
+                        <span
+                          className="badge badge-rejected"
+                          style={{ marginLeft: "0.4rem" }}
+                        >
+                          Neuznáno
+                        </span>
+                      )
                     )}
                   </td>
                   <td>+{run.keyLevel}</td>

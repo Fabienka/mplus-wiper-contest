@@ -12,6 +12,7 @@ import {
 } from "@/lib/labels";
 import { Notice } from "../notice";
 import { ChangePasswordForm } from "./password-form";
+import { CharacterName } from "../character-name";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +84,8 @@ export default async function ProfilePage({
               <dl className="detail">
                 <dt>Jméno a realm</dt>
                 <dd>
-                  {character.characterName} - {character.realm}
+                  <CharacterName name={character.characterName} wowClass={character.class} /> -{" "}
+                  {character.realm}
                 </dd>
                 <dt>Class a spec</dt>
                 <dd>

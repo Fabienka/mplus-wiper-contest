@@ -175,10 +175,16 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   MATCH_CLOSED: "Uzavřen zápas",
   MATCH_CONFIRMATION_REVOKED: "Zrušeno schválení termínu",
   MATCH_CONFIRMED: "Schválen termín",
+  MATCH_CREATED: "Přidán termín z administrace",
+  MATCH_TIMER_RESET: "Vynulován časovač zápasu",
   MATCH_DELETED: "Smazán termín",
   MATCH_PROPOSED: "Navržen termín",
   MATCH_REOPENED: "Znovu otevřen zápas",
   MATCH_RESULT_ADDED: "Nahrán výsledek běhu",
+  MATCH_RESULT_INVALIDATED: "Zneplatněn výsledek běhu",
+  MATCH_RESULT_TIME_LIMIT_ALLOWED: "Uznán běh přes herní čas",
+  MATCH_RESULT_TIME_LIMIT_REVOKED: "Zrušeno uznání běhu přes herní čas",
+  MATCH_RESULT_VALIDATED: "Uznán výsledek běhu",
   PASSWORD_CHANGED: "Změněno heslo",
   PASSWORD_RESET_ISSUED: "Vydán odkaz na reset hesla",
   PASSWORD_RESET_REVOKED: "Zneplatněn odkaz na reset hesla",
@@ -193,6 +199,9 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   TEAM_MEMBERSHIP_ADDED: "Přidán člen týmu",
   TEAM_MEMBERSHIP_UPDATED: "Upraveno členství v týmu",
   TEAM_RENAMED: "Přejmenován tým",
+  TEAM_NOTE_ADDED: "Přidána poznámka k týmu",
+  TEAM_REROLL_RECORDED: "Zapsán reroll klíče",
+  TEAM_REROLL_RESET: "Zrušen reroll klíče",
   USER_ROLE_CHANGED: "Změněna role uživatele",
 };
 
@@ -206,6 +215,8 @@ export const AUDIT_ENTITY_LABELS: Record<string, string> = {
   ShuffleRun: "běh shuffle",
   Team: "tým",
   TeamMembership: "členství v týmu",
+  TeamNote: "poznámka k týmu",
+  TeamReroll: "reroll klíče",
   User: "uživatel",
 };
 

@@ -7,6 +7,7 @@
 import { DEFAULT_SCORING_CONFIG } from "../src/lib/scoring";
 import {
   evaluateRun,
+  latestRunStart,
   type MatchContext,
   type RunCandidate,
 } from "../src/lib/match-result";
@@ -91,6 +92,7 @@ console.log("2. Dungeon mimo rotaci");
   check(!r.valid, "neplatný");
   check(r.dungeon === null, "dungeon se nenapároval");
   check(r.reasons.some((x) => x.includes("rotaci")), "řekne proč", r.reasons.join(" | "));
+  check(!r.countsTowardTimeLimit, "dungeon mimo rotaci herní čas nečerpá");
 }
 
 console.log("3. Párování dungeonu");
@@ -103,33 +105,51 @@ console.log("3. Párování dungeonu");
   check(jinaVelikost.dungeon?.abbreviation === "BV", "nezáleží na velikosti písmen");
 }
 
-console.log("4. Okno zápasu");
+console.log("4. Okno zápasu - rozhoduje začátek běhu");
 {
+  const CLEAR_MS = 1240 * 1000;
+  const koncem = (start: Date) => new Date(start.getTime() + CLEAR_MS);
+
   const pred = evaluateRun(
     realnyBeh({ completedAt: new Date("2026-08-25T15:30:00.000Z") }),
     context
   );
-  check(!pred.valid, "běh před oknem je neplatný");
+  check(!pred.valid, "běh začatý před oknem je neplatný");
   check(
     pred.reasons.some((x) => x.includes("před začátkem")),
     "a řekne o kolik",
     pred.reasons.join(" | ")
   );
+  check(!pred.countsTowardTimeLimit, "a herní čas nečerpá");
 
-  const po = evaluateRun(
+  // Začátek přesně v okamžiku otevření okna ještě platí.
+  const naZacatku = evaluateRun(realnyBeh({ completedAt: koncem(context.windowStart) }), context);
+  check(naZacatku.valid, "start přesně na začátku okna projde", naZacatku.reasons.join(" | "));
+
+  // Konec okna je jen orientační: běh doběhlý po něm, ale začatý ve dni
+  // termínu, platí.
+  const poKonciOkna = evaluateRun(
     realnyBeh({ completedAt: new Date("2026-08-25T18:20:00.000Z") }),
     context
   );
-  check(!po.valid, "běh po okně je neplatný");
-  check(po.reasons.some((x) => x.includes("20:00")), "hlásí přesah 20 minut",
-    po.reasons.join(" | "));
+  check(poKonciOkna.valid, "doběh po konci okna projde", poKonciOkna.reasons.join(" | "));
+  check(poKonciOkna.countsTowardTimeLimit, "a čerpá herní čas");
 
-  // Hranice okna se počítá jako platná.
-  const naHranici = evaluateRun(
-    realnyBeh({ completedAt: context.windowEnd }),
-    context
+  // Poslední start ve 23:59 dne termínu - doběhne po půlnoci a platí.
+  const posledni = new Date(latestRunStart(context.windowStart).getTime() - 30_000);
+  const poPulnoci = evaluateRun(realnyBeh({ completedAt: koncem(posledni) }), context);
+  check(poPulnoci.valid, "start 23:59 a doběh po půlnoci projde", poPulnoci.reasons.join(" | "));
+
+  // Start po půlnoci už ne.
+  const druhyDen = new Date(latestRunStart(context.windowStart).getTime() + 10 * 60_000);
+  const pozde = evaluateRun(realnyBeh({ completedAt: koncem(druhyDen) }), context);
+  check(!pozde.valid, "start po půlnoci je neplatný");
+  check(
+    pozde.reasons.some((x) => x.includes("po 23:59 dne termínu")),
+    "a řekne proč",
+    pozde.reasons.join(" | ")
   );
-  check(naHranici.valid, "doběh přesně na konci okna projde");
+  check(!pozde.countsTowardTimeLimit, "a herní čas nečerpá");
 }
 
 console.log("5. Cizí hráč v sestavě");
@@ -149,6 +169,7 @@ console.log("5. Cizí hráč v sestavě");
     "a je to v důvodech",
     r.reasons.join(" | ")
   );
+  check(!r.countsTowardTimeLimit, "běh s cizím hráčem herní čas nečerpá");
 }
 
 console.log("6. Porovnání jmen a realmů");
@@ -176,9 +197,11 @@ console.log("7. Nestihnutý a příliš nízký klíč");
   );
   check(!nestihnuty.valid, "nestihnutý klíč je neplatný");
   check(!nestihnuty.score.scored, "a neboduje se");
+  check(nestihnuty.countsTowardTimeLimit, "herní čas ale čerpá");
 
   const nizky = evaluateRun(realnyBeh({ keyLevel: 8 }), context);
   check(!nizky.valid, "+8 je neplatný");
+  check(nizky.countsTowardTimeLimit, "nízký klíč herní čas čerpá taky");
   check(
     nizky.reasons.some((x) => x.includes("+10")),
     "zmíní hranici bodování",
@@ -211,7 +234,8 @@ console.log("9. Víc důvodů najednou");
       abbreviation: "XYZ",
       dungeonName: "Neznámý",
       keyLevel: 8,
-      completedAt: new Date("2026-08-25T20:00:00.000Z"),
+      // Až další den - start po 23:59 dne termínu je třetí důvod.
+      completedAt: new Date("2026-08-26T08:00:00.000Z"),
     }),
     context
   );

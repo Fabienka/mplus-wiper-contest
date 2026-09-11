@@ -132,6 +132,24 @@ export default async function SeasonPage({
             </div>
 
             <div className="field">
+              <label htmlFor="timeBudgetMinutes">Herní čas na zápas (minuty)</label>
+              <input
+                id="timeBudgetMinutes"
+                name="timeBudgetMinutes"
+                type="number"
+                min="15"
+                max="720"
+                step="5"
+                defaultValue={scoring.timeBudgetMinutes}
+                required
+              />
+              <span className="meta">
+                Tým ho čerpá časem na časovači všech pokusů v zápase, i vzdaných.
+                Běh, kterým ho překročí, se neuzná - moderátor ho může uznat ručně.
+              </span>
+            </div>
+
+            <div className="field">
               <label htmlFor="pointsPerKeyLevel">Body za úroveň klíče</label>
               <input
                 id="pointsPerKeyLevel"
@@ -152,9 +170,10 @@ export default async function SeasonPage({
             <div className="field">
               <span className="meta">
                 Slug Raider.io ({season.raiderioSeasonSlug ?? "nevyplněný"}), nejnižší
-                bodovaný klíč ({scoring.minScoredKeyLevel}) a body za úroveň klíče
-                ({scoring.pointsPerKeyLevel}) mění jen administrátor - závisí na nich
-                už spočtené výsledky.
+                bodovaný klíč ({scoring.minScoredKeyLevel}), body za úroveň klíče
+                ({scoring.pointsPerKeyLevel}) a herní čas na zápas (
+                {scoring.timeBudgetMinutes} min) mění jen administrátor - závisí na
+                nich už spočtené výsledky.
               </span>
             </div>
           )}

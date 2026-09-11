@@ -3,7 +3,7 @@
  *
  * Všechny časy se formátují i parsují na serveru v jeho systémové zóně:
  * `formatRange` a spol. v labels.ts, mřížka v calendar.ts a hlavně
- * `new Date("2026-09-14T18:00")` nad hodnotou z <input type="datetime-local">.
+ * skládání zadaného termínu z polí dne a času (datetime-input.ts).
  * Nikde se zóna nepředává explicitně, takže o zobrazených časech rozhoduje
  * systémové nastavení serveru.
  *

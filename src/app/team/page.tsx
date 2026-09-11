@@ -1,26 +1,28 @@
 import Link from "next/link";
 import { SubmitButton } from "../submit-button";
-import { prisma } from "@/lib/prisma";
 import { getMyTeamContext } from "@/lib/team";
-import { findOverlaps, type MemberSlots, type Overlap } from "@/lib/availability";
-import { parseMonthParam, type CalendarEvent } from "@/lib/calendar";
+import { parseMonthParam } from "@/lib/calendar";
 import { MonthCalendar } from "../month-calendar";
+import { DateTimeField } from "../date-time-field";
+import { SectionNav } from "../section-nav";
+import { CharacterName, CharacterNameList } from "../character-name";
 import {
-  MATCH_STATUS_BADGES,
-  MATCH_STATUS_LABELS,
   SPEC_ROLE_LABELS,
   formatDuration,
   formatRange,
-  formatTimeLimit,
   toDateTimeLocal,
 } from "@/lib/labels";
 import { ActionNotice } from "../action-notice";
+import { buildTeamCalendarEvents, findTeamOverlaps, loadTeamData } from "./team-data";
+import { MatchesCard, RerollCard, ResultsCard, RosterCard } from "./team-cards";
 import {
   addAvailability,
+  addManualResult,
   addRunResult,
   deleteAvailability,
   deleteMatch,
   proposeMatch,
+  recordReroll,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -28,9 +30,6 @@ export const dynamic = "force-dynamic";
 export const metadata = {
   title: "Můj tým",
 };
-
-/** Nejdřív se hledá termín pro celý tým, pak se povolí chybějící hráči. */
-const FALLBACK_STEPS = [0, 1, 2];
 
 export default async function TeamPage({
   searchParams,
@@ -100,103 +99,42 @@ export default async function TeamPage({
   }
 
   const team = membership.team;
-  const teamCharacterIds = team.members.map((m) => m.characterId);
-
-  const [availabilities, matches] = await Promise.all([
-    prisma.availability.findMany({
-      where: {
-        seasonId: membership.seasonId,
-        characterId: { in: teamCharacterIds },
-        // Minulé termíny jen zabírají místo.
-        end: { gte: new Date() },
-      },
-      orderBy: { start: "asc" },
-    }),
-    prisma.match.findMany({
-      where: { teamId: team.id },
-      orderBy: { windowStart: "asc" },
-      include: {
-        proposedBy: { select: { characterName: true } },
-        confirmedBy: { select: { username: true } },
-        results: { orderBy: { createdAt: "asc" } },
-      },
-    }),
-  ]);
+  const data = await loadTeamData(team);
+  const { availabilities, matches } = data;
 
   const mySlots = availabilities.filter((a) => a.characterId === character.id);
+  const teammateSlots = availabilities.filter((a) => a.characterId !== character.id);
 
-  const memberSlots: MemberSlots[] = team.members.map((member) => ({
-    characterId: member.characterId,
-    characterName: member.character.characterName,
-    slots: availabilities
-      .filter((a) => a.characterId === member.characterId)
-      .map((a) => ({ start: a.start, end: a.end })),
-  }));
+  // Jméno i classa - jména se na stránce vypisují v barvě classy.
+  const memberById = new Map(
+    team.members.map((m) => [
+      m.characterId,
+      { name: m.character.characterName, wowClass: m.character.class },
+    ])
+  );
 
-  // Nejdřív termín pro celý tým; když žádný není, povolí se postupně chybějící
-  // hráči, ať stránka neukáže prázdno, když se jeden člověk nezapsal.
-  let overlaps: Overlap[] = [];
-  let overlapMissing = 0;
-
-  for (const step of FALLBACK_STEPS) {
-    const needed = team.members.length - step;
-    if (needed < 2) break;
-
-    overlaps = findOverlaps(memberSlots, needed, { minDurationMinutes: 30 });
-    if (overlaps.length > 0) {
-      overlapMissing = step;
-      break;
-    }
-  }
+  const { overlaps, overlapMissing, fullTeamOverlaps } = findTeamOverlaps(
+    team.members,
+    availabilities
+  );
 
   const month = parseMonthParam(searchParams.month);
 
-  // Do kalendáře jdou termíny, vlastní časy a překryvy celého týmu. Překryvy
-  // s chybějícími hráči se nezobrazují, ať kalendář nezaplní skoro-termíny.
-  const fullTeamOverlaps =
-    overlapMissing === 0
-      ? overlaps
-      : findOverlaps(memberSlots, team.members.length, { minDurationMinutes: 30 });
-
-  const calendarEvents: CalendarEvent[] = [
-    ...matches.map((match) => ({
-      id: `match-${match.id}`,
-      start: match.windowStart,
-      end: match.windowEnd,
-      kind:
-        match.status === "PROPOSED"
-          ? ("MATCH_PROPOSED" as const)
-          : ("MATCH_CONFIRMED" as const),
-      label: match.proposedBy.characterName,
-      detail: `${match.proposedBy.characterName} navrhl termín ${formatRange(
-        match.windowStart,
-        match.windowEnd
-      )} - ${MATCH_STATUS_LABELS[match.status].toLowerCase()}`,
-    })),
-    ...fullTeamOverlaps.map((overlap) => ({
-      id: `overlap-${overlap.start.toISOString()}`,
-      start: overlap.start,
-      end: overlap.end,
-      kind: "OVERLAP" as const,
-      label: "může tým",
-      detail: `Celý tým může ${formatRange(overlap.start, overlap.end)}`,
-    })),
-    ...mySlots.map((slot) => ({
-      id: `slot-${slot.id}`,
-      start: slot.start,
-      end: slot.end,
-      kind: "AVAILABILITY" as const,
-      label: "můj čas",
-      detail: `Zadal jsi si čas ${formatRange(slot.start, slot.end)}${
-        slot.note ? ` (${slot.note})` : ""
-      }`,
-    })),
-  ];
+  // Do kalendáře jdou termíny, vlastní časy, časy spoluhráčů a překryvy celého
+  // týmu. Překryvy s chybějícími hráči se nezobrazují, ať kalendář nezaplní
+  // skoro-termíny.
+  const calendarEvents = buildTeamCalendarEvents({
+    matches,
+    availabilities,
+    members: team.members,
+    fullTeamOverlaps,
+    viewerCharacterId: character.id,
+  });
 
   const whoIsMissing = (ids: string[]) =>
     team.members
       .filter((m) => !ids.includes(m.characterId))
-      .map((m) => m.character.characterName);
+      .map((m) => ({ name: m.character.characterName, wowClass: m.character.class }));
 
   return (
     <main className="site-main site-main-wide" id="obsah">
@@ -207,31 +145,40 @@ export default async function TeamPage({
 
       <ActionNotice
         error={searchParams.error}
-        success={searchParams.saved && "Uloženo."}
+        success={
+          searchParams.saved &&
+          (searchParams.saved === "manual"
+            ? "Běh je uložený. Počítat se začne, až ho moderátor ověří podle screenshotu."
+            : searchParams.saved === "abandoned"
+              ? "Vzdaný pokus je zapsaný, jeho čas se odečetl z herního času zápasu."
+              : "Uloženo.")
+        }
       />
 
-      {/* Stránka má sedm karet a přes 2 000 px - bez rozcestníku se ke
-          každé věci muselo dorolovat. Obyčejné kotvy, fungují bez JS. */}
-      <nav className="section-nav" aria-label="Sekce stránky">
-        <a className="btn" href="#kalendar">
-          Kalendář
-        </a>
-        <a className="btn" href="#moje-casy">
-          Kdy mám čas
-        </a>
-        <a className="btn" href="#casy-tymu">
-          Kdy může tým
-        </a>
-        <a className="btn" href="#terminy">
-          Termíny
-        </a>
-        <a className="btn" href="#vysledky">
-          Výsledky
-        </a>
-        <a className="btn" href="#sestava">
-          Sestava
-        </a>
-      </nav>
+      {/* Stránka má osm karet a přes 2 000 px - bez rozcestníku se ke
+          každé věci muselo dorolovat. Obyčejné kotvy, fungují bez JS.
+
+          Pořadí karet sleduje, jak tým stránku používá: kdo v něm je,
+          kdy se hraje (kalendář, termíny), domluva termínu (moje časy,
+          společné časy, vlastní návrh), reroll a nakonec výsledky. */}
+      <SectionNav
+        items={[
+          { id: "sestava", label: "Sestava" },
+          { id: "kalendar", label: "Kalendář" },
+          { id: "terminy", label: "Termíny" },
+          { id: "moje-casy", label: "Kdy mám čas" },
+          { id: "casy-tymu", label: "Kdy může tým" },
+          { id: "vlastni-termin", label: "Navrhnout termín" },
+          { id: "reroll", label: "Reroll" },
+          { id: "vysledky", label: "Výsledky" },
+        ]}
+      />
+
+      <RosterCard
+        members={team.members}
+        availabilities={availabilities}
+        viewerCharacterId={character.id}
+      />
 
       <section className="card" id="kalendar" aria-labelledby="kalendar-nadpis">
         <h2 id="kalendar-nadpis">Kalendář</h2>
@@ -245,9 +192,12 @@ export default async function TeamPage({
             { kind: "MATCH_PROPOSED", label: "navržený termín" },
             { kind: "OVERLAP", label: "může celý tým" },
             { kind: "AVAILABILITY", label: "můj čas" },
+            { kind: "TEAMMATE_AVAILABILITY", label: "čas spoluhráče" },
           ]}
         />
       </section>
+
+      <MatchesCard matches={matches} deleteAction={deleteMatch} />
 
       <section className="card" id="moje-casy" aria-labelledby="moje-casy-nadpis">
         <h2 id="moje-casy-nadpis">Kdy mám čas</h2>
@@ -296,22 +246,26 @@ export default async function TeamPage({
 
         <form action={addAvailability} style={{ marginTop: "1.25rem" }}>
           <div className="row-actions row-actions-end">
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="start">Od</label>
-              <input id="start" name="start" type="datetime-local" required />
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="end">Do</label>
-              <input id="end" name="end" type="datetime-local" required />
-            </div>
+            <DateTimeField
+              id="start"
+              name="start"
+              label="Od"
+              required
+              style={{ marginBottom: 0 }}
+            />
+            <DateTimeField
+              id="end"
+              name="end"
+              label="Do"
+              required
+              dayFallbackFrom="start"
+              style={{ marginBottom: 0 }}
+            />
             <div className="field" style={{ marginBottom: 0, flex: 1 }}>
               <label htmlFor="note">Poznámka (nepovinné)</label>
               <input id="note" name="note" placeholder="Např. po 22:00 už jen možná" />
             </div>
-            <SubmitButton
-              className="btn btn-accent"
-              pendingLabel="Přidávám..."
-            >
+            <SubmitButton className="btn btn-accent" pendingLabel="Přidávám...">
               Přidat
             </SubmitButton>
           </div>
@@ -358,7 +312,7 @@ export default async function TeamPage({
                         {overlap.characterIds.length} / {team.members.length}
                       </td>
                       <td className="muted">
-                        {missing.length === 0 ? "nikdo" : missing.join(", ")}
+                        {missing.length === 0 ? "nikdo" : <CharacterNameList characters={missing} />}
                       </td>
                       <td>
                         <form action={proposeMatch}>
@@ -372,10 +326,7 @@ export default async function TeamPage({
                             name="end"
                             value={toDateTimeLocal(overlap.end)}
                           />
-                          <SubmitButton
-                            className="btn"
-                            pendingLabel="Navrhuji..."
-                          >
+                          <SubmitButton className="btn" pendingLabel="Navrhuji...">
                             Navrhnout termín
                           </SubmitButton>
                         </form>
@@ -387,156 +338,41 @@ export default async function TeamPage({
             </table>
           </>
         )}
-      </section>
 
-      <section className="card" id="terminy" aria-labelledby="terminy-nadpis">
-        <h2 id="terminy-nadpis">Termíny týmu</h2>
+        <h3 style={{ marginTop: "1.5rem" }}>Časy spoluhráčů</h3>
 
-        {matches.length === 0 ? (
-          <p className="empty-state">Zatím není navržený žádný termín.</p>
+        {teammateSlots.length === 0 ? (
+          <p className="empty-state">Spoluhráči si zatím nezadali žádný čas.</p>
         ) : (
-          <table className="data">
+          <table className="data table-cards">
             <thead>
               <tr>
-                <th scope="col" style={{ width: "32%" }}>Kdy</th>
-                <th scope="col" style={{ width: "14%" }}>Stav</th>
-                <th scope="col" style={{ width: "18%" }}>Navrhl</th>
-                <th scope="col" style={{ width: "18%" }}>Schválil</th>
-                <th scope="col" />
+                <th scope="col" style={{ width: "24%" }}>Hráč</th>
+                <th scope="col" style={{ width: "36%" }}>Kdy</th>
+                <th scope="col" style={{ width: "14%" }}>Délka</th>
+                <th scope="col">Poznámka</th>
               </tr>
             </thead>
             <tbody>
-              {matches.map((match) => (
-                <tr key={match.id}>
-                  <td>
-                    {formatRange(match.windowStart, match.windowEnd)}
-                    {match.note && (
-                      <div className="meta">
-                        {match.note}
-                      </div>
+              {teammateSlots.map((slot) => (
+                <tr key={slot.id}>
+                  <td data-label="Hráč">
+                    {memberById.has(slot.characterId) && (
+                      <CharacterName
+                        name={memberById.get(slot.characterId)!.name}
+                        wowClass={memberById.get(slot.characterId)!.wowClass}
+                      />
                     )}
                   </td>
-                  <td>
-                    <span className={MATCH_STATUS_BADGES[match.status]}>
-                      {MATCH_STATUS_LABELS[match.status]}
-                    </span>
-                  </td>
-                  <td>{match.proposedBy.characterName}</td>
-                  <td className="muted">
-                    {match.confirmedBy?.username ?? "-"}
-                  </td>
-                  <td>
-                    {match.status === "PROPOSED" && (
-                      <form action={deleteMatch}>
-                        <input type="hidden" name="matchId" value={match.id} />
-                        <SubmitButton
-                          pendingLabel="Ruším..."
-                          className="btn btn-danger"
-                          confirmTitle="Zrušit návrh termínu?"
-                          confirm="Zmizí i ostatním v týmu a moderátor ho už neschválí."
-                          confirmLabel="Zrušit návrh"
-                        >
-                          Zrušit
-                        </SubmitButton>
-                      </form>
-                    )}
+                  <td data-label="Kdy">{formatRange(slot.start, slot.end)}</td>
+                  <td data-label="Délka">{formatDuration(slot.start, slot.end)}</td>
+                  <td className="muted" data-label="Poznámka">
+                    {slot.note ?? "-"}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </section>
-
-      <section className="card" id="vysledky" aria-labelledby="vysledky-nadpis">
-        <h2 id="vysledky-nadpis">Výsledky</h2>
-        <p className="card-lead">
-          Po odehrání vlož odkaz na běh z Raider.io. Čas i sestavu si aplikace
-          stáhne sama, takže se nedá překlepnout. Počítá se jen nejlepší platný
-          běh - neúspěšný pokus o vyšší klíč vás o dřívější výsledek nepřipraví.
-        </p>
-
-        {matches.filter((m) => m.status === "CONFIRMED").length === 0 ? (
-          <p className="empty-state">
-            Výsledky jdou nahrávat až ke schválenému termínu.
-          </p>
-        ) : (
-          matches
-            .filter((m) => m.status === "CONFIRMED")
-            .map((match) => (
-              <div key={match.id} style={{ marginBottom: "1.5rem" }}>
-                <strong style={{ fontSize: "0.95rem" }}>
-                  {formatRange(match.windowStart, match.windowEnd)}
-                </strong>
-
-                {match.results.length === 0 ? (
-                  <p className="empty-state" style={{ padding: "0.75rem 0" }}>
-                    Zatím žádný běh.
-                  </p>
-                ) : (
-                  <table className="data" style={{ marginTop: "0.5rem" }}>
-                    <thead>
-                      <tr>
-                        <th scope="col" style={{ width: "30%" }}>Dungeon</th>
-                        <th scope="col" style={{ width: "10%" }}>Klíč</th>
-                        <th scope="col" style={{ width: "14%" }}>Čas</th>
-                        <th scope="col" style={{ width: "14%" }}>Body</th>
-                        <th scope="col">Stav</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {match.results.map((result) => (
-                        <tr key={result.id}>
-                          <td>{result.dungeonName}</td>
-                          <td>+{result.keyLevel}</td>
-                          <td>{formatTimeLimit(result.clearTimeSeconds)}</td>
-                          <td>
-                            {result.points === null ? "-" : result.points.toFixed(1)}
-                          </td>
-                          <td>
-                            {result.isOfficial ? (
-                              <span className="badge badge-approved">Počítá se</span>
-                            ) : result.isValid ? (
-                              <span className="badge badge-pending">Platný</span>
-                            ) : (
-                              <>
-                                <span className="badge badge-rejected">Nepočítá se</span>
-                                {result.invalidReason && (
-                                  <div className="meta">
-                                    {result.invalidReason}
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-
-                <form action={addRunResult} style={{ marginTop: "0.75rem" }}>
-                  <input type="hidden" name="matchId" value={match.id} />
-                  <div className="row-actions row-actions-end">
-                    <div className="field" style={{ marginBottom: 0, flex: 1 }}>
-                      <label htmlFor={`run-${match.id}`}>Odkaz na běh</label>
-                      <input
-                        id={`run-${match.id}`}
-                        name="runUrl"
-                        placeholder="https://raider.io/mythic-plus-runs/..."
-                        required
-                      />
-                    </div>
-                    <SubmitButton
-                      className="btn btn-accent"
-                      pendingLabel="Stahuji běh z Raider.io..."
-                    >
-                      Nahrát výsledek
-                    </SubmitButton>
-                  </div>
-                </form>
-              </div>
-            ))
         )}
       </section>
 
@@ -548,67 +384,45 @@ export default async function TeamPage({
         </p>
         <form action={proposeMatch}>
           <div className="row-actions row-actions-end">
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="match-start">Od</label>
-              <input id="match-start" name="start" type="datetime-local" required />
-            </div>
-            <div className="field" style={{ marginBottom: 0 }}>
-              <label htmlFor="match-end">Do</label>
-              <input id="match-end" name="end" type="datetime-local" required />
-            </div>
+            <DateTimeField
+              id="match-start"
+              name="start"
+              label="Od"
+              required
+              style={{ marginBottom: 0 }}
+            />
+            <DateTimeField
+              id="match-end"
+              name="end"
+              label="Do"
+              required
+              dayFallbackFrom="start"
+              style={{ marginBottom: 0 }}
+            />
             <div className="field" style={{ marginBottom: 0, flex: 1 }}>
               <label htmlFor="match-note">Poznámka (nepovinné)</label>
               <input id="match-note" name="note" placeholder="Např. sraz na Discordu" />
             </div>
-            <SubmitButton
-              className="btn btn-accent"
-              pendingLabel="Navrhuji..."
-            >
+            <SubmitButton className="btn btn-accent" pendingLabel="Navrhuji...">
               Navrhnout
             </SubmitButton>
           </div>
         </form>
       </section>
 
-      <section className="card" id="sestava" aria-labelledby="sestava-nadpis">
-        <h2 id="sestava-nadpis">Sestava</h2>
-        {/* table-cards: pod 640 px se řádky rozpadnou na kartičky, jinak by
-            se "Monk - Brewmas..." uprostřed slova ořízlo. */}
-        <table className="data table-cards">
-          <thead>
-            <tr>
-              <th scope="col" style={{ width: "30%" }}>Postava</th>
-              <th scope="col" style={{ width: "34%" }}>Class / spec</th>
-              <th scope="col" style={{ width: "18%" }}>Role</th>
-              <th scope="col">Zadaných časů</th>
-            </tr>
-          </thead>
-          <tbody>
-            {team.members.map((member) => (
-              <tr key={member.id}>
-                <td data-label="Postava">
-                  {member.character.characterName}
-                  {member.characterId === character.id && (
-                    <span className="meta"> (ty)</span>
-                  )}
-                </td>
-                <td className="muted" data-label="Class / spec">
-                  {member.character.wowSpec
-                    ? `${member.character.class} - ${member.character.wowSpec}`
-                    : member.character.class ?? "-"}
-                </td>
-                <td data-label="Role">{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
-                <td data-label="Zadaných časů">
-                  {
-                    availabilities.filter((a) => a.characterId === member.characterId)
-                      .length
-                  }
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      <RerollCard
+        reroll={data.reroll}
+        activeDungeons={data.activeDungeons}
+        recordAction={recordReroll}
+      />
+
+      <ResultsCard
+        matches={matches}
+        activeDungeons={data.activeDungeons}
+        budgetByMatch={data.budgetByMatch}
+        runAction={addRunResult}
+        manualAction={addManualResult}
+      />
     </main>
   );
 }

@@ -227,3 +227,45 @@ export async function setResultValidity(formData: FormData) {
   revalidateMatches();
   redirect("/admin/matches?saved=1");
 }
+
+/**
+ * Uzná běh i přes vyčerpaný herní čas zápasu - nebo uznání vezme zpátky.
+ *
+ * Schválně odděleně od platnosti běhu: ověřený screenshot ještě neznamená
+ * souhlas s překročením limitu.
+ */
+export async function setTimeLimitOverride(formData: FormData) {
+  const staff = await requirePermission("approveMatchTerms");
+  const resultId = String(formData.get("resultId"));
+  const allow = String(formData.get("allow")) === "1";
+
+  const result = await prisma.matchResult.findUniqueOrThrow({
+    where: { id: resultId },
+    include: { match: { select: { id: true, status: true } } },
+  });
+
+  if (result.match.status === "COMPLETED") {
+    fail("Zápas je uzavřený. Nejdřív ho znovu otevři.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.matchResult.update({
+      where: { id: resultId },
+      data: { timeLimitOverride: allow },
+    });
+
+    await recomputeOfficialResult(tx, result.match.id);
+
+    await writeAuditLog(tx, {
+      actorId: staff.id,
+      actionType: allow ? "MATCH_RESULT_TIME_LIMIT_ALLOWED" : "MATCH_RESULT_TIME_LIMIT_REVOKED",
+      entityType: "MatchResult",
+      entityId: resultId,
+      oldValue: { timeLimitOverride: result.timeLimitOverride },
+      newValue: { timeLimitOverride: allow },
+    });
+  });
+
+  revalidateMatches();
+  redirect("/admin/matches?saved=1");
+}

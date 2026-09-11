@@ -27,11 +27,17 @@ export interface ScoringConfig {
   minScoredKeyLevel: number;
   /** Kolik bodů má jedna úroveň klíče. Nesmí být pod 100, viz komentář výše. */
   pointsPerKeyLevel: number;
+  /**
+   * Herní čas, který má tým na jeden zápas, v minutách. Čerpá ho čas na
+   * časovači všech pokusů v zápase, i vzdaných (viz time-budget.ts).
+   */
+  timeBudgetMinutes: number;
 }
 
 export const DEFAULT_SCORING_CONFIG: ScoringConfig = {
   minScoredKeyLevel: 10,
   pointsPerKeyLevel: 100,
+  timeBudgetMinutes: 120,
 };
 
 /** Maximum časového bonusu - odpovídá běhu o nulové délce, tedy nedosažitelné. */
@@ -57,6 +63,11 @@ export function parseScoringConfig(raw: unknown): ScoringConfig {
       ? DEFAULT_SCORING_CONFIG.pointsPerKeyLevel
       : Number(source.pointsPerKeyLevel);
 
+  const timeBudgetMinutes =
+    source.timeBudgetMinutes === undefined
+      ? DEFAULT_SCORING_CONFIG.timeBudgetMinutes
+      : Number(source.timeBudgetMinutes);
+
   if (!Number.isInteger(minScoredKeyLevel) || minScoredKeyLevel < 2) {
     throw new ScoringConfigError(
       "Nejnižší bodovaná výška klíče musí být celé číslo od 2 výš."
@@ -69,7 +80,18 @@ export function parseScoringConfig(raw: unknown): ScoringConfig {
     );
   }
 
-  return { minScoredKeyLevel, pointsPerKeyLevel };
+  // Kratší limit, než trvá jeden klíč, nedává smysl; delší než půl dne je překlep.
+  if (
+    !Number.isInteger(timeBudgetMinutes) ||
+    timeBudgetMinutes < 15 ||
+    timeBudgetMinutes > 720
+  ) {
+    throw new ScoringConfigError(
+      "Herní čas na zápas musí být celý počet minut od 15 do 720."
+    );
+  }
+
+  return { minScoredKeyLevel, pointsPerKeyLevel, timeBudgetMinutes };
 }
 
 export interface RunInput {
