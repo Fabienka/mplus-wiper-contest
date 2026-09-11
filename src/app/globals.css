@@ -48,6 +48,11 @@
   --silver: #c3c8d2;
   --bronze: #c98a5c;
 
+  /* Fialová - časy spoluhráčů v kalendáři. Šedá už patří vlastním časům
+     a všechno teplé je obsazené termíny a zlatou. Světlost a sytost drží
+     rodinu stavových barev. */
+  --violet: #b08ee8;
+
   --danger: #ef6b62;
   --success: #34c96f;
 
@@ -490,6 +495,25 @@ button.primary:disabled {
   border-radius: 12px;
   padding: 1.25rem;
   margin-bottom: 1.25rem;
+  /* Jen seznam vlastností, ne celá zkratka transition: délky zůstávají
+     z obecného pravidla výš, takže při prefers-reduced-motion (tam je
+     transition: none) se stín pořád neanimuje. */
+  transition-property: background-color, border-color, color, box-shadow;
+}
+
+/* Karta pod myší jen o stupeň světlejší okraj. Velký stín na každé kartě by
+   na stránce plné karet působil neklidně a nic by neřekl. */
+.card:hover {
+  border-color: color-mix(in srgb, var(--muted) 40%, var(--border));
+}
+
+/* Karta, ve které člověk něco vyplňuje. Zlatý okraj a stín ji vytáhnou
+   z řady ostatních - na dlouhé stránce je hned vidět, kde se pracuje. */
+.card:focus-within {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 12px 30px rgba(0, 0, 0, 0.35);
 }
 
 /* Nadpisy karet schválně nejsou zlaté. Je jich v aplikaci přes šedesát a
@@ -1121,6 +1145,396 @@ pre.json {
   }
 }
 
+/* Jméno postavy v barvě její classy (barvu dává inline style z classColor).
+   Tučně, aby barevný text nepůsobil jako odkaz. */
+.class-name {
+  font-weight: 600;
+}
+
+/* Herní čas zápasu (TimeBudgetLine). */
+.time-budget {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.time-budget strong {
+  color: var(--text);
+}
+
+.time-budget-over,
+.time-budget-over strong {
+  color: var(--danger);
+}
+
+/* Časovač herního času na detailu týmu (MatchTimer). */
+.match-timer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin: 0.75rem 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+}
+
+.match-timer-running {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+.match-timer-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.match-timer-clock {
+  margin: 0.15rem 0;
+  font-size: 2rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.match-timer-running .match-timer-clock {
+  color: var(--accent);
+}
+
+.match-timer-over .match-timer-clock {
+  color: var(--danger);
+}
+
+.match-timer-meta {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.match-timer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.match-timer-alert {
+  flex-basis: 100%;
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-left: 3px solid var(--danger);
+  border-radius: 6px;
+  background: #2b1c1e;
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+/* Neveřejné poznámky moderátorů u týmu. */
+.team-notes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-notes li {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.team-note-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* pre-wrap: odstavce, které moderátor napsal, zůstanou odstavci. */
+.team-note-body {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Ruční zadání běhu ---------- */
+
+.manual-run {
+  margin-top: 0.75rem;
+}
+
+.manual-run > summary {
+  width: fit-content;
+  color: var(--accent);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.manual-run[open] > summary {
+  margin-bottom: 0.6rem;
+}
+
+.manual-run .field-hint {
+  margin: 0 0 0.9rem;
+}
+
+/* Tlačítko výběru souboru jako ostatní tlačítka, ne systémové. */
+.field input[type="file"] {
+  padding: 0.4rem;
+  color: var(--muted);
+}
+
+.field input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.field input[type="file"]::file-selector-button:hover {
+  border-color: var(--muted);
+}
+
+/* Náhled toho, co se opravdu odešle - po zmenšení v prohlížeči. */
+.screenshot-preview {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.screenshot-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 14rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.screenshot-preview:hover img,
+.screenshot-preview:focus-visible img {
+  border-color: var(--accent);
+}
+
+/* ---------- Výběr dne a času (DateTimeField) ---------- */
+
+.dtf-inputs {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.dtf-part {
+  position: relative;
+  display: flex;
+}
+
+/* Šířky na nejdelší zápis ("28. 12. 2026", "hh:mm") plus ikonu - užší
+   pole ořezávalo už zástupný text. */
+.dtf-part-day {
+  width: 10.75rem;
+}
+
+.dtf-part-time {
+  width: 7.25rem;
+}
+
+/* Místo vpravo pro ikonu, ať do ní text nevteče. */
+.dtf-part input {
+  width: 100%;
+  padding-right: 2.35rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dtf-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.3rem;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.dtf-toggle:hover,
+.dtf-toggle[aria-expanded="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.dtf-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dtf-popover {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 30;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+}
+
+.dtf-popover:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.dtf-cal {
+  width: 17.5rem;
+  padding: 0.75rem;
+}
+
+.dtf-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.dtf-cal-title {
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
+.dtf-cal-nav {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.dtf-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.dtf-cal-weekday {
+  padding: 0.25rem 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.dtf-day {
+  aspect-ratio: 1;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.dtf-day:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.dtf-day:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Stejné potlačení jako dny sousedního měsíce ve velkém kalendáři. */
+.dtf-day-outside {
+  color: #7d766f;
+  color: color-mix(in srgb, var(--muted) 80%, transparent);
+}
+
+/* Dnešek jen zlatým číslem - zlatý rámeček už patří fokusu a oba vedle
+   sebe šly splést. */
+.dtf-day-today {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.dtf-day-selected,
+.dtf-day-selected:hover {
+  background: var(--accent-strong);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.dtf-cal-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+/* position: relative kvůli offsetTop položek - podle něj se seznam posouvá
+   na vybraný čas. */
+.dtf-times {
+  position: absolute;
+  width: 100%;
+  min-width: 6.75rem;
+  max-height: 15rem;
+  margin: 0;
+  padding: 0.3rem;
+  overflow-y: auto;
+  list-style: none;
+  /* Systémový posuvník je v tmavé nabídce světlý pruh. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.dtf-time {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  cursor: pointer;
+}
+
+/* Celé hodiny výrazněji - v seznamu 96 časů slouží jako záchytné body. */
+.dtf-time-hour {
+  color: var(--text);
+}
+
+.dtf-time:hover,
+.dtf-time-active {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+}
+
+.dtf-time[aria-selected="true"] {
+  background: var(--accent-strong);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
 /* ---------- Měsíční kalendář ---------- */
 
 .cal-header {
@@ -1266,6 +1680,12 @@ pre.json {
   background: #23262d;
   background: color-mix(in srgb, var(--muted) 16%, transparent);
   border-left-color: var(--muted);
+}
+
+.cal-kind-teammate {
+  background: #2a2436;
+  background: color-mix(in srgb, var(--violet) 18%, transparent);
+  border-left-color: var(--violet);
 }
 
 .cal-more {
@@ -1510,16 +1930,100 @@ pre.json {
 /* Přepínač podstránek v informační části. */
 .info-nav,
 /* Rozcestník po sekcích dlouhé stránky (kotvy). */
+/* Rozcestník stránky (SectionNav). Přilepený k hornímu okraji, ať jde
+   skočit jinam odkudkoli. Vypadá jako navigace, ne jako tlačítka akcí -
+   dřív to byly obyčejné .btn a splývaly s "Uložit" a "Přidat".
+   Vrstva 15: pod menu z lišty (20) a pod výběrem data (30). */
 .section-nav {
+  position: sticky;
+  top: 0;
+  z-index: 15;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1.5rem;
+  padding: 0.55rem 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
 }
 
-/* Skok na kotvu nesmí nadpis zarazit těsně pod horní okraj. */
+.section-nav-label {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* position: relative kvůli offsetLeft - podle něj se aktivní položka
+   posouvá do záběru, když se lišta roluje do strany. */
+.section-nav ul {
+  position: relative;
+  display: flex;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.section-nav ul::-webkit-scrollbar {
+  display: none;
+}
+
+.section-nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 0.85rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.section-nav a:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 7%, transparent);
+}
+
+.section-nav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Karta, ve které člověk právě je. */
+.section-nav a[aria-current="location"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+/* Skok na kotvu nesmí nadpis zarazit těsně pod horní okraj - a na stránce
+   s rozcestníkem ani pod přilepenou lištu. */
 [id] {
   scroll-margin-top: 1rem;
+}
+
+.section-nav ~ [id] {
+  scroll-margin-top: 4.5rem;
+}
+
+/* Na telefonu jeden řádek rolovaný do strany, od kraje ke kraji. */
+@media (max-width: 640px) {
+  .section-nav {
+    margin-right: -1rem;
+    margin-left: -1rem;
+    padding-right: 1rem;
+    padding-left: 1rem;
+  }
+
+  .section-nav-label {
+    display: none;
+  }
 }
 
 /* Seznamy v pravidlech - odrážky se musí číst pohodlně i na mobilu. */
@@ -1630,6 +2134,89 @@ pre.json {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 0.3em;
+}
+
+/* ---------- Vyskakovací hláška po akci (ActionToast) ---------- */
+
+/* Přichycená k okraji obrazovky - hláška nahoře stránky zůstávala
+   nepovšimnutá, když byl člověk dole u formuláře, který ji vyvolal. Vpravo
+   dole, ne nahoře: tam by zakrývala odkazy v hlavičce. Nad menu (20)
+   a výběrem data (30), pod odkazem "Přeskočit na obsah" (100). */
+.toast-region {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 50;
+  width: min(26rem, calc(100vw - 2.5rem));
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.85rem 0.5rem 0.85rem 1rem;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
+  animation: toast-in 0.18s ease-out;
+}
+
+.toast .notice-title {
+  flex: 1;
+  line-height: 1.45;
+}
+
+/* 44 px na dotyk, záporný okraj ho schová do výšky hlášky. */
+.toast-close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -0.6rem 0;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.toast-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+/* Na telefonu přes celou šířku u spodního okraje, kam míří palec. */
+@media (max-width: 640px) {
+  .toast-region {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    width: auto;
+  }
 }
 
 /* ---------- Responzivita ---------- */
@@ -1841,6 +2428,12 @@ dl.detail dd {
   .row-actions > .field input,
   .row-actions > .field select {
     width: 100%;
+  }
+
+  /* Výběr termínu přes celou šířku: den se roztáhne, čas zůstane úzký. */
+  .row-actions > .dtf .dtf-part-day {
+    flex: 1 1 auto;
+    width: auto;
   }
 
   .stat-grid {

@@ -24,6 +24,7 @@ export interface SeasonDungeonRef {
 
 export interface MatchContext {
   windowStart: Date;
+  /** Jen orientační - o běhu rozhoduje začátek okna a 23:59 dne termínu. */
   windowEnd: Date;
   /** Postavy, které za tým smějí hrát - včetně náhradníků. */
   teamCharacters: TeamCharacter[];
@@ -37,7 +38,8 @@ export interface RunCandidate {
   keyLevel: number;
   clearTimeSeconds: number;
   parTimeSeconds: number;
-  keystoneUpgrades: number;
+  /** Verdikt hry. Ručně zadaný běh ho nemá - pak se rozhodne podle časů. */
+  keystoneUpgrades: number | null;
   completedAt: Date;
   roster: { characterName: string; realm: string }[];
 }
@@ -53,6 +55,31 @@ export interface RunEvaluation {
   matchedCharacterIds: string[];
   /** Jména ze sestavy, která do týmu nepatří. */
   outsiders: string[];
+  /** Začátek běhu - konec minus čas běhu. */
+  startedAt: Date;
+  /** Běh začal v termínu: po začátku okna, nejpozději 23:59 dne termínu. */
+  inWindow: boolean;
+  /**
+   * Ubírá z herního času zápasu: začal v termínu, hraje ho tým a dungeon je
+   * v rotaci. Bodovaný, nestihnutý i vzdaný běh ano - nezáleží na bodech.
+   */
+  countsTowardTimeLimit: boolean;
+}
+
+/**
+ * Nejpozdější začátek běhu: 23:59:59 dne, kdy termín začíná (místní čas).
+ * Klíč načatý večer smí doběhnout po půlnoci, nový po půlnoci už ne.
+ */
+export function latestRunStart(windowStart: Date): Date {
+  return new Date(
+    windowStart.getFullYear(),
+    windowStart.getMonth(),
+    windowStart.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
 }
 
 /** Jména a realmy se porovnávají bez ohledu na velikost písmen a apostrofy. */
@@ -102,13 +129,21 @@ export function evaluateRun(run: RunCandidate, context: MatchContext): RunEvalua
     reasons.push(`Dungeon "${run.dungeonName}" není v rotaci sezóny.`);
   }
 
-  // 2) Běh musí spadat do okna zápasu.
-  if (run.completedAt < context.windowStart) {
-    const rozdil = (context.windowStart.getTime() - run.completedAt.getTime()) / 1000;
-    reasons.push(`Běh skončil ${formatOffset(rozdil)} před začátkem okna zápasu.`);
-  } else if (run.completedAt > context.windowEnd) {
-    const rozdil = (run.completedAt.getTime() - context.windowEnd.getTime()) / 1000;
-    reasons.push(`Běh skončil ${formatOffset(rozdil)} po konci okna zápasu.`);
+  // 2) Běh musí začít v termínu: po začátku okna a nejpozději ve 23:59 dne
+  // termínu. Rozhoduje začátek, ne konec - klíč načatý večer smí doběhnout
+  // po půlnoci. Konec okna je jen orientační, délku hraní hlídá herní čas.
+  const startedAt = new Date(run.completedAt.getTime() - run.clearTimeSeconds * 1000);
+  const latestStart = latestRunStart(context.windowStart);
+  let inWindow = true;
+
+  if (startedAt < context.windowStart) {
+    inWindow = false;
+    const rozdil = (context.windowStart.getTime() - startedAt.getTime()) / 1000;
+    reasons.push(`Běh začal ${formatOffset(rozdil)} před začátkem okna zápasu.`);
+  } else if (startedAt > latestStart) {
+    inWindow = false;
+    const rozdil = (startedAt.getTime() - latestStart.getTime()) / 1000;
+    reasons.push(`Běh začal ${formatOffset(rozdil)} po 23:59 dne termínu.`);
   }
 
   // 3) Celá sestava musí patřit týmu - jinak by šlo nahlásit cizí běh.
@@ -152,5 +187,9 @@ export function evaluateRun(run: RunCandidate, context: MatchContext): RunEvalua
     dungeon,
     matchedCharacterIds,
     outsiders,
+    startedAt,
+    inWindow,
+    // Body nerozhodují: nestihnutý, nízký i vzdaný klíč čas stojí taky.
+    countsTowardTimeLimit: inWindow && dungeon !== null && outsiders.length === 0,
   };
 }

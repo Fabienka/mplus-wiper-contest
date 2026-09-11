@@ -47,6 +47,11 @@ export const PERMISSIONS = {
   /** Smazání celého rozdělení sezóny. Nevratné, proto jen admin. */
   deleteTeams: ["ADMIN"],
   /**
+   * Zrušení zapsaného rerollu klíče (třeba kvůli překlepu) - tým si ho pak
+   * může zapsat znovu. Maže záznam, proto jen admin.
+   */
+  resetTeamReroll: ["ADMIN"],
+  /**
    * Seznam uživatelů a detail jednoho z nich - kdo to je, jakou má postavu,
    * v jakém je týmu, jestli má zaplacené zápisné a co odběhal. Jen čtení.
    */

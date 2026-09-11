@@ -14,6 +14,12 @@ import {
 } from "@/lib/labels";
 import { parseMonthParam, type CalendarEvent } from "@/lib/calendar";
 import { MonthCalendar } from "../../month-calendar";
+import { isAwaitingVerification } from "@/lib/manual-result";
+import { MatchAuthor } from "../../match-author";
+import { matchAuthorText } from "@/lib/match-author";
+import { DEFAULT_SCORING_CONFIG, parseScoringConfig } from "@/lib/scoring";
+import { OVER_TIME_LIMIT_REASON, budgetRunsOf, computeTimeBudget } from "@/lib/time-budget";
+import { TimeBudgetLine } from "../../time-budget-line";
 import { ActionNotice } from "../../action-notice";
 import {
   closeMatch,
@@ -21,6 +27,7 @@ import {
   reopenMatch,
   revokeMatch,
   setResultValidity,
+  setTimeLimitOverride,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -70,10 +77,15 @@ export default async function MatchesPage({
     },
     orderBy: { windowStart: "asc" },
     include: {
-      team: { select: { name: true } },
-      proposedBy: { select: { characterName: true } },
+      team: { select: { id: true, name: true } },
+      proposedBy: { select: { characterName: true, class: true } },
+      createdBy: { select: { username: true } },
       confirmedBy: { select: { username: true } },
-      results: { orderBy: { createdAt: "asc" } },
+      // Ze screenshotu jen id na odkaz - samotný obrázek se tahá zvlášť.
+      results: {
+        orderBy: { createdAt: "asc" },
+        include: { screenshot: { select: { id: true } } },
+      },
     },
   });
 
@@ -84,10 +96,22 @@ export default async function MatchesPage({
   // Kalendář schválně ignoruje filtr - je to přehled, filtr patří k tabulce.
   const allMatches = await prisma.match.findMany({
     where: { team: { seasonId: season.id } },
-    include: { team: { select: { name: true } }, proposedBy: { select: { characterName: true } } },
+    include: {
+      team: { select: { name: true } },
+      proposedBy: { select: { characterName: true } },
+      createdBy: { select: { username: true } },
+    },
   });
 
   const month = parseMonthParam(searchParams.month);
+
+  // Rozbité nastavení sezóny nesmí shodit stránku - platí výchozí herní čas.
+  let timeBudgetMinutes = DEFAULT_SCORING_CONFIG.timeBudgetMinutes;
+  try {
+    timeBudgetMinutes = parseScoringConfig(season.scoringConfig).timeBudgetMinutes;
+  } catch {
+    timeBudgetMinutes = DEFAULT_SCORING_CONFIG.timeBudgetMinutes;
+  }
 
   const calendarEvents: CalendarEvent[] = allMatches.map((match) => ({
     id: `match-${match.id}`,
@@ -98,7 +122,7 @@ export default async function MatchesPage({
         ? ("MATCH_PROPOSED" as const)
         : ("MATCH_CONFIRMED" as const),
     label: match.team.name,
-    detail: `${match.team.name} - ${match.proposedBy.characterName} navrhl termín ${formatRange(
+    detail: `${match.team.name} - ${matchAuthorText(match).name} ${matchAuthorText(match).verb} termín ${formatRange(
       match.windowStart,
       match.windowEnd
     )}`,
@@ -170,7 +194,11 @@ export default async function MatchesPage({
             <tbody>
               {matches.flatMap((match) => [
                 <tr key={match.id}>
-                  <td>{match.team.name}</td>
+                  <td>
+                    <Link className="link" href={`/admin/teams/${match.team.id}`}>
+                      {match.team.name}
+                    </Link>
+                  </td>
                   <td>
                     {formatRange(match.windowStart, match.windowEnd)}
                     {match.note && (
@@ -193,7 +221,9 @@ export default async function MatchesPage({
                       </div>
                     )}
                   </td>
-                  <td>{match.proposedBy.characterName}</td>
+                  <td>
+                    <MatchAuthor match={match} />
+                  </td>
                   <td>
                     {match.status === "PROPOSED" && (
                       <form action={confirmMatch}>
@@ -266,12 +296,33 @@ export default async function MatchesPage({
                       <strong style={{ fontSize: "0.82rem" }}>
                         Běhy ({match.results.length})
                       </strong>
+                      <TimeBudgetLine
+                        budget={computeTimeBudget(
+                          budgetRunsOf(match.results),
+                          timeBudgetMinutes * 60
+                        )}
+                      />
                       <table className="data" style={{ marginTop: "0.4rem" }}>
                         <tbody>
                           {match.results.map((result) => (
                             <tr key={result.id}>
                               <td style={{ width: "26%" }}>
                                 {result.dungeonName} +{result.keyLevel}
+                                {result.screenshot && (
+                                  <div className="meta">
+                                    zadáno ručně -{" "}
+                                    <a
+                                      href={`/team/screenshot/${result.screenshot.id}`}
+                                      target="_blank"
+                                      rel="noopener"
+                                    >
+                                      otevřít screenshot
+                                    </a>
+                                  </div>
+                                )}
+                                {!result.countsTowardTimeLimit && (
+                                  <div className="meta">do herního času se nepočítá</div>
+                                )}
                               </td>
                               <td style={{ width: "12%" }}>
                                 {formatTimeLimit(result.clearTimeSeconds)}
@@ -283,9 +334,39 @@ export default async function MatchesPage({
                               </td>
                               <td style={{ width: "28%" }}>
                                 {result.isOfficial ? (
-                                  <span className="badge badge-approved">
-                                    Počítá se
-                                  </span>
+                                  <>
+                                    <span className="badge badge-approved">
+                                      Počítá se
+                                    </span>
+                                    {result.overTimeLimit && result.timeLimitOverride && (
+                                      <div className="meta">Uznáno i přes herní čas.</div>
+                                    )}
+                                  </>
+                                ) : result.abandoned ? (
+                                  <>
+                                    <span className="badge badge-rejected">Vzdáno</span>
+                                    <div className="meta">
+                                      Tým pokus vzdal - čas se odečetl z herního času.
+                                    </div>
+                                  </>
+                                ) : result.overTimeLimit && !result.timeLimitOverride ? (
+                                  <>
+                                    <span className="badge badge-rejected">
+                                      Přes herní čas
+                                    </span>
+                                    <div className="meta">{OVER_TIME_LIMIT_REASON}</div>
+                                  </>
+                                ) : isAwaitingVerification(result) ? (
+                                  <>
+                                    <span className="badge badge-pending">
+                                      Čeká na ověření
+                                    </span>
+                                    {/* Co našla automatická kontrola - moderátor
+                                        to vidí dřív, než běh uzná. */}
+                                    {result.invalidReason && (
+                                      <div className="meta">{result.invalidReason}</div>
+                                    )}
+                                  </>
                                 ) : result.isValid ? (
                                   <span className="badge badge-pending">Platný</span>
                                 ) : (
@@ -303,7 +384,44 @@ export default async function MatchesPage({
                                 )}
                               </td>
                               <td>
-                                {match.status === "CONFIRMED" && (
+                                {/* Ručně zadaný běh čeká na rozhodnutí - obě
+                                    tlačítka, ať neověřený běh nevisí napořád
+                                    jen proto, že je už teď neplatný. */}
+                                {match.status === "CONFIRMED" &&
+                                  isAwaitingVerification(result) && (
+                                    <div className="row-actions" style={{ flexWrap: "wrap" }}>
+                                      <form action={setResultValidity}>
+                                        <input type="hidden" name="resultId" value={result.id} />
+                                        <input type="hidden" name="valid" value="1" />
+                                        <SubmitButton className="btn btn-accent" pendingLabel="Uznávám...">
+                                          Uznat
+                                        </SubmitButton>
+                                      </form>
+                                      <form action={setResultValidity}>
+                                        <input type="hidden" name="resultId" value={result.id} />
+                                        <input type="hidden" name="valid" value="0" />
+                                        <input
+                                          type="hidden"
+                                          name="note"
+                                          value="Moderátor běh podle screenshotu neuznal."
+                                        />
+                                        <SubmitButton
+                                          className="btn btn-danger"
+                                          pendingLabel="Zamítám..."
+                                          confirmTitle="Zamítnout ručně zadaný běh?"
+                                          confirm="Běh zůstane u zápasu jako neplatný. Uznat ho půjde i později."
+                                          confirmLabel="Zamítnout"
+                                        >
+                                          Zamítnout
+                                        </SubmitButton>
+                                      </form>
+                                    </div>
+                                  )}
+
+                                {/* Vzdaný pokus se nepočítá nikdy - není o čem rozhodovat. */}
+                                {match.status === "CONFIRMED" &&
+                                  !isAwaitingVerification(result) &&
+                                  !result.abandoned && (
                                   <form action={setResultValidity}>
                                     <input
                                       type="hidden"
@@ -320,6 +438,27 @@ export default async function MatchesPage({
                                     </button>
                                   </form>
                                 )}
+
+                                {match.status === "CONFIRMED" &&
+                                  result.overTimeLimit &&
+                                  !result.abandoned && (
+                                    <form
+                                      action={setTimeLimitOverride}
+                                      style={{ marginTop: "0.35rem" }}
+                                    >
+                                      <input type="hidden" name="resultId" value={result.id} />
+                                      <input
+                                        type="hidden"
+                                        name="allow"
+                                        value={result.timeLimitOverride ? "0" : "1"}
+                                      />
+                                      <SubmitButton className="btn" pendingLabel="Ukládám...">
+                                        {result.timeLimitOverride
+                                          ? "Zrušit uznání přes limit"
+                                          : "Uznat i přes limit"}
+                                      </SubmitButton>
+                                    </form>
+                                  )}
                               </td>
                             </tr>
                           ))}

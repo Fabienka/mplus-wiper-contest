@@ -137,7 +137,7 @@ async function main() {
 
     check(!mimo.evaluation.valid, "běh mimo okno je neplatný");
     check(
-      mimo.evaluation.reasons.some((r) => r.includes("po konci okna")),
+      mimo.evaluation.reasons.some((r) => r.includes("po 23:59 dne termínu")),
       "a řekne proč",
       mimo.evaluation.reasons.join(" | ")
     );

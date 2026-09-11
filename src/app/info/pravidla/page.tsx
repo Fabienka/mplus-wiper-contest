@@ -101,12 +101,21 @@ export default async function RulesPage() {
             navrhne termín; platí až po schválení moderátorem.
           </li>
           <li>
-            Běhy se počítají <strong>jen z domluveného okna</strong>. Co odběhnete
-            před jeho začátkem nebo po konci, se neuzná.
+            Běh se počítá, když <strong>začne po začátku domluveného okna a
+            nejpozději ve 23:59 dne termínu</strong>. Rozhoduje začátek - klíč
+            načatý večer smí doběhnout i po půlnoci. Co začne dřív nebo později,
+            se neuzná.
           </li>
           <li>
             Uvnitř okna můžete zkusit klíčů kolik chcete - počítá se z nich
             jediný nejlepší.
+          </li>
+          <li>
+            Na zápas máte <strong>{config.timeBudgetMinutes} minut herního času</strong>.
+            Počítá se čas na časovači pokusů, které k termínu patří - bodovaných,
+            nestihnutých i vzdaných. Běhy mimo termín, s cizím hráčem nebo
+            v dungeonu mimo rotaci herní čas nečerpají, pauzy mezi klíči taky ne.
+            Běh, kterým herní čas překročíte, se neuzná.
           </li>
           <li>
             Moderátor zápas na konci <strong>uzavře</strong> a tím se výsledky
@@ -167,7 +176,11 @@ export default async function RulesPage() {
         </p>
         <ul className="info-list">
           <li>dungeon je v rotaci sezóny,</li>
-          <li>běh skončil uvnitř okna schváleného termínu,</li>
+          <li>
+            běh začal po začátku okna schváleného termínu a nejpozději ve 23:59
+            dne termínu,
+          </li>
+          <li>tým tím během nepřekročil herní čas zápasu,</li>
           <li>
             celá pětice v sestavě patří do týmu - jeden cizí hráč běh
             zneplatňuje,

@@ -167,6 +167,7 @@ export type CalendarEventKind =
   | "MATCH_PROPOSED"
   | "MATCH_CONFIRMED"
   | "AVAILABILITY"
+  | "TEAMMATE_AVAILABILITY"
   | "OVERLAP";
 
 export interface CalendarEvent {
@@ -176,6 +177,8 @@ export interface CalendarEvent {
   kind: CalendarEventKind;
   /** Krátký popis do buňky, např. jméno navrhovatele. */
   label: string;
+  /** Barva popisku - u jména postavy barva její classy (classColor). */
+  labelColor?: string | null;
   /** Delší popis do title atributu. */
   detail?: string;
 }

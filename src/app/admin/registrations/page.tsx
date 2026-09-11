@@ -9,6 +9,7 @@ import {
   SPEC_ROLE_LABELS,
   formatDateTime,
 } from "@/lib/labels";
+import { CharacterName } from "../../character-name";
 
 export const dynamic = "force-dynamic";
 
@@ -108,7 +109,10 @@ export default async function RegistrationsPage({
               {registrations.map((registration) => (
                 <tr key={registration.id}>
                   <td>
-                    {registration.character.characterName}
+                    <CharacterName
+                      name={registration.character.characterName}
+                      wowClass={registration.character.class}
+                    />
                     <div className="meta">
                       {registration.character.realm}
                       {registration.character.class

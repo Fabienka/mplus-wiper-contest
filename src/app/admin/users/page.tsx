@@ -11,6 +11,7 @@ import {
 } from "@/lib/labels";
 import { updateUserRole } from "./actions";
 import { ActionNotice } from "../../action-notice";
+import { CharacterName } from "../../character-name";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function UsersPage({
       where,
       orderBy: { username: "asc" },
       include: {
-        character: { select: { characterName: true, realm: true } },
+        character: { select: { characterName: true, realm: true, class: true } },
       },
     }),
     prisma.user.count(),
@@ -147,9 +148,17 @@ export default async function UsersPage({
                   )}
                 </td>
                 <td className="muted">
-                  {user.character
-                    ? `${user.character.characterName} - ${user.character.realm}`
-                    : "-"}
+                  {user.character ? (
+                    <>
+                      <CharacterName
+                        name={user.character.characterName}
+                        wowClass={user.character.class}
+                      />{" "}
+                      - {user.character.realm}
+                    </>
+                  ) : (
+                    "-"
+                  )}
                 </td>
                 <td className="muted">{user.discordNick ?? "-"}</td>
                 <td>{formatDateTime(user.createdAt)}</td>

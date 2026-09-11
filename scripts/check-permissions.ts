@@ -23,6 +23,7 @@ const EXPECTED: Record<UserRole, Permission[]> = {
     "runShuffle",
     "manageTeams",
     "deleteTeams",
+    "resetTeamReroll",
     "viewUsers",
     "manageUsers",
     "issuePasswordReset",
@@ -33,7 +34,8 @@ const EXPECTED: Record<UserRole, Permission[]> = {
   // Sezónu a týmy moderátor vidí a upravuje, ale jen vratně: název sezóny,
   // stav registrace, časy z Raider.io, přepínač Aktivní u dungeonu a přesuny
   // v soupiskách. Pravidla bodování (configureSeason), mazání rozdělení
-  // (deleteTeams) i změny rolí (manageUsers) zůstávají adminovi.
+  // (deleteTeams), rušení rerollu (resetTeamReroll) i změny rolí (manageUsers)
+  // zůstávají adminovi.
   MODERATOR: [
     "accessAdmin",
     "confirmEntryFee",

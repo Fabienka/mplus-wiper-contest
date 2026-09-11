@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import { prisma } from "@/lib/prisma";
+import { CharacterName } from "../character-name";
+import { countsForScore } from "@/lib/time-budget";
 import { getCurrentSeason } from "@/lib/season";
 import { buildLeaderboard } from "@/lib/leaderboard";
 import { getMyTeamId } from "@/lib/team";
@@ -70,10 +73,10 @@ export default async function LeaderboardPage() {
           keyLevel: result.keyLevel,
           clearTimeSeconds: result.clearTimeSeconds,
           points: result.points,
-          isValid: result.isValid,
-          // Doběhnutí neevidujeme zvlášť, takže se bere zapsání výsledku -
-          // pro rozstřel shody bodů to stačí.
-          completedAt: result.createdAt,
+          // Běh přes herní čas zápasu se nepočítá, i když je sám o sobě platný.
+          isValid: countsForScore(result),
+          // Starší záznamy konec běhu nemají - berou čas zápisu.
+          completedAt: result.completedAt ?? result.createdAt,
         }))
       ),
     }))
@@ -182,12 +185,13 @@ export default async function LeaderboardPage() {
                       {jeMuj && <span className="rank-mine-tag">tvůj tým</span>}
                       {sestava.length > 0 && (
                         <div className="meta">
-                          {sestava
-                            .map(
-                              (m) =>
-                                `${m.characterName} (${SPEC_ROLE_LABELS[m.roleInTeam]})`
-                            )
-                            .join(", ")}
+                          {sestava.map((m, i) => (
+                            <Fragment key={`${m.characterName}-${i}`}>
+                              {i > 0 && ", "}
+                              <CharacterName name={m.characterName} wowClass={m.className} />{" "}
+                              ({SPEC_ROLE_LABELS[m.roleInTeam]})
+                            </Fragment>
+                          ))}
                         </div>
                       )}
                     </td>

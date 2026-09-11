@@ -10,6 +10,12 @@ const nextConfig = {
     // Kvůli src/instrumentation.ts, které při startu kontroluje časovou zónu.
     // V Next 15 už je hook stabilní a tenhle přepínač zmizí.
     instrumentationHook: true,
+
+    // Ručně zadaný běh posílá screenshot přes server action. Výchozí limit
+    // těla požadavku je 1 MB, na screenshot z monitoru 1440p nestačí.
+    // Aplikace sama pouští nejvýš MAX_SCREENSHOT_BYTES (8 MB), tohle je
+    // rezerva na zbytek formuláře.
+    serverActions: { bodySizeLimit: "10mb" },
   },
 };
 

@@ -9,6 +9,7 @@ import { can } from "@/lib/permissions";
 import { parseTimeLimit } from "@/lib/labels";
 import { RaiderioLookupError, fetchSeasonDungeons } from "@/lib/raiderio";
 import { ScoringConfigError, parseScoringConfig } from "@/lib/scoring";
+import { recomputeMatchResults } from "@/lib/match-official";
 
 function revalidateSeason() {
   revalidatePath("/admin");
@@ -64,6 +65,7 @@ export async function updateSeason(formData: FormData) {
       scoringConfig = parseScoringConfig({
         minScoredKeyLevel: Number(formData.get("minScoredKeyLevel")),
         pointsPerKeyLevel: Number(formData.get("pointsPerKeyLevel")),
+        timeBudgetMinutes: Number(formData.get("timeBudgetMinutes")),
       });
     } catch (err) {
       redirect(
@@ -85,6 +87,18 @@ export async function updateSeason(formData: FormData) {
 
   await prisma.$transaction(async (tx) => {
     await tx.season.update({ where: { id }, data });
+
+    // Změna herního času na zápas mění, které běhy se do limitu vejdou -
+    // přepočítá se každý zápas sezóny i jeho oficiální výsledek.
+    if (data.scoringConfig !== undefined) {
+      const matches = await tx.match.findMany({
+        where: { team: { seasonId: id } },
+        select: { id: true },
+      });
+      for (const match of matches) {
+        await recomputeMatchResults(tx, match.id);
+      }
+    }
 
     await writeAuditLog(tx, {
       actorId: admin.id,

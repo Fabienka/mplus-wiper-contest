@@ -13,6 +13,7 @@ import type {
 } from "@/lib/shuffle";
 import { applyVariant, runShuffleForSeason } from "./actions";
 import { ActionNotice } from "../../action-notice";
+import { CharacterName } from "../../character-name";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,9 @@ function MemberRow({ member }: { member: ShuffleMember }) {
   return (
     <tr>
       <td>{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
-      <td>{member.characterName}</td>
+      <td>
+        <CharacterName name={member.characterName} wowClass={member.className} />
+      </td>
       <td className="muted">
         {member.wowSpec ? `${member.className} - ${member.wowSpec}` : member.className ?? "-"}
       </td>

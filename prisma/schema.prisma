@@ -131,8 +131,10 @@ model User {
   shuffleRunsExecuted  ShuffleRun[]
   verifiedResults      MatchResult[]        @relation("VerifiedBy")
   confirmedMatches     Match[]              @relation("ConfirmedMatches")
+  createdMatches       Match[]              @relation("CreatedMatches")
   passwordResets       PasswordResetToken[] @relation("ResetForUser")
   issuedPasswordResets PasswordResetToken[] @relation("ResetIssuedBy")
+  teamNotes            TeamNote[]           @relation("TeamNotes")
 }
 
 model Character {
@@ -158,6 +160,7 @@ model Character {
   teamMemberships TeamMembership[]
   proposedMatches Match[]              @relation("ProposedBy")
   availabilities  Availability[]
+  recordedRerolls TeamReroll[]         @relation("RecordedRerolls")
 
   @@index([userId])
 }
@@ -201,8 +204,44 @@ model Team {
 
   members TeamMembership[]
   matches Match[]
+  reroll  TeamReroll?
+  notes   TeamNote[]
 
   @@index([seasonId])
+}
+
+/// Reroll klíče. Každý tým má na celou soutěž jeden - zapíše ho kdokoli
+/// z týmu, opravit (smazat) ho může jen admin.
+///
+/// Dungeony se ukládají názvem, stejně jako u MatchResult: záznam je historie
+/// a nesmí se změnit ani spadnout, když admin dungeon přejmenuje nebo odebere.
+model TeamReroll {
+  id              String    @id @default(cuid())
+  /// Unikátní - tým patří jen do jedné sezóny, takže tohle drží "jeden reroll
+  /// na soutěž" i při dvou současných odesláních.
+  teamId          String    @unique
+  team            Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  fromDungeonName String
+  fromKeyLevel    Int
+  toDungeonName   String
+  toKeyLevel      Int
+  recordedById    String
+  recordedBy      Character @relation("RecordedRerolls", fields: [recordedById], references: [id])
+  createdAt       DateTime  @default(now())
+}
+
+/// Neveřejná poznámka admina nebo moderátora k týmu. Hráči ji nevidí.
+/// Jen se přidává - zůstává historie, kdo co kdy napsal.
+model TeamNote {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation("TeamNotes", fields: [authorId], references: [id])
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([teamId])
 }
 
 model TeamMembership {
@@ -259,8 +298,14 @@ model Match {
   id            String      @id @default(cuid())
   teamId        String
   team          Team        @relation(fields: [teamId], references: [id])
-  proposedById  String
-  proposedBy    Character   @relation("ProposedBy", fields: [proposedById], references: [id])
+  /// Hráč, který termín navrhl. Prázdné u termínu, který přidal rovnou admin
+  /// nebo moderátor (createdById) - ten v týmu být nemusí.
+  proposedById  String?
+  proposedBy    Character?  @relation("ProposedBy", fields: [proposedById], references: [id])
+  /// Admin nebo moderátor, který termín přidal za tým (tým ho nechtěl
+  /// vyplňovat v aplikaci sám). U návrhu od hráče prázdné.
+  createdById   String?
+  createdBy     User?       @relation("CreatedMatches", fields: [createdById], references: [id])
   windowStart   DateTime
   windowEnd     DateTime
   status        MatchStatus @default(PROPOSED)
@@ -271,6 +316,12 @@ model Match {
   confirmedBy   User?       @relation("ConfirmedMatches", fields: [confirmedById], references: [id])
   confirmedAt   DateTime?
   createdAt     DateTime    @default(now())
+
+  /// Časovač herního času, který pouští admin nebo moderátor na detailu týmu.
+  /// Naměřený čas z dřívějších úseků (bez právě běžícího).
+  timerElapsedSeconds Int       @default(0)
+  /// Kdy se časovač naposled spustil. Prázdné = pozastavený nebo nespuštěný.
+  timerStartedAt      DateTime?
 
   results MatchResult[]
 
@@ -310,13 +361,51 @@ model MatchResult {
   isValid            Boolean       @default(false)
   invalidReason      String?
   isOfficial         Boolean       @default(false)
+  /// Ručně zadaný běh, který tým nedokončil a pokus vzdal. Do bodů se nepočítá
+  /// nikdy, ale čas i screenshot má povinné jako každý ručně zadaný běh -
+  /// čas strávený na pokusu se týmu počítá do časového limitu zápasu.
+  abandoned          Boolean       @default(false)
+  /// Kdy běh skončil (z Raider.io, u ručního zadání od týmu). Podle toho se
+  /// řadí čerpání časového limitu. Starší záznamy ho nemají - berou čas zápisu.
+  completedAt        DateTime?
+  /// Tímhle během (nebo dřívějším) tým vyčerpal časový limit zápasu - nepočítá
+  /// se. Odvozené, přepočítává recomputeTimeBudget po každé změně výsledků.
+  overTimeLimit      Boolean       @default(false)
+  /// Moderátor běh uznal i přes vyčerpaný časový limit. Schválně oddělené od
+  /// verifiedById: ověřený screenshot neznamená souhlas s překročením limitu.
+  timeLimitOverride  Boolean       @default(false)
+  /// Ubírá z herního času zápasu: začal v termínu (po začátku okna, nejpozději
+  /// 23:59 dne termínu), hraje ho tým a dungeon je v rotaci. Bodovaný,
+  /// nestihnutý i vzdaný běh ano; běh mimo termín, s cizím hráčem nebo mimo
+  /// rotaci ne. Počítá se při zápisu (evaluateRun).
+  countsTowardTimeLimit Boolean    @default(true)
   points             Float?
+  /// Kdo o platnosti rozhodl ručně. U ručně zadaného běhu (source SCREENSHOT)
+  /// prázdná hodnota znamená "čeká na ověření moderátorem".
   verifiedById       String?
   verifiedBy         User?         @relation("VerifiedBy", fields: [verifiedById], references: [id])
   createdAt          DateTime      @default(now())
 
+  screenshot         ResultScreenshot?
+
   @@index([matchId])
   @@unique([matchId, raiderioRunId])
+}
+
+/// Screenshot ručně zadaného běhu (MatchResult se source SCREENSHOT).
+///
+/// Leží v databázi, ne na disku: jede se stávajícími zálohami pg_dump a nezávisí
+/// na tom, jestli má server trvalý disk. Samostatná tabulka proto, aby výpisy
+/// výsledků netahaly obrázky s sebou.
+model ResultScreenshot {
+  id        String      @id @default(cuid())
+  resultId  String      @unique
+  result    MatchResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  /// Typ podle obsahu souboru (detectImageType), ne podle toho, co tvrdí prohlížeč.
+  mimeType  String
+  sizeBytes Int
+  data      Bytes
+  createdAt DateTime    @default(now())
 }
 
 // ---------- Audit & Discord ----------

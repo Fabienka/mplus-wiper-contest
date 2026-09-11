@@ -17,6 +17,8 @@ import {
   reopenRegistration,
   revokeEntryFee,
 } from "../actions";
+import { CharacterName } from "../../../character-name";
+import { classColor } from "@/lib/wow-specs";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +67,11 @@ export default async function RegistrationDetailPage({
 
   return (
     <>
-      <h1>{character.characterName}</h1>
+      {/* Nadpis jen v barvě classy, bez tučného řezu - Marcellus ho nemá
+          a prohlížeč by písmo jen uměle ztloustil. */}
+      <h1 style={{ color: classColor(character.class) ?? undefined }}>
+        {character.characterName}
+      </h1>
       <p className="admin-subtitle">
         {registration.season.name} -{" "}
         <span className={REGISTRATION_STATUS_BADGES[registration.status]}>
@@ -78,7 +84,8 @@ export default async function RegistrationDetailPage({
         <dl className="detail">
           <dt>Jméno a realm</dt>
           <dd>
-            {character.characterName} - {character.realm}
+            <CharacterName name={character.characterName} wowClass={character.class} /> -{" "}
+            {character.realm}
           </dd>
           <dt>Class</dt>
           <dd>{character.class ?? "-"}</dd>

@@ -266,6 +266,20 @@ console.log("8. Nastavení bodování");
     parseScoringConfig({ minScoredKeyLevel: 2 }).minScoredKeyLevel === 2,
     "hranice jde přenastavit"
   );
+  check(parseScoringConfig({}).timeBudgetMinutes === 120, "výchozí herní čas na zápas je 120 min");
+  check(
+    parseScoringConfig({ timeBudgetMinutes: 90 }).timeBudgetMinutes === 90,
+    "herní čas na zápas jde přenastavit"
+  );
+  for (const bad of [0, 10, 12.5, 1000, "abc"]) {
+    let threw = false;
+    try {
+      parseScoringConfig({ timeBudgetMinutes: bad });
+    } catch (err) {
+      threw = err instanceof ScoringConfigError;
+    }
+    check(threw, `nesmyslný herní čas ${String(bad)} se odmítne`);
+  }
 
   const zkus = (raw: unknown) => {
     try {

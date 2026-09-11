@@ -6,10 +6,11 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/admin";
 import { can } from "@/lib/permissions";
 import { getCurrentSeason } from "@/lib/season";
-import { SPEC_ROLE_LABELS, plural } from "@/lib/labels";
+import { SPEC_ROLE_LABELS, formatDateTime, plural } from "@/lib/labels";
 import { describeTeamComposition } from "@/lib/shuffle";
-import { addAsSubstitute, deleteAllTeams, updateTeams } from "./actions";
+import { addAsSubstitute, deleteAllTeams, resetTeamReroll, updateTeams } from "./actions";
 import { ActionNotice } from "../../action-notice";
+import { CharacterName } from "../../character-name";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,9 @@ function MemberRows({
     <>
       {rows.map((row) => (
         <tr key={row.membershipId}>
-          <td>{row.characterName}</td>
+          <td>
+            <CharacterName name={row.characterName} wowClass={row.className} />
+          </td>
           <td className="muted">
             {row.wowSpec ? `${row.className} - ${row.wowSpec}` : row.className ?? "-"}
           </td>
@@ -106,6 +109,7 @@ export default async function TeamsPage({
   // Přesuny v soupiskách zvládne i moderátor - nic se jimi nemaže a jdou
   // vzít zpátky. Smazat celé rozdělení smí jen admin.
   const canDelete = can(user?.role, "deleteTeams");
+  const canResetReroll = can(user?.role, "resetTeamReroll");
 
   if (!season) {
     return (
@@ -115,7 +119,7 @@ export default async function TeamsPage({
     );
   }
 
-  const [teams, memberships, approved] = await Promise.all([
+  const [teams, memberships, approved, rerolls] = await Promise.all([
     prisma.team.findMany({
       where: { seasonId: season.id },
       orderBy: { createdAt: "asc" },
@@ -128,7 +132,13 @@ export default async function TeamsPage({
       where: { seasonId: season.id, status: "APPROVED" },
       include: { character: true },
     }),
+    prisma.teamReroll.findMany({
+      where: { team: { seasonId: season.id } },
+      include: { recordedBy: { select: { characterName: true, class: true } } },
+    }),
   ]);
+
+  const rerollByTeam = new Map(rerolls.map((reroll) => [reroll.teamId, reroll]));
 
   const toRow = (membership: (typeof memberships)[number]): Row => ({
     membershipId: membership.id,
@@ -213,6 +223,12 @@ export default async function TeamsPage({
 
               return (
                 <div className="card" key={team.id}>
+                  {/* Detail je mimo formulář úprav jen odkazem - neodesílá nic. */}
+                  <div className="row-actions" style={{ justifyContent: "flex-end", marginBottom: "0.5rem" }}>
+                    <Link className="btn" href={`/admin/teams/${team.id}`}>
+                      Detail týmu - termíny, běhy, poznámky
+                    </Link>
+                  </div>
                   <div className="field" style={{ maxWidth: "280px" }}>
                     <label htmlFor={`teamname-${team.id}`}>Název týmu</label>
                     <input
@@ -294,6 +310,79 @@ export default async function TeamsPage({
             </div>
           </form>
 
+          {/* Mimo velký formulář úprav - zrušení rerollu je samostatná akce
+              a vnořený formulář HTML nedovolí. */}
+          {teams.length > 0 && (
+            <div className="card">
+              <h2>Reroll klíče</h2>
+              <p className="card-lead">
+                Každý tým má na soutěž jeden reroll. Zapisuje ho tým sám na
+                stránce Můj tým.
+              </p>
+              <table className="data table-cards">
+                <thead>
+                  <tr>
+                    <th scope="col" style={{ width: "22%" }}>Tým</th>
+                    <th scope="col" style={{ width: "38%" }}>Reroll</th>
+                    <th scope="col" style={{ width: "24%" }}>Zapsal</th>
+                    <th scope="col" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {teams.map((team) => {
+                    const reroll = rerollByTeam.get(team.id);
+
+                    return (
+                      <tr key={team.id}>
+                        <td data-label="Tým">
+                          <Link className="link" href={`/admin/teams/${team.id}`}>
+                            {team.name}
+                          </Link>
+                        </td>
+                        <td data-label="Reroll">
+                          {reroll ? (
+                            `${reroll.fromDungeonName} +${reroll.fromKeyLevel} → ${reroll.toDungeonName} +${reroll.toKeyLevel}`
+                          ) : (
+                            <span className="muted">nevyužitý</span>
+                          )}
+                        </td>
+                        <td className="muted" data-label="Zapsal">
+                          {reroll ? (
+                            <>
+                              <CharacterName
+                                name={reroll.recordedBy.characterName}
+                                wowClass={reroll.recordedBy.class}
+                              />
+                              , {formatDateTime(reroll.createdAt)}
+                            </>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                        <td>
+                          {reroll && canResetReroll && (
+                            <form action={resetTeamReroll}>
+                              <input type="hidden" name="teamId" value={team.id} />
+                              <SubmitButton
+                                className="btn btn-danger"
+                                pendingLabel="Ruším..."
+                                confirmTitle="Zrušit reroll týmu?"
+                                confirm={`Záznam rerollu týmu "${team.name}" se smaže a tým si ho bude moct zapsat znovu.`}
+                                confirmLabel="Zrušit reroll"
+                              >
+                                Zrušit reroll
+                              </SubmitButton>
+                            </form>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
           {withoutMembership.length > 0 && (
             <div className="card">
               <h2>Schválení bez zařazení ({withoutMembership.length})</h2>
@@ -314,7 +403,12 @@ export default async function TeamsPage({
                 <tbody>
                   {withoutMembership.map((registration) => (
                     <tr key={registration.id}>
-                      <td>{registration.character.characterName}</td>
+                      <td>
+                        <CharacterName
+                          name={registration.character.characterName}
+                          wowClass={registration.character.class}
+                        />
+                      </td>
                       <td className="muted">
                         {registration.character.wowSpec
                           ? `${registration.character.class} - ${registration.character.wowSpec}`
