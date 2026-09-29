@@ -220,7 +220,8 @@ export function RegisterForm() {
               required
             />
             <span className="field-hint" id="discord-hint">
-              Přes Discord se domlouvají termíny a chodí sem oznámení.
+              Přes Discord se domlouvají termíny a chodí sem oznámení. Nick
+              uvidí spoluhráči v týmu, ať ti můžou napsat.
             </span>
           </div>
         </fieldset>

@@ -69,7 +69,13 @@ export default async function TeamDetailPage({
           where: { status: "ACTIVE" },
           include: {
             character: {
-              select: { id: true, characterName: true, class: true, wowSpec: true },
+              select: {
+                id: true,
+                characterName: true,
+                class: true,
+                wowSpec: true,
+                user: { select: { discordNick: true } },
+              },
             },
           },
         },
