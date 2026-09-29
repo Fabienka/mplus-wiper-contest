@@ -6,6 +6,7 @@ import { specsForRole } from "@/lib/wow-specs";
 import { MIN_PASSWORD_LENGTH } from "@/lib/password-rules";
 import { Notice } from "../../notice";
 import { BrandMark } from "../../brand-mark";
+import { EntryFeeLine } from "../../entry-fee";
 
 /** Minimální délka uživatelského jména - stejná hodnota hlídá i server. */
 const MIN_USERNAME_LENGTH = 3;
@@ -128,6 +129,14 @@ export function RegisterForm() {
           <Notice kind="success" title="Přihláška dorazila">
             Čeká na schválení adminem. Až ji projde, uvidíš to na svém profilu.
           </Notice>
+          {/* Na zápisné se nejvíc zapomíná zrovna po odeslání - tady je
+              chvíle, kdy si ho člověk opíše. */}
+          <div className="auth-notice">
+            <Notice kind="info" title="Nezapomeň na zápisné">
+              <EntryFeeLine /> Zaplacení potvrdí moderátor a uvidíš ho
+              v profilu.
+            </Notice>
+          </div>
           <p className="auth-hint">
             Mezitím se můžeš <Link href="/login">přihlásit</Link> a doplnit si
             údaje.
@@ -286,11 +295,18 @@ export function RegisterForm() {
               aria-describedby="alt-hint"
             />
             <span className="field-hint" id="alt-hint">
-              Nepovinné, min. ilvl 660. Pomůže při skládání týmů, když bude
-              chybět tank nebo healer.
+              Nepovinné. Pomůže při skládání týmů, když bude chybět tank nebo
+              healer.
             </span>
           </div>
         </fieldset>
+
+        <div className="auth-notice">
+          <Notice kind="info" title="Zápisné">
+            Výši zápisného stanovuje pořadatel. <EntryFeeLine /> Pošli ho po
+            odeslání přihlášky.
+          </Notice>
+        </div>
 
         <div className="field field-check">
           <label>

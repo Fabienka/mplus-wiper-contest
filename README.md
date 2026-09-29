@@ -155,9 +155,9 @@ npm run build
   Je to schválně - tiše posunuté časy termínů by si nikdo nevšiml.
 - **Raider.io se volá bez timeoutu.** Když jejich API nereaguje, registrace visí,
   dokud request nespadne na timeoutu proxy.
-- **Kontakty na `/info/kontakt` jsou prázdné**, dokud je nevyplníš v
-  `src/lib/contest-info.ts`. Do té doby stránka jen řekne, že se doplňují -
-  schválně nic nevymýšlí, ať lidi nepíšou někam, kde je nikdo nečte.
+- **Kontakty a zápisné** jsou natvrdo v `src/lib/contest-info.ts`. Před
+  sezónou zkontroluj, že sedí organizátoři, výše zápisného i postava, které se
+  posílá - vypisuje se to v pravidlech, na přihlášce i v profilu.
 - **`NEXTAUTH_URL` musí sedět na veřejnou adresu.** Sestavují se z ní odkazy na
   reset hesla, takže při špatné hodnotě vydáš odkaz, který nikam nevede. Musí
   začínat `https://`, jinak server při startu spadne - viz
@@ -291,10 +291,13 @@ je potřeba přegenerovat z ní, hlavně `apple-icon.png`.
 a má dvě podstránky:
 
 - **`/info/pravidla`** - pravidla soutěže. Čísla se **neopisují ručně**: nejnižší
-  bodovaná výška klíče, body za úroveň i seznam dungeonů se berou z aktuální
-  sezóny, takže po změně bodování v administraci nemůžou pravidla lhát.
-- **`/info/kontakt`** - na koho se obrátit. Obsah je v `src/lib/contest-info.ts`;
-  není v databázi schválně - mění se výjimečně a patří do verzí.
+  bodovaná výška klíče, herní čas zápasu i seznam dungeonů se berou z aktuální
+  sezóny, takže po změně bodování v administraci nemůžou pravidla lhát. Vzorec
+  bodování tam schválně není - hráčům stačí lidský popis, vzorec je v
+  [Bodování](#bodování).
+- **`/info/kontakt`** - na koho se obrátit. Obsah je v `src/lib/contest-info.ts`
+  spolu s výší zápisného a postavou, které se posílá; není v databázi schválně -
+  mění se výjimečně a patří do verzí.
 
 Na pravidla vede odkaz z registračního formuláře, od zaškrtávátka se souhlasem.
 Otevírá se do nové karty, aby odchod ze stránky nesmazal rozepsanou registraci.

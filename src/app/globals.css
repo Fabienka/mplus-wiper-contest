@@ -2040,19 +2040,6 @@ pre.json {
   margin-top: 0.5rem;
 }
 
-/* Vzorec bodování. Přeteklý řádek roluje, ať kvůli němu neroluje celá
-   stránka do strany. */
-.info-formula {
-  margin: 0;
-  padding: 0.75rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow-x: auto;
-  font-size: 0.82rem;
-  line-height: 1.6;
-}
-
 /* Pole s vydaným odkazem na reset hesla. Odkaz je dlouhý, takže se text
    nezalamuje, ale roluje - jinak by hláška přerostla celou tabulku. */
 .reset-link {
