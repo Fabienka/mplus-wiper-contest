@@ -41,6 +41,7 @@
     "check:rate-limit": "tsx scripts/check-rate-limit.ts",
     "check:password-reset": "tsx scripts/check-password-reset.ts",
     "check:discord": "tsx scripts/check-discord.ts",
+    "check:auth-url": "tsx scripts/check-auth-url.ts",
     "discord:preview": "dotenv -e .env -- tsx scripts/discord-preview.ts",
     "discord:notify": "tsx scripts/notify-discord.ts",
     "discord:notify:test": "dotenv -e .env.test -- tsx scripts/notify-discord.ts",

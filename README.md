@@ -159,7 +159,11 @@ npm run build
   `src/lib/contest-info.ts`. Do té doby stránka jen řekne, že se doplňují -
   schválně nic nevymýšlí, ať lidi nepíšou někam, kde je nikdo nečte.
 - **`NEXTAUTH_URL` musí sedět na veřejnou adresu.** Sestavují se z ní odkazy na
-  reset hesla, takže při špatné hodnotě vydáš odkaz, který nikam nevede.
+  reset hesla, takže při špatné hodnotě vydáš odkaz, který nikam nevede. Musí
+  začínat `https://`, jinak server při startu spadne - viz
+  [Heslo v požadavku](#heslo-v-požadavku).
+- **Přesměrování na HTTPS.** Proxy musí posílat `http://` na `https://`. Hesla
+  jdou v požadavku čitelně a chrání je jen TLS.
 - **Velikost požadavku na proxy.** Ručně zadaný běh nahrává screenshot až
   8 MB (aplikace sama pouští 10 MB, viz `next.config.mjs`). nginx má výchozí
   `client_max_body_size` jen 1 MB - nastav ho aspoň na `10m`, jinak nahrání
@@ -190,6 +194,7 @@ npm run check:leaderboard     # žebříček týmů
 npm run check:rate-limit      # omezení počtu pokusů
 npm run check:password-reset  # platnost odkazu, kdo komu smí reset vydat
 npm run check:discord         # tvar zpráv pro Discord
+npm run check:auth-url        # produkce jen s HTTPS adresou
 npm run check:result-flow:test  # celý zápis výsledku proti reálnému běhu
 npm run check:manual-flow:test  # ruční běh se screenshotem až po ověření
 ```
@@ -336,6 +341,22 @@ Změna hesla i vydání nového odkazu ruší všechny dosud nepoužité odkazy 
 nastavil by mu heslo a povýšil se - přitom nemá právo měnit role. Rozhoduje o
 tom `canIssueResetFor` v `src/lib/password-rules.ts`; seznam na `/admin/hesla`
 proto moderátorovi ostatní účty ani neukazuje.
+
+### Heslo v požadavku
+
+Přihlášení (`/api/auth/callback/credentials`), registrace (`/api/register`) i
+změna hesla (server action na `/profile`) posílají heslo tak, jak ho člověk
+napsal - ve vývojářských nástrojích prohlížeče je v payloadu čitelné. **Je to
+tak správně**: DevTools ukazují požadavek ještě před zašifrováním, na síti ho
+chrání TLS a do databáze jde jen bcrypt otisk. Hashovat nebo šifrovat heslo už
+v prohlížeči nic nepřidá - otisk by se stal novým heslem, které jde odposlechnout
+a přehrát úplně stejně.
+
+Stojí to celé na HTTPS. Proto produkce při startu spadne, když `NEXTAUTH_URL`
+nezačíná `https://` (výjimka je `http://localhost` na zkoušku) - viz
+`src/lib/auth-url.ts`, kontroluje se `npm run check:auth-url`. Proxy musí
+navíc přesměrovat `http://` na `https://`, jinak by se formulář načtený přes
+HTTP odeslal taky přes HTTP.
 
 Stránka resetu se neomezuje počtem pokusů schválně: token má 256 bitů náhody a
 při neplatném tokenu se ke kontrole hesla vůbec nedojde, takže zkoušení nestojí
