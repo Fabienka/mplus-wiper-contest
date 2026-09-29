@@ -202,7 +202,8 @@ export function RerollCard({
       ) : (
         <>
           <p className="card-lead">
-            Tým má na celou soutěž jeden reroll klíče. Kdo ho využije, zapíše
+            Tým má na celou soutěž jeden reroll klíče. Nový klíč musí být
+            aspoň o 1 úroveň nižší než původní. Kdo reroll využije, zapíše
             sem, z jakého klíče na jaký. Zapsat ho může kdokoli z týmu, ale jen
             jednou.
           </p>
@@ -259,7 +260,7 @@ export function RerollCard({
                   min={2}
                   max={40}
                   step={1}
-                  placeholder="12"
+                  placeholder="11"
                   required
                 />
               </div>

@@ -254,8 +254,13 @@ export async function recordReroll(formData: FormData) {
   const fromKeyLevel = parseKeyLevel(formData, "fromLevel", "původního klíče");
   const toKeyLevel = parseKeyLevel(formData, "toLevel", "nového klíče");
 
-  if (fromDungeonName === toDungeonName && fromKeyLevel === toKeyLevel) {
-    fail("Původní a nový klíč jsou stejné.");
+  // Pravidlo soutěže: reroll nesmí klíč zvednout ani udržet - nový klíč je
+  // aspoň o úroveň níž. Stejný dungeon níž projde, je to jiný klíč.
+  if (toKeyLevel >= fromKeyLevel) {
+    fail(
+      `Nový klíč musí být aspoň o 1 úroveň nižší než původní - z +${fromKeyLevel} ` +
+        `nejvýš na +${fromKeyLevel - 1}.`
+    );
   }
 
   let reroll;
