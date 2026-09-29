@@ -33,7 +33,12 @@ export interface RosterMember {
   id: string;
   characterId: string;
   roleInTeam: SpecRole;
-  character: { characterName: string; class: string | null; wowSpec: string | null };
+  character: {
+    characterName: string;
+    class: string | null;
+    wowSpec: string | null;
+    user: { discordNick: string | null };
+  };
 }
 
 export function RosterCard({
@@ -54,9 +59,10 @@ export function RosterCard({
       <table className="data table-cards">
         <thead>
           <tr>
-            <th scope="col" style={{ width: "30%" }}>Postava</th>
-            <th scope="col" style={{ width: "34%" }}>Class / spec</th>
-            <th scope="col" style={{ width: "18%" }}>Role</th>
+            <th scope="col" style={{ width: "24%" }}>Postava</th>
+            <th scope="col" style={{ width: "22%" }}>Discord</th>
+            <th scope="col" style={{ width: "26%" }}>Class / spec</th>
+            <th scope="col" style={{ width: "12%" }}>Role</th>
             <th scope="col">Zadaných časů</th>
           </tr>
         </thead>
@@ -70,6 +76,11 @@ export function RosterCard({
                 />
                 {member.characterId === viewerCharacterId && (
                   <span className="meta"> (ty)</span>
+                )}
+              </td>
+              <td data-label="Discord">
+                {member.character.user.discordNick ?? (
+                  <span className="muted">-</span>
                 )}
               </td>
               <td className="muted" data-label="Class / spec">
@@ -202,7 +213,8 @@ export function RerollCard({
       ) : (
         <>
           <p className="card-lead">
-            Tým má na celou soutěž jeden reroll klíče. Kdo ho využije, zapíše
+            Tým má na celou soutěž jeden reroll klíče. Nový klíč musí být
+            aspoň o 1 úroveň nižší než původní. Kdo reroll využije, zapíše
             sem, z jakého klíče na jaký. Zapsat ho může kdokoli z týmu, ale jen
             jednou.
           </p>
@@ -259,7 +271,7 @@ export function RerollCard({
                   min={2}
                   max={40}
                   step={1}
-                  placeholder="12"
+                  placeholder="11"
                   required
                 />
               </div>

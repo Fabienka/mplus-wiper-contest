@@ -3,18 +3,27 @@ import { getCurrentSeason } from "@/lib/season";
 import { prisma } from "@/lib/prisma";
 import {
   DEFAULT_SCORING_CONFIG,
-  MAX_TIME_BONUS,
   ScoringConfigError,
   parseScoringConfig,
 } from "@/lib/scoring";
-import { ENTRY_FEE_RECIPIENT } from "@/lib/contest-info";
+import { plural } from "@/lib/labels";
 import { Notice } from "../../notice";
+import { EntryFeeLine } from "../../entry-fee";
 
 export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Pravidla soutěže",
 };
+
+/** Herní čas do věty: "2 hodiny", u necelých hodin "90 minut". */
+function playTimeLabel(minutes: number): string {
+  if (minutes % 60 === 0) {
+    const hours = minutes / 60;
+    return `${hours} ${plural(hours, "hodinu", "hodiny", "hodin")}`;
+  }
+  return `${minutes} ${plural(minutes, "minutu", "minuty", "minut")}`;
+}
 
 export default async function RulesPage() {
   const season = await getCurrentSeason();
@@ -42,6 +51,7 @@ export default async function RulesPage() {
     : [];
 
   const zvyhodnene = dungeons.filter((d) => d.bonusMultiplier !== 1);
+  const playTime = playTimeLabel(config.timeBudgetMinutes);
 
   return (
     <>
@@ -51,6 +61,19 @@ export default async function RulesPage() {
       </p>
 
       <div className="card">
+        <h2>Ve zkratce</h2>
+        <p className="card-lead">
+          Soutěž má jedno kolo. Každý tým odehraje jeden zápas a má v něm{" "}
+          <strong>{playTime} herního času</strong>, aby vytáhl klíč co nejvýš.
+          Vyhrává tým s nejvyšším stihnutým klíčem.
+        </p>
+        <p className="card-note">
+          Pořadatel si vyhrazuje právo zasáhnout do soutěže, když někdo poruší
+          pravidla, a pravidla v průběhu soutěže upravit.
+        </p>
+      </div>
+
+      <div className="card">
         <h2>Přihlášení</h2>
         <ul className="info-list">
           <li>
@@ -58,14 +81,18 @@ export default async function RulesPage() {
             Podle něj se načte class, spec a skóre.
           </li>
           <li>
-            Přihlášku schvaluje admin. Schválení <strong>není</strong> totéž co
-            zaplacené zápisné - obojí musí proběhnout.
+            Přihlášku schvaluje admin. Požadavky na postavu (třeba item level)
+            se liší sezónu od sezóny - přihlášku postavy, která je nesplňuje,
+            admin neschválí.
           </li>
           <li>
-            Zápisné se posílá <strong>ve hře</strong>
-            {ENTRY_FEE_RECIPIENT ? ` postavě ${ENTRY_FEE_RECIPIENT}` : ""}. Že
-            peníze dorazily, potvrdí moderátor ručně - do té doby máš u přihlášky
-            stav „nezaplaceno".
+            Výši zápisného stanovuje pořadatel. <EntryFeeLine /> Najdeš to
+            i na přihlášce a v profilu.
+          </li>
+          <li>
+            Schválení <strong>není</strong> totéž co zaplacené zápisné - obojí
+            musí proběhnout. Že peníze dorazily, potvrdí moderátor ručně - do té
+            doby máš u přihlášky stav „nezaplaceno".
           </li>
           <li>
             Spec uveď ten, se kterým opravdu půjdeš hrát. Skládají se podle něj
@@ -79,12 +106,19 @@ export default async function RulesPage() {
         <ul className="info-list">
           <li>
             Tým má <strong>pět hráčů</strong>: jeden tank, jeden healer, tři
-            DPS. Sestavu určuje rozdělení, ne domluva hráčů.
+            DPS.
           </li>
           <li>
-            Rozdělení se snaží vyvážit skóre týmů, poměr ranged/melee a pokrýt
-            battle rez a bloodlust. Ne vždy to jde beze zbytku - které pravidlo
-            se u které varianty porušilo, vidí admin před potvrzením.
+            Hráči se do týmů rozdělí <strong>náhodně</strong>. Z mnoha možných
+            rozdělení se vybere to nejlepší - týmy mají být co nejvyrovnanější
+            a mít v sestavě battle rez i bloodlust. Rozdělení se počítá
+            z anonymních údajů (role, spec, Raider.io skóre), jména hráčů
+            nezná.
+          </li>
+          <li>
+            Na výběr spoluhráčů není nárok. Ve výjimečných případech může admin
+            hráče na požádání přesunout do jiného týmu - do kterého, si ale
+            vybrat nejde.
           </li>
           <li>
             Hráči, na které nezbylo místo v žádném týmu, zůstávají jako
@@ -94,32 +128,82 @@ export default async function RulesPage() {
       </div>
 
       <div className="card">
-        <h2>Termín a průběh</h2>
+        <h2>Termín</h2>
         <ul className="info-list">
           <li>
             Členové týmu si v kalendáři zadají, kdy mají čas. Z překryvů se
             navrhne termín; platí až po schválení moderátorem.
           </li>
           <li>
-            Běh se počítá, když <strong>začne po začátku domluveného okna a
-            nejpozději ve 23:59 dne termínu</strong>. Rozhoduje začátek - klíč
-            načatý večer smí doběhnout i po půlnoci. Co začne dřív nebo později,
-            se neuzná.
+            Každý tým odehraje <strong>jeden zápas</strong>. Když ho tým musí
+            zrušit nebo přerušit, o dalším postupu rozhoduje moderátor.
           </li>
           <li>
-            Uvnitř okna můžete zkusit klíčů kolik chcete - počítá se z nich
-            jediný nejlepší.
+            V domluvený čas se tým sejde na Discordu. Začít můžete, až když je
+            u vás supervizor. Když nedorazí, napište pořadateli (Fabienka).
           </li>
           <li>
-            Na zápas máte <strong>{config.timeBudgetMinutes} minut herního času</strong>.
-            Počítá se čas na časovači pokusů, které k termínu patří - bodovaných,
-            nestihnutých i vzdaných. Běhy mimo termín, s cizím hráčem nebo
-            v dungeonu mimo rotaci herní čas nečerpají, pauzy mezi klíči taky ne.
-            Běh, kterým herní čas překročíte, se neuzná.
+            Běh se počítá, když <strong>začne po začátku schváleného termínu a
+            nejpozději ve 23:59 téhož dne</strong>. Rozhoduje začátek - klíč
+            načatý večer smí doběhnout i po půlnoci. Když začnete později, třeba
+            protože se čeká na supervizora, nevadí to.
           </li>
           <li>
-            Moderátor zápas na konci <strong>uzavře</strong> a tím se výsledky
-            zamknou. Po uzavření už nejde nic přidat.
+            Během zápasu tým <strong>streamuje</strong> na Discordu nebo jiné
+            streamovací platformě.
+          </li>
+        </ul>
+      </div>
+
+      <div className="card">
+        <h2>Průběh zápasu</h2>
+        <ul className="info-list">
+          <li>Startovní klíč může dát kdokoli z týmu.</li>
+          <li>
+            <strong>Klíče musí navazovat</strong>: další dungeon jdete s klíčem,
+            který vám hra dala po tom předchozím. Jiný klíč z inventáře použít
+            nesmíte (kromě rerollu). Hlídá to supervizor.
+          </li>
+          <li>
+            Na zápas máte <strong>{playTime} herního času</strong>. Počítá se
+            jen čas v dungeonu podle herního časovače, včetně penalizace za
+            smrt - příprava, přesuny a pauzy mezi klíči ne. Čas ubírají
+            i nestihnuté a vzdané klíče.
+          </li>
+          <li>
+            Klíč, během kterého vám herní čas dojde, se nepočítá - ani když ho
+            stihnete v limitu dungeonu. Výsledek, kterého jste dosáhli dřív, vám
+            zůstává.
+          </li>
+          <li>
+            Tým má na celou soutěž <strong>jeden reroll</strong>: místo klíče,
+            který dostal po posledním dokončeném dungeonu, smí použít jiný klíč
+            - <strong>aspoň o 1 úroveň nižší</strong>. Například místo +11
+            můžete jít +10 v jiném dungeonu. Reroll zapíše kdokoli z týmu na
+            stránce týmu.
+          </li>
+          <li>
+            Aspoň jeden hráč v týmu musí mít addon <strong>Raider.IO</strong>{" "}
+            a časovač klíče - addon <strong>MPlusTimer</strong>, nebo timer
+            v <strong>EllesmereUI</strong>.
+          </li>
+        </ul>
+      </div>
+
+      <div className="card">
+        <h2>Supervizor</h2>
+        <ul className="info-list">
+          <li>
+            Každý tým má přiděleného supervizora. Dohlíží na dodržování pravidel
+            a na zápis výsledků.
+          </li>
+          <li>
+            Do hry nijak nezasahuje. Může vám připomenout pravidla a odpovídá na
+            otázky k soutěži.
+          </li>
+          <li>
+            Když uvidí porušení pravidel, cheatování nebo nesportovní chování,
+            musí to nahlásit pořadateli.
           </li>
         </ul>
       </div>
@@ -135,61 +219,73 @@ export default async function RulesPage() {
 
         <ul className="info-list">
           <li>
+            Vyhrává tým s <strong>nejvyšším stihnutým klíčem</strong>. Vyšší
+            klíč porazí nižší vždycky, bez ohledu na čas.
+          </li>
+          <li>
+            Když mají dva týmy stejně vysoký klíč, rozhoduje,{" "}
+            <strong>kolik procent z limitu dungeonu jim zbylo</strong> - ne
+            čistý čas. Dungeony mají různě dlouhý limit, takže procenta jsou
+            férovější.
+            <br />
+            <span className="muted">
+              Příklad: tým A dá +15 v dungeonu s limitem 30 minut za 27 minut,
+              zbylo mu 10 % limitu. Tým B dá +15 v dungeonu s limitem 40 minut
+              za 34 minut, zbylo mu 15 %. Vyhrává B, i když byl v dungeonu
+              déle.
+            </span>
+          </li>
+          <li>
             Boduje se jen klíč <strong>+{config.minScoredKeyLevel} a vyšší</strong>.
-            Nižší klíče se nepočítají, ani když je stihnete - berou se jen jako
-            rozběh na vytažení klíče.
+            Nižší klíče se nepočítají, ani když je stihnete.
           </li>
           <li>
-            <strong>Nestihnutý klíč se neboduje vůbec</strong>, nedostane ani
-            nulu. Rozhoduje verdikt hry, ne naše měření. Když klíč nestihnete,
-            musíte běžet jiný.
+            <strong>Nestihnutý klíč se neboduje vůbec</strong>. Rozhoduje verdikt
+            hry, ne naše měření.
           </li>
           <li>
-            Týmu se počítá <strong>jediný nejlepší bodovaný běh</strong>.
-            Neúspěšný pokus vás o dřívější výsledek nepřipraví.
+            Týmu se počítá <strong>jediný nejlepší běh</strong>. Neúspěšný pokus
+            vás o dřívější výsledek nepřipraví.
           </li>
           <li>
-            <strong>Vyšší klíč porazí nižší vždycky</strong>, bez ohledu na čas.
-            Obtížnost s každou úrovní roste natolik, že by srovnávání přes čas
-            nedávalo smysl.
+            Kdyby dva týmy skončily přesně stejně, rozhodne{" "}
+            <strong>rozstřel</strong>: oba půjdou stejný dungeon na čas
+            a rychlejší vyhrává. Rozstřel může mít podle situace další pravidla
+            - dozvíte se je před startem.
           </li>
         </ul>
-
-        <h3 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>Vzorec</h3>
-        <pre className="info-formula">
-          {`body = (výška klíče − ${config.minScoredKeyLevel}) × ${config.pointsPerKeyLevel}
-       + ${MAX_TIME_BONUS} × (1 − čas běhu ÷ časový limit klíče)`}
-        </pre>
-        <p className="card-note">
-          Druhý řádek je procento limitu, které jste nevyčerpali. Díky tomu se
-          srovnají různě dlouhé dungeony - ušetřená pětina času znamená všude
-          totéž. Časový bonus je vždycky menší než {MAX_TIME_BONUS}, takže
-          nemůže přebít celou úroveň klíče.
-        </p>
       </div>
 
       <div className="card">
         <h2>Uznání běhu</h2>
         <p className="card-lead">
-          Výsledek se nahrává odkazem na běh z Raider.io. Aby se uznal, musí
-          platit všechno naráz:
+          Výsledek nahrajete do aplikace odkazem na běh z Raider.io - čas
+          i sestavu si aplikace stáhne sama. Aby se běh uznal, musí platit
+          všechno naráz:
         </p>
         <ul className="info-list">
-          <li>dungeon je v rotaci sezóny,</li>
           <li>
-            běh začal po začátku okna schváleného termínu a nejpozději ve 23:59
-            dne termínu,
+            běh začal po začátku schváleného termínu a nejpozději ve 23:59 téhož
+            dne,
           </li>
-          <li>tým tím během nepřekročil herní čas zápasu,</li>
+          <li>běh se celý vešel do zbývajícího herního času zápasu,</li>
           <li>
             celá pětice v sestavě patří do týmu - jeden cizí hráč běh
             zneplatňuje,
           </li>
-          <li>klíč byl stihnutý a je aspoň +{config.minScoredKeyLevel}.</li>
+          <li>
+            klíč byl dokončen v čase dungeonu a je alespoň +
+            {config.minScoredKeyLevel},
+          </li>
+          <li>klíč navazuje na předchozí (hlídá supervizor).</li>
         </ul>
         <p className="card-note">
-          Když něco nesedí, aplikace u běhu vypíše důvod. Poslední slovo má
-          moderátor - běh může uznat i zneplatnit ručně.
+          Běh, který na Raider.io není, se zadá ručně se screenshotem a počítá
+          se až po ověření moderátorem. Běh mimo termín nebo s cizím hráčem vám
+          neubírá ani herní čas. Když něco nesedí,
+          aplikace u běhu vypíše důvod. Poslední slovo má moderátor - běh může
+          uznat i zneplatnit ručně. Na konci moderátor zápas uzavře a výsledky
+          se tím zamknou.
         </p>
       </div>
 
@@ -213,12 +309,26 @@ export default async function RulesPage() {
           {zvyhodnene.length > 0 && (
             <p className="card-note">
               Zvýhodnění dostávají dungeony, kde část času neovlivníte - typicky
-              nucené čekání na NPC. Násobí se jím časový bonus, ale nikdy tolik,
-              aby nižší klíč porazil vyšší.
+              nucené čekání na NPC. Ušetřený čas se v nich počítá víc, ale nikdy
+              tolik, aby nižší klíč porazil vyšší.
             </p>
           )}
         </div>
       )}
+
+      <div className="card">
+        <h2>Porušení pravidel</h2>
+        <ul className="info-list">
+          <li>
+            Za hrubé porušení pravidel, nesportovní chování nebo podezření na
+            programy třetích stran (cheaty) bude hráč ze soutěže vyřazen.
+          </li>
+          <li>
+            Tým pak dostane náhradníka, pokud je nějaký k dispozici. Jinak si
+            může náhradu najít sám, ale už bez nároku na výhru.
+          </li>
+        </ul>
+      </div>
 
       <div className="card">
         <h2>Něco není jasné?</h2>

@@ -48,7 +48,7 @@ Před nasazením si projdi [Nasazení na server](#nasazení-na-server), hlavně
 - **Reset a změna hesla** bez e-mailu - jednorázový odkaz vydá admin nebo
   moderátor na `/admin/hesla`, změna vlastního hesla je v `/profile`
 - **Notifikace na Discord** přes webhook - nová přihláška, rozdělení do týmů,
-  blížící se termín a nahraný běh; viz [Discord](#discord)
+  navržený termín, blížící se termín a nahraný běh; viz [Discord](#discord)
 - Audit log u všech admin akcí, zálohy databáze, oddělená testovací databáze
 
 ### Chybí
@@ -155,11 +155,15 @@ npm run build
   Je to schválně - tiše posunuté časy termínů by si nikdo nevšiml.
 - **Raider.io se volá bez timeoutu.** Když jejich API nereaguje, registrace visí,
   dokud request nespadne na timeoutu proxy.
-- **Kontakty na `/info/kontakt` jsou prázdné**, dokud je nevyplníš v
-  `src/lib/contest-info.ts`. Do té doby stránka jen řekne, že se doplňují -
-  schválně nic nevymýšlí, ať lidi nepíšou někam, kde je nikdo nečte.
+- **Kontakty a zápisné** jsou natvrdo v `src/lib/contest-info.ts`. Před
+  sezónou zkontroluj, že sedí organizátoři, výše zápisného i postava, které se
+  posílá - vypisuje se to v pravidlech, na přihlášce i v profilu.
 - **`NEXTAUTH_URL` musí sedět na veřejnou adresu.** Sestavují se z ní odkazy na
-  reset hesla, takže při špatné hodnotě vydáš odkaz, který nikam nevede.
+  reset hesla, takže při špatné hodnotě vydáš odkaz, který nikam nevede. Musí
+  začínat `https://`, jinak server při startu spadne - viz
+  [Heslo v požadavku](#heslo-v-požadavku).
+- **Přesměrování na HTTPS.** Proxy musí posílat `http://` na `https://`. Hesla
+  jdou v požadavku čitelně a chrání je jen TLS.
 - **Velikost požadavku na proxy.** Ručně zadaný běh nahrává screenshot až
   8 MB (aplikace sama pouští 10 MB, viz `next.config.mjs`). nginx má výchozí
   `client_max_body_size` jen 1 MB - nastav ho aspoň na `10m`, jinak nahrání
@@ -190,6 +194,7 @@ npm run check:leaderboard     # žebříček týmů
 npm run check:rate-limit      # omezení počtu pokusů
 npm run check:password-reset  # platnost odkazu, kdo komu smí reset vydat
 npm run check:discord         # tvar zpráv pro Discord
+npm run check:auth-url        # produkce jen s HTTPS adresou
 npm run check:result-flow:test  # celý zápis výsledku proti reálnému běhu
 npm run check:manual-flow:test  # ruční běh se screenshotem až po ověření
 ```
@@ -286,10 +291,13 @@ je potřeba přegenerovat z ní, hlavně `apple-icon.png`.
 a má dvě podstránky:
 
 - **`/info/pravidla`** - pravidla soutěže. Čísla se **neopisují ručně**: nejnižší
-  bodovaná výška klíče, body za úroveň i seznam dungeonů se berou z aktuální
-  sezóny, takže po změně bodování v administraci nemůžou pravidla lhát.
-- **`/info/kontakt`** - na koho se obrátit. Obsah je v `src/lib/contest-info.ts`;
-  není v databázi schválně - mění se výjimečně a patří do verzí.
+  bodovaná výška klíče, herní čas zápasu i seznam dungeonů se berou z aktuální
+  sezóny, takže po změně bodování v administraci nemůžou pravidla lhát. Vzorec
+  bodování tam schválně není - hráčům stačí lidský popis, vzorec je v
+  [Bodování](#bodování).
+- **`/info/kontakt`** - na koho se obrátit. Obsah je v `src/lib/contest-info.ts`
+  spolu s výší zápisného a postavou, které se posílá; není v databázi schválně -
+  mění se výjimečně a patří do verzí.
 
 Na pravidla vede odkaz z registračního formuláře, od zaškrtávátka se souhlasem.
 Otevírá se do nové karty, aby odchod ze stránky nesmazal rozepsanou registraci.
@@ -337,6 +345,22 @@ nastavil by mu heslo a povýšil se - přitom nemá právo měnit role. Rozhoduj
 tom `canIssueResetFor` v `src/lib/password-rules.ts`; seznam na `/admin/hesla`
 proto moderátorovi ostatní účty ani neukazuje.
 
+### Heslo v požadavku
+
+Přihlášení (`/api/auth/callback/credentials`), registrace (`/api/register`) i
+změna hesla (server action na `/profile`) posílají heslo tak, jak ho člověk
+napsal - ve vývojářských nástrojích prohlížeče je v payloadu čitelné. **Je to
+tak správně**: DevTools ukazují požadavek ještě před zašifrováním, na síti ho
+chrání TLS a do databáze jde jen bcrypt otisk. Hashovat nebo šifrovat heslo už
+v prohlížeči nic nepřidá - otisk by se stal novým heslem, které jde odposlechnout
+a přehrát úplně stejně.
+
+Stojí to celé na HTTPS. Proto produkce při startu spadne, když `NEXTAUTH_URL`
+nezačíná `https://` (výjimka je `http://localhost` na zkoušku) - viz
+`src/lib/auth-url.ts`, kontroluje se `npm run check:auth-url`. Proxy musí
+navíc přesměrovat `http://` na `https://`, jinak by se formulář načtený přes
+HTTP odeslal taky přes HTTP.
+
 Stránka resetu se neomezuje počtem pokusů schválně: token má 256 bitů náhody a
 při neplatném tokenu se ke kontrole hesla vůbec nedojde, takže zkoušení nestojí
 víc než jeden otisk a jeden dotaz do indexu.
@@ -379,6 +403,7 @@ proměnné prostředí, ne do gitu.
 |---|---|
 | `NEW_REGISTRATION` | hráč odeslal přihlášku (ještě před schválením) |
 | `SHUFFLE_RESULT` | admin potvrdil variantu rozdělení a týmy vznikly |
+| `MATCH_PROPOSED` | hráč navrhl termín, čeká na schválení (termín přidaný moderátorem je rovnou schválený, ten se neohlašuje) |
 | `UPCOMING_MATCH` | termín začíná v nejbližších hodinách - posílá cron, viz níž |
 | `MATCH_RESULT` | tým nahrál běh; do kanálu jde i neplatný, ať je vidět proč |
 

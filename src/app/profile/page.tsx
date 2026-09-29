@@ -13,6 +13,7 @@ import {
 import { Notice } from "../notice";
 import { ChangePasswordForm } from "./password-form";
 import { CharacterName } from "../character-name";
+import { EntryFeeLine } from "../entry-fee";
 
 export const dynamic = "force-dynamic";
 
@@ -160,8 +161,9 @@ export default async function ProfilePage({
                   {!registration.entryFeePaidAt &&
                     registration.status !== "REJECTED" && (
                       <Notice kind="info" title="Zápisné zatím není potvrzené">
-                        Přihlášku potvrdíš zaplacením zápisného ve hře. Jakmile
-                        peníze dorazí, potvrdí to moderátor a uvidíš to tady.
+                        Přihlášku potvrdíš zaplacením zápisného ve hře.{" "}
+                        <EntryFeeLine /> Jakmile peníze dorazí, potvrdí to
+                        moderátor a uvidíš to tady.
                       </Notice>
                     )}
                 </>

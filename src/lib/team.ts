@@ -34,6 +34,9 @@ export async function getMyTeamContext() {
                   characterName: true,
                   class: true,
                   wowSpec: true,
+                  // Spoluhráči si píšou na Discordu - bez nicku by se
+                  // museli shánět přes admina.
+                  user: { select: { discordNick: true } },
                 },
               },
             },

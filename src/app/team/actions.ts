@@ -7,6 +7,7 @@ import { Prisma } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { writeAuditLog } from "@/lib/admin";
+import { enqueueDiscordEvent, sendDiscordEvent } from "@/lib/discord";
 import {
   RecordResultError,
   recordManualResult,
@@ -127,29 +128,49 @@ export async function proposeMatch(formData: FormData) {
     fail("Tenhle termín už je navržený.");
   }
 
-  const match = await prisma.match.create({
-    data: {
-      teamId: membership.teamId,
-      proposedById: character.id,
-      windowStart: start,
-      windowEnd: end,
-      note,
-      status: "PROPOSED",
-    },
+  const discordEventId = await prisma.$transaction(async (tx) => {
+    const match = await tx.match.create({
+      data: {
+        teamId: membership.teamId,
+        proposedById: character.id,
+        windowStart: start,
+        windowEnd: end,
+        note,
+        status: "PROPOSED",
+      },
+      include: { team: { select: { name: true } } },
+    });
+
+    await writeAuditLog(tx, {
+      actorId: user.id,
+      actionType: "MATCH_PROPOSED",
+      entityType: "Match",
+      entityId: match.id,
+      newValue: {
+        team: membership.teamId,
+        windowStart: start.toISOString(),
+        windowEnd: end.toISOString(),
+        proposedBy: character.characterName,
+      },
+    });
+
+    // Do kanálu, ať o návrhu ví moderátor, který ho má schválit, i zbytek
+    // týmu, který by se jinak dozvěděl až z kalendáře.
+    return enqueueDiscordEvent(tx, {
+      eventType: "MATCH_PROPOSED",
+      payload: {
+        teamName: match.team.name,
+        proposedBy: character.characterName,
+        windowStart: start.toISOString(),
+        windowEnd: end.toISOString(),
+        note,
+      },
+    });
   });
 
-  await writeAuditLog(prisma, {
-    actorId: user.id,
-    actionType: "MATCH_PROPOSED",
-    entityType: "Match",
-    entityId: match.id,
-    newValue: {
-      team: membership.teamId,
-      windowStart: start.toISOString(),
-      windowEnd: end.toISOString(),
-      proposedBy: character.characterName,
-    },
-  });
+  // Až po commitu a před redirect(), který vyhazuje výjimku - za ním by
+  // odeslání nikdy neproběhlo.
+  if (discordEventId) await sendDiscordEvent(prisma, discordEventId);
 
   revalidatePath("/team");
   revalidatePath("/admin/matches");
@@ -233,8 +254,13 @@ export async function recordReroll(formData: FormData) {
   const fromKeyLevel = parseKeyLevel(formData, "fromLevel", "původního klíče");
   const toKeyLevel = parseKeyLevel(formData, "toLevel", "nového klíče");
 
-  if (fromDungeonName === toDungeonName && fromKeyLevel === toKeyLevel) {
-    fail("Původní a nový klíč jsou stejné.");
+  // Pravidlo soutěže: reroll nesmí klíč zvednout ani udržet - nový klíč je
+  // aspoň o úroveň níž. Stejný dungeon níž projde, je to jiný klíč.
+  if (toKeyLevel >= fromKeyLevel) {
+    fail(
+      `Nový klíč musí být aspoň o 1 úroveň nižší než původní - z +${fromKeyLevel} ` +
+        `nejvýš na +${fromKeyLevel - 1}.`
+    );
   }
 
   let reroll;

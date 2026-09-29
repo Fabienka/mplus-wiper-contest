@@ -43,10 +43,15 @@ export interface ContactEntry {
  *     href: "mailto:soutez@example.com",
  *   },
  */
-export const CONTACTS: ContactEntry[] = [];
+export const CONTACTS: ContactEntry[] = [
+  { label: "Hlavní organizátor MDWC", value: "Fabienka" },
+  { label: "Organizátor", value: "Daaron" },
+];
 
 /**
- * Ve hře se posílá zápisné, takže hráč musí vědět komu. Prázdné = stránka
- * o zápisném mlčí, ať nikdo neposílá zlato naslepo.
+ * Ve hře se posílá zápisné, takže hráč musí vědět komu a kolik. Vypisuje se
+ * v pravidlech, na přihlášce a v profilu (EntryFeeLine). Když jedno z toho
+ * chybí, stránky o částce a příjemci mlčí, ať nikdo neposílá zlato naslepo.
  */
-export const ENTRY_FEE_RECIPIENT: string | null = null;
+export const ENTRY_FEE_RECIPIENT: string | null = "Mdwcgoldy";
+export const ENTRY_FEE_AMOUNT: string | null = "15 000 goldů";

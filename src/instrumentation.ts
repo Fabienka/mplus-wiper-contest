@@ -9,4 +9,7 @@ export async function register() {
 
   const { assertAppTimeZone } = await import("@/lib/timezone");
   assertAppTimeZone();
+
+  const { assertSecureAuthUrl } = await import("@/lib/auth-url");
+  assertSecureAuthUrl();
 }
