@@ -63,6 +63,16 @@ const UKAZKY: DiscordEvent[] = [
     },
   },
   {
+    eventType: "MATCH_PROPOSED",
+    payload: {
+      teamName: "Tým 1",
+      proposedBy: "Lecitel",
+      windowStart: start.toISOString(),
+      windowEnd: end.toISOString(),
+      note: "Kdyby to nešlo, můžeme i o hodinu později.",
+    },
+  },
+  {
     eventType: "UPCOMING_MATCH",
     payload: {
       matchId: "ukazka",

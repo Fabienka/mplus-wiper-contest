@@ -67,6 +67,8 @@ enum DiscordEventType {
   SHUFFLE_RESULT
   UPCOMING_MATCH
   MATCH_RESULT
+  /// Hráč navrhl termín, čeká na schválení moderátorem.
+  MATCH_PROPOSED
 }
 
 enum DiscordEventStatus {

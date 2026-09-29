@@ -48,6 +48,16 @@ export interface UpcomingMatchPayload {
   members: string[];
 }
 
+export interface MatchProposedPayload {
+  teamName: string;
+  /** Postava, která termín navrhla. */
+  proposedBy: string;
+  /** ISO řetězec, ne Date - payload musí přežít uložení do JSON sloupce. */
+  windowStart: string;
+  windowEnd: string;
+  note: string | null;
+}
+
 export interface MatchResultPayload {
   teamName: string;
   dungeonName: string;
@@ -62,6 +72,7 @@ export interface MatchResultPayload {
 export interface DiscordEventPayloadMap {
   NEW_REGISTRATION: NewRegistrationPayload;
   SHUFFLE_RESULT: ShuffleResultPayload;
+  MATCH_PROPOSED: MatchProposedPayload;
   UPCOMING_MATCH: UpcomingMatchPayload;
   MATCH_RESULT: MatchResultPayload;
 }
@@ -101,6 +112,7 @@ export interface DiscordWebhookMessage {
 const COLORS = {
   registration: 0x5865f2,
   shuffle: 0x9b59b6,
+  proposed: 0x3498db,
   match: 0xf1c40f,
   resultValid: 0x2ecc71,
   resultInvalid: 0xe67e22,
@@ -215,6 +227,40 @@ function shuffleResultEmbed(
   };
 }
 
+function matchProposedEmbed(
+  payload: MatchProposedPayload,
+  baseUrl: string | null
+): DiscordEmbed {
+  const start = new Date(payload.windowStart);
+  const end = new Date(payload.windowEnd);
+
+  const fields: DiscordEmbedField[] = [
+    {
+      name: "Navrhl/a",
+      value: escapeMarkdown(payload.proposedBy),
+      inline: true,
+    },
+  ];
+
+  if (payload.note) {
+    fields.push({
+      name: "Poznámka",
+      value: truncate(escapeMarkdown(payload.note), LIMIT_FIELD_VALUE),
+    });
+  }
+
+  return {
+    title: "Nový termín ke schválení",
+    description:
+      `**${escapeMarkdown(payload.teamName)}** navrhuje ${formatRange(start, end)}. ` +
+      `Čeká na schválení moderátorem.`,
+    // Stejně jako u přihlášky vede odkaz tam, kde se schvaluje.
+    url: baseUrl ? `${baseUrl}/admin/matches` : undefined,
+    color: COLORS.proposed,
+    fields,
+  };
+}
+
 function upcomingMatchEmbed(
   payload: UpcomingMatchPayload,
   baseUrl: string | null
@@ -302,6 +348,9 @@ export function buildDiscordMessage(
       break;
     case "SHUFFLE_RESULT":
       embed = shuffleResultEmbed(event.payload, baseUrl);
+      break;
+    case "MATCH_PROPOSED":
+      embed = matchProposedEmbed(event.payload, baseUrl);
       break;
     case "UPCOMING_MATCH":
       embed = upcomingMatchEmbed(event.payload, baseUrl);

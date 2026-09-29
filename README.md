@@ -48,7 +48,7 @@ Před nasazením si projdi [Nasazení na server](#nasazení-na-server), hlavně
 - **Reset a změna hesla** bez e-mailu - jednorázový odkaz vydá admin nebo
   moderátor na `/admin/hesla`, změna vlastního hesla je v `/profile`
 - **Notifikace na Discord** přes webhook - nová přihláška, rozdělení do týmů,
-  blížící se termín a nahraný běh; viz [Discord](#discord)
+  navržený termín, blížící se termín a nahraný běh; viz [Discord](#discord)
 - Audit log u všech admin akcí, zálohy databáze, oddělená testovací databáze
 
 ### Chybí
@@ -379,6 +379,7 @@ proměnné prostředí, ne do gitu.
 |---|---|
 | `NEW_REGISTRATION` | hráč odeslal přihlášku (ještě před schválením) |
 | `SHUFFLE_RESULT` | admin potvrdil variantu rozdělení a týmy vznikly |
+| `MATCH_PROPOSED` | hráč navrhl termín, čeká na schválení (termín přidaný moderátorem je rovnou schválený, ten se neohlašuje) |
 | `UPCOMING_MATCH` | termín začíná v nejbližších hodinách - posílá cron, viz níž |
 | `MATCH_RESULT` | tým nahrál běh; do kanálu jde i neplatný, ať je vidět proč |
 

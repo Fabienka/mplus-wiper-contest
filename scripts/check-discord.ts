@@ -10,6 +10,7 @@
 import {
   buildDiscordMessage,
   escapeMarkdown,
+  type MatchProposedPayload,
   type MatchResultPayload,
   type NewRegistrationPayload,
   type ShuffleResultPayload,
@@ -245,7 +246,54 @@ console.log("8. Výsledek běhu");
   check(neplatny.fields?.[0].value === "-", "chybějící body jako pomlčka");
 }
 
-console.log("9. Dlouhý text se zkracuje pod limit Discordu");
+console.log("9. Nový termín ke schválení");
+{
+  const start = new Date(2026, 8, 20, 19, 0);
+  const end = new Date(2026, 8, 20, 21, 0);
+
+  const payload: MatchProposedPayload = {
+    teamName: "Tým 1",
+    proposedBy: "Ne_bo_j",
+    windowStart: start.toISOString(),
+    windowEnd: end.toISOString(),
+    note: "Klidně i o hodinu dřív",
+  };
+
+  const message = buildDiscordMessage({ eventType: "MATCH_PROPOSED", payload }, BASE);
+  const embed = message.embeds[0];
+
+  check(embed.title === "Nový termín ke schválení", "titulek", embed.title);
+  check(embed.description?.includes("**Tým 1**") ?? false, "tým v popisu", embed.description);
+  check(embed.description?.includes("19:00") ?? false, "začátek okna v popisu", embed.description);
+  check(embed.description?.includes("21:00") ?? false, "konec okna v popisu");
+  check(
+    embed.description?.includes("Čeká na schválení") ?? false,
+    "je poznat, že termín ještě neplatí",
+    embed.description
+  );
+  check(
+    embed.fields?.find((f) => f.name === "Navrhl/a")?.value === "Ne\\_bo\\_j",
+    "navrhovatel s escapovaným jménem"
+  );
+  check(
+    embed.fields?.find((f) => f.name === "Poznámka")?.value === "Klidně i o hodinu dřív",
+    "poznámka jako vlastní pole"
+  );
+  check(embed.url === `${BASE}/admin/matches`, "odkaz na schvalování termínů", embed.url);
+  check(message.allowed_mentions.parse.length === 0, "zmínky jsou zakázané");
+
+  const bezPoznamky = buildDiscordMessage(
+    { eventType: "MATCH_PROPOSED", payload: { ...payload, note: null } },
+    BASE
+  ).embeds[0];
+
+  check(
+    !(bezPoznamky.fields?.some((f) => f.name === "Poznámka") ?? true),
+    "prázdná poznámka se nevypisuje"
+  );
+}
+
+console.log("10. Dlouhý text se zkracuje pod limit Discordu");
 {
   const payload: UpcomingMatchPayload = {
     matchId: "m2",
