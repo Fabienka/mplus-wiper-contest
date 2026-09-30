@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/admin";
 import { can } from "@/lib/permissions";
+import { switchableSpecs } from "@/lib/wow-specs";
 import {
   REGISTRATION_STATUS_BADGES,
   REGISTRATION_STATUS_LABELS,
@@ -12,6 +13,7 @@ import {
 } from "@/lib/labels";
 import { Notice } from "../notice";
 import { ChangePasswordForm } from "./password-form";
+import { SwitchSpecForm, type SwitchSpecOption } from "./switch-spec-form";
 import { CharacterName } from "../character-name";
 import { EntryFeeLine } from "../entry-fee";
 
@@ -35,6 +37,7 @@ export default async function ProfilePage({
   const character = await prisma.character.findUnique({
     where: { userId: user.id },
     include: {
+      switchSpecs: true,
       registrations: {
         orderBy: { createdAt: "desc" },
         include: {
@@ -52,6 +55,19 @@ export default async function ProfilePage({
 
   const registration = character?.registrations[0] ?? null;
   const membership = character?.teamMemberships[0] ?? null;
+
+  const savedSwitchSpecs = new Map(
+    (character?.switchSpecs ?? []).map((spec) => [spec.specName, spec])
+  );
+  const switchOptions: SwitchSpecOption[] = switchableSpecs(
+    character?.class,
+    character?.wowSpec
+  ).map((spec) => ({
+    specName: spec.specName,
+    role: spec.role,
+    selected: savedSwitchSpecs.has(spec.specName),
+    rioScore: savedSwitchSpecs.get(spec.specName)?.rioScore ?? null,
+  }));
 
   return (
     <main className="site-main" id="obsah">
@@ -109,6 +125,21 @@ export default async function ProfilePage({
                   </a>
                 </dd>
               </dl>
+            </div>
+
+            <div className="card">
+              <h2>Switch specu</h2>
+              {switchOptions.length === 0 ? (
+                <p className="empty-state">
+                  Classu postavy se nepodařilo načíst z Raider.io, takže není
+                  z čeho vybírat. Napiš adminovi.
+                </p>
+              ) : (
+                <SwitchSpecForm
+                  canSwitchSpec={character.canSwitchSpec}
+                  options={switchOptions}
+                />
+              )}
             </div>
 
             <div className="card">

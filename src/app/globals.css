@@ -357,6 +357,11 @@ table.data tbody tr {
   color: var(--accent);
 }
 
+/* Vysvětlivka zarovnaná s textem popisku, ne se zaškrtávátkem. */
+.field-check > .field-hint {
+  padding-left: 1.65rem;
+}
+
 .field input,
 .field select,
 .field textarea {

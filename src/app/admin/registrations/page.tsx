@@ -64,6 +64,7 @@ export default async function RegistrationsPage({
           realm: true,
           class: true,
           specRole: true,
+          canSwitchSpec: true,
           rioScore: true,
           user: { select: { discordNick: true } },
         },
@@ -120,7 +121,12 @@ export default async function RegistrationsPage({
                         : ""}
                     </div>
                   </td>
-                  <td>{SPEC_ROLE_LABELS[registration.character.specRole]}</td>
+                  <td>
+                    {SPEC_ROLE_LABELS[registration.character.specRole]}
+                    {registration.character.canSwitchSpec && (
+                      <div className="meta">může switchnout</div>
+                    )}
+                  </td>
                   <td>{registration.character.rioScore ?? "-"}</td>
                   <td>{registration.character.user.discordNick ?? "-"}</td>
                   <td>{formatDateTime(registration.createdAt)}</td>

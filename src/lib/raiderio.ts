@@ -1,4 +1,5 @@
 import type { SpecRole } from "@prisma/client";
+import { specsForClass } from "./wow-specs";
 
 /**
  * Raider.io veřejné API - čtení profilu postavy a dat o sezóně.
@@ -122,6 +123,38 @@ export async function fetchCharacterFromRaiderio(
     wowSpec: data.active_spec_name ?? null,
     rioScore: data.mythic_plus_scores_by_season?.[0]?.scores?.all ?? 0,
   };
+}
+
+/**
+ * RIO skóre postavy v jednotlivých specech aktuální sezóny, podle názvu specu.
+ * Spec, ve kterém postava v sezóně nic neodehrála, má 0.
+ *
+ * Raider.io specy nepojmenovává, vrací je jako spec_0 až spec_3 v pořadí,
+ * v jakém je má classa ve hře - stejném, v jakém je drží WOW_SPECS.
+ */
+export async function fetchSpecScores(
+  raiderioUrl: string
+): Promise<Record<string, number>> {
+  const { region, realm, name } = parseCharacterUrl(raiderioUrl);
+
+  const data = (await callRaiderio("/characters/profile", {
+    region,
+    realm,
+    name,
+    fields: "mythic_plus_scores_by_season:current",
+  })) as {
+    class: string;
+    mythic_plus_scores_by_season?: { scores?: Record<string, number> }[];
+  };
+
+  const scores = data.mythic_plus_scores_by_season?.[0]?.scores ?? {};
+
+  return Object.fromEntries(
+    specsForClass(data.class).map((spec, index) => [
+      spec.specName,
+      scores[`spec_${index}`] ?? 0,
+    ])
+  );
 }
 
 interface RawRecentRun {

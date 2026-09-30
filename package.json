@@ -28,6 +28,7 @@
     "check:calendar": "tsx scripts/check-calendar.ts",
     "check:datetime-input": "tsx scripts/check-datetime-input.ts",
     "check:class-colors": "tsx scripts/check-class-colors.ts",
+    "check:wow-specs": "tsx scripts/check-wow-specs.ts",
     "check:scoring": "tsx scripts/check-scoring.ts",
     "check:stats": "tsx scripts/check-stats.ts",
     "seed:run-team:test": "dotenv -e .env.test -- tsx scripts/seed-run-team.ts",

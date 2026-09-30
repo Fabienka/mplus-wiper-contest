@@ -157,7 +157,11 @@ model Character {
   specRole       SpecRole
   rioScore       Float?
   lastSyncedAt   DateTime?
+  /// Hráč je ochotný přepnout na jiný spec (třeba z DPS na tanka), když to
+  /// bude při skládání týmů potřeba. Na které specy, vybírá v profilu.
+  canSwitchSpec  Boolean   @default(false)
 
+  switchSpecs     CharacterSwitchSpec[]
   registrations   SeasonRegistration[]
   teamMemberships TeamMembership[]
   proposedMatches Match[]              @relation("ProposedBy")
@@ -165,6 +169,23 @@ model Character {
   recordedRerolls TeamReroll[]         @relation("RecordedRerolls")
 
   @@index([userId])
+}
+
+/// Spec, na který je hráč ochotný switchnout (viz Character.canSwitchSpec).
+/// Jen spec jeho vlastní classy - jiná postava patří do odpovědi "alt postava"
+/// v registraci.
+model CharacterSwitchSpec {
+  id          String    @id @default(cuid())
+  characterId String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  specName    String
+  specRole    SpecRole
+  /// RIO skóre v tomhle specu z Raider.io. Prázdné = nepodařilo se načíst.
+  rioScore    Float?
+  rioSyncedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@unique([characterId, specName])
 }
 
 // ---------- Registration ----------

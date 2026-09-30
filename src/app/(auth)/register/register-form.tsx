@@ -31,6 +31,7 @@ export function RegisterForm() {
   // Prázdné = spec se vezme z Raider.io. Shuffle podle něj počítá ranged/melee,
   // battle rez a bloodlust, takže se vyplatí ho mít správně.
   const [wowSpec, setWowSpec] = useState("");
+  const [canSwitchSpec, setCanSwitchSpec] = useState(false);
   // Zjednodušená verze doplňujících otázek formuláře - v reálné sezóně
   // odpovídá aktuálně platné podobě registračního formuláře (viz use case
   // s alt postavou pro tank/heal switch).
@@ -78,6 +79,7 @@ export function RegisterForm() {
           raiderioUrl,
           specRole,
           wowSpec: wowSpec || undefined,
+          canSwitchSpec,
           seasonId: season.id,
           formAnswers: {
             altCharacter: altCharacter || null,
@@ -137,6 +139,11 @@ export function RegisterForm() {
               v profilu.
             </Notice>
           </div>
+          {canSwitchSpec && (
+            <p className="auth-hint">
+              Na které specy můžeš switchnout, vybereš po přihlášení v profilu.
+            </p>
+          )}
           <p className="auth-hint">
             Mezitím se můžeš <Link href="/login">přihlásit</Link> a doplnit si
             údaje.
@@ -283,6 +290,23 @@ export function RegisterForm() {
             <span className="field-hint" id="spec-hint">
               Vyplň, pokud budeš hrát jiný spec, než se kterým tě naposledy
               vidělo Raider.io. Podle specu se skládají týmy.
+            </span>
+          </div>
+
+          <div className="field field-check">
+            <label>
+              <input
+                type="checkbox"
+                checked={canSwitchSpec}
+                onChange={(e) => setCanSwitchSpec(e.target.checked)}
+                aria-describedby="switch-hint"
+              />
+              <span>Můžu switchnout spec, pokud bude potřeba</span>
+            </label>
+            <span className="field-hint" id="switch-hint">
+              Zaškrtni, pokud jsi ochotný/á kvůli týmu přepnout na jiný spec -
+              třeba z DPS na tanka nebo z tanka na healera. Na které specy,
+              doplníš po registraci v profilu a RIO se k nim načte z Raider.io.
             </span>
           </div>
 

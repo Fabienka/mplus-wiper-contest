@@ -18,6 +18,7 @@ import {
   revokeEntryFee,
 } from "../actions";
 import { CharacterName } from "../../../character-name";
+import { SwitchSpecs } from "../../../switch-specs";
 import { classColor } from "@/lib/wow-specs";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +51,8 @@ export default async function RegistrationDetailPage({
       character: {
         include: {
           user: { select: { username: true, email: true, discordNick: true } },
+          // Enum se v Postgresu řadí podle pořadí v deklaraci: tank, healer, DPS.
+          switchSpecs: { orderBy: [{ specRole: "asc" }, { specName: "asc" }] },
         },
       },
     },
@@ -91,6 +94,13 @@ export default async function RegistrationDetailPage({
           <dd>{character.class ?? "-"}</dd>
           <dt>Role</dt>
           <dd>{SPEC_ROLE_LABELS[character.specRole]}</dd>
+          <dt>Switch specu</dt>
+          <dd>
+            <SwitchSpecs
+              canSwitchSpec={character.canSwitchSpec}
+              specs={character.switchSpecs}
+            />
+          </dd>
           <dt>RIO skóre</dt>
           <dd>{character.rioScore ?? "-"}</dd>
           <dt>Guilda</dt>

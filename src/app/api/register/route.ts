@@ -22,6 +22,7 @@ const registerSchema = z.object({
   specRole: z.enum(["TANK", "HEALER", "DPS"]),
   // Prázdné = použije se aktivní spec z Raider.io.
   wowSpec: z.string().optional(),
+  canSwitchSpec: z.boolean().optional(),
   seasonId: z.string(),
   formAnswers: z.record(z.any()),
 });
@@ -67,6 +68,7 @@ export async function POST(request: NextRequest) {
     raiderioUrl,
     specRole,
     wowSpec,
+    canSwitchSpec,
     seasonId,
     formAnswers,
   } = parsed.data;
@@ -150,6 +152,9 @@ export async function POST(request: NextRequest) {
         specRole,
         rioScore: raiderioData.rioScore,
         lastSyncedAt: new Date(),
+        // Na které specy, vybírá hráč až v profilu - tady ještě nemusí vědět,
+        // co mu Raider.io o postavě vrátí.
+        canSwitchSpec: canSwitchSpec ?? false,
       },
     });
 

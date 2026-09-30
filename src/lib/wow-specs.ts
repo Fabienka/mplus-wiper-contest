@@ -35,6 +35,11 @@ export interface WowSpec {
  *   takže se do tabulky nedají zanést. Shuffle je tedy nezná a "chybí
  *   bloodlust" hlásí i tam, kde by je tým pokryl drumy - admin to musí
  *   posoudit sám.
+ *
+ * POŘADÍ: specy jedné classy jdou ve stejném pořadí jako ve hře, ne podle
+ * abecedy. Raider.io podle něj čísluje RIO skóre po specech (spec_0 až
+ * spec_3, viz fetchSpecScores) - nový spec proto patří na konec své classy.
+ * Hlídá to scripts/check-wow-specs.ts.
  */
 export const WOW_SPECS: WowSpec[] = [
   // Death Knight - battle rez: Raise Ally
@@ -142,6 +147,20 @@ export function specsForClass(className: string | null | undefined): WowSpec[] {
   if (!className) return [];
   const normalized = className.trim().toLowerCase();
   return WOW_SPECS.filter((spec) => spec.className.toLowerCase() === normalized);
+}
+
+/**
+ * Specy, na které může hráč switchnout - ostatní specy jeho classy. Hlavní
+ * spec se nenabízí; když ho neznáme, nabídnou se všechny.
+ */
+export function switchableSpecs(
+  className: string | null | undefined,
+  mainSpec: string | null | undefined
+): WowSpec[] {
+  const main = mainSpec?.trim().toLowerCase();
+  return specsForClass(className).filter(
+    (spec) => spec.specName.toLowerCase() !== main
+  );
 }
 
 export const WOW_CLASSES = [...new Set(WOW_SPECS.map((spec) => spec.className))].sort();

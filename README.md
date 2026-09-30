@@ -33,6 +33,9 @@ Před nasazením si projdi [Nasazení na server](#nasazení-na-server), hlavně
   s oprávněními v `src/lib/permissions.ts`, správa rolí na `/admin/users`
 - Registrace do sezóny přes Raider.io profil, schvalování adminem, potvrzení
   zápisného moderátorem
+- **Switch specu** - hráč v registraci zaškrtne, že je ochotný přepnout spec,
+  v `/profile` vybere na které a RIO po specech se načte z Raider.io; admin
+  to vidí na detailu hráče i přihlášky
 - Správa sezóny a dungeonů včetně stažení časových limitů z Raider.io
 - **Shuffle** (`src/lib/shuffle.ts`) - tři varianty rozdělení s vysvětlením
   porušených pravidel, ruční úprava týmů a smazání rozdělení
@@ -188,6 +191,7 @@ npm run check:availability    # překryvy dostupností
 npm run check:calendar        # měsíční mřížka
 npm run check:datetime-input  # čtení dne a času z výběru termínu
 npm run check:class-colors    # barvy tříd a jejich čitelnost
+npm run check:wow-specs       # tabulka speců a RIO po specech z Raider.io
 npm run check:permissions     # matice oprávnění
 npm run check:stats           # statistiky na úvodní stránce
 npm run check:leaderboard     # žebříček týmů
