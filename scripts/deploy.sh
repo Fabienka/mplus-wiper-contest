@@ -50,6 +50,6 @@ echo "🏗️ Buildim aplikaci (Next.js)..."
 npm run build
 
 echo "▶️ Startuji PM2 proces..."
-pm2 start npm --name "$PM2_APP_NAME" --update-env -- start
+pm2 start "$PM2_APP_NAME" --update-env
 
 echo "✅ Hotovo! Aplikace bezi v nove verzi."
