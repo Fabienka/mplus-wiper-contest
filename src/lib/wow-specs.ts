@@ -45,6 +45,8 @@ export const WOW_SPECS: WowSpec[] = [
   // Demon Hunter - bez brezu i lustu
   { className: "Demon Hunter", specName: "Havoc", role: "DPS", range: "MELEE", battleRez: false, bloodlust: false },
   { className: "Demon Hunter", specName: "Vengeance", role: "TANK", range: "MELEE", battleRez: false, bloodlust: false },
+  // Devourer (od Midnight) je ranged caster
+  { className: "Demon Hunter", specName: "Devourer", role: "DPS", range: "RANGED", battleRez: false, bloodlust: false },
 
   // Druid - battle rez: Rebirth (všechny specy)
   { className: "Druid", specName: "Balance", role: "DPS", range: "RANGED", battleRez: true, bloodlust: false },
