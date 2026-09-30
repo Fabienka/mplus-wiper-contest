@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/admin";
 import { can } from "@/lib/permissions";
 import { switchableSpecs } from "@/lib/wow-specs";
+import { altCharacterFromAnswers } from "@/lib/registration-answers";
 import {
   REGISTRATION_STATUS_BADGES,
   REGISTRATION_STATUS_LABELS,
@@ -181,6 +182,8 @@ export default async function ProfilePage({
                     </dd>
                     <dt>Přihlášeno</dt>
                     <dd>{formatDateTime(registration.createdAt)}</dd>
+                    <dt>Alt postava tank/heal</dt>
+                    <dd>{altCharacterFromAnswers(registration.formAnswers) ?? "-"}</dd>
                     {registration.rejectionReason && (
                       <>
                         <dt>Důvod zamítnutí</dt>

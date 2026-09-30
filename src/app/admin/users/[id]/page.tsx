@@ -13,6 +13,7 @@ import {
   formatTimeLimit,
 } from "@/lib/labels";
 import { isAwaitingVerification } from "@/lib/manual-result";
+import { altCharacterFromAnswers } from "@/lib/registration-answers";
 import { CharacterName } from "../../../character-name";
 import { SwitchSpecs } from "../../../switch-specs";
 
@@ -113,6 +114,8 @@ export default async function UserDetailPage({
   );
 
   const registrations = character?.registrations ?? [];
+  // Alt je odpověď z přihlášky, ne údaj postavy - platí ta z poslední sezóny.
+  const altCharacter = altCharacterFromAnswers(registrations[0]?.formAnswers);
   const paidCount = registrations.filter((r) => r.entryFeePaidAt).length;
 
   return (
@@ -194,6 +197,8 @@ export default async function UserDetailPage({
                 specs={character.switchSpecs}
               />
             </dd>
+            <dt>Alt postava tank/heal</dt>
+            <dd>{altCharacter ?? "-"}</dd>
             <dt>RIO skóre</dt>
             <dd>
               {character.rioScore == null ? "-" : Math.round(character.rioScore)}

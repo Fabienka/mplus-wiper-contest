@@ -20,6 +20,7 @@ import {
 import { CharacterName } from "../../../character-name";
 import { SwitchSpecs } from "../../../switch-specs";
 import { classColor } from "@/lib/wow-specs";
+import { formAnswerLabel } from "@/lib/registration-answers";
 
 export const dynamic = "force-dynamic";
 
@@ -144,7 +145,7 @@ export default async function RegistrationDetailPage({
           <dl className="detail">
             {Object.entries(answers).map(([key, value]) => (
               <div key={key} style={{ display: "contents" }}>
-                <dt>{key}</dt>
+                <dt>{formAnswerLabel(key)}</dt>
                 <dd>{formatAnswer(value)}</dd>
               </div>
             ))}
