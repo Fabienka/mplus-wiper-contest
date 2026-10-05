@@ -90,7 +90,34 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.id = user.id;
+        return token;
       }
+
+      // Cookie si id a roli pamatuje z chvíle přihlášení. Bez kontroly proti
+      // databázi by změna role platila až po novém přihlášení (odebraný admin
+      // by adminem zůstal do vypršení cookie) a cookie účtu, který v databázi
+      // není, by prošla až k zápisu a spadla na cizím klíči (reviewedById).
+      let current;
+      try {
+        current = token.id
+          ? await prisma.user.findUnique({
+              where: { id: token.id },
+              select: { role: true },
+            })
+          : null;
+      } catch (err) {
+        // Výpadek databáze nesmí všechny odhlásit - ověří se při dalším požadavku.
+        console.error("[auth] ověření přihlášení proti databázi selhalo:", err);
+        return token;
+      }
+
+      if (!current) {
+        // NextAuth výjimku zaloguje a session zahodí - uživatel se přihlásí
+        // znovu a dostane cookie s platným id.
+        throw new Error(`Účet ${token.id} z přihlašovací cookie v databázi není.`);
+      }
+
+      token.role = current.role;
       return token;
     },
     async session({ session, token }) {
