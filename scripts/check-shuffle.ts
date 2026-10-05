@@ -8,8 +8,13 @@
  * týmu, že se žádný hráč neobjeví dvakrát a že priorita pravidel drží.
  */
 
-import { runShuffle, type ShufflePlayer, type ShuffleResult } from "../src/lib/shuffle";
-import { WOW_SPECS } from "../src/lib/wow-specs";
+import {
+  planRoleSwitches,
+  runShuffle,
+  type ShufflePlayer,
+  type ShuffleResult,
+} from "../src/lib/shuffle";
+import { WOW_SPECS, findSpec } from "../src/lib/wow-specs";
 
 let failures = 0;
 let checks = 0;
@@ -96,12 +101,29 @@ function checkStructure(result: ShuffleResult, players: ShufflePlayer[], label: 
         `${label}: tým ${team.teamIndex} má právě 3 DPS`
       );
 
-      // Role v týmu musí sedět s rolí, se kterou se hráč přihlásil.
+      // Role v týmu musí sedět s rolí, se kterou se hráč přihlásil - nebo
+      // switchnul na spec, který sám nabídl.
       for (const member of team.members) {
         const source = players.find((p) => p.characterId === member.characterId)!;
+
+        if (!member.switchedFrom) {
+          check(
+            source.specRole === member.roleInTeam,
+            `${label}: ${member.characterName} hraje roli, se kterou se přihlásil`
+          );
+          continue;
+        }
+
         check(
-          source.specRole === member.roleInTeam,
-          `${label}: ${member.characterName} hraje roli, se kterou se přihlásil`
+          source.specRole === member.switchedFrom.specRole &&
+            source.wowSpec === member.switchedFrom.wowSpec,
+          `${label}: ${member.characterName} má u switche správnou původní roli a spec`
+        );
+        check(
+          (source.switchSpecs ?? []).some((option) => option.specName === member.wowSpec) &&
+            findSpec(member.className, member.wowSpec)?.role === member.roleInTeam,
+          `${label}: ${member.characterName} switchnul na spec, který nabídl, a hraje jeho roli`,
+          `${member.wowSpec} jako ${member.roleInTeam}`
         );
       }
 
@@ -356,6 +378,174 @@ section("8. Lokální zlepšování opravdu pomáhá");
   );
   const violations = full.variants[0].teams.reduce((n, t) => n + t.violations.length, 0);
   console.log(`  plný běh: score ${full.variants[0].score}, ${violations} porušení pravidel`);
+}
+
+// ---------- 9. Switch specu ----------
+
+/** Hráč s pevně daným specem - pro scénáře, kde záleží na konkrétní class. */
+function player(
+  id: string,
+  className: string,
+  wowSpec: string,
+  rioScore: number,
+  switchSpecs: [string, number | null][] = []
+): ShufflePlayer {
+  const spec = findSpec(className, wowSpec)!;
+  return {
+    characterId: id,
+    characterName: id,
+    className,
+    wowSpec,
+    specRole: spec.role,
+    rioScore,
+    switchSpecs: switchSpecs.map(([specName, rio]) => ({
+      specName,
+      specRole: findSpec(className, specName)?.role ?? "DPS",
+      rioScore: rio,
+    })),
+  };
+}
+
+section("9. Switch specu doplní chybějící role");
+{
+  // 25 hráčů, ale jen 3 tanci - bez switche 3 týmy a 10 náhradníků.
+  const base = buildPool({ tanks: 3, healers: 5, dps: 17 }, 21);
+  const withoutSwitch = runShuffle(base, { seed: 1 });
+  check(withoutSwitch.teamCount === 3, "bez switche 3 týmy", `vyšlo ${withoutSwitch.teamCount}`);
+  check(withoutSwitch.switches.length === 0, "bez nabídnutého switche nikdo nepřepíná");
+
+  // Tři DPS z poolu nahradí tři, kteří nabídli tanka - hráčů je pořád 25.
+  const players = [
+    ...base.filter((p) => !["DPS-0", "DPS-1", "DPS-2"].includes(p.characterId)),
+    player("Feral-switch", "Druid", "Feral", 2500, [["Guardian", 2100]]),
+    player("Fury-switch", "Warrior", "Fury", 2400, [["Protection", 1900]]),
+    player("Ret-switch", "Paladin", "Retribution", 2600, [["Protection", 1200]]),
+  ];
+
+  const result = runShuffle(players, { seed: 1 });
+  check(result.teamCount === 5, "se switchem 5 týmů", `vyšlo ${result.teamCount}`);
+  check(result.switches.length === 2, "switchnou jen 2 hráči, kolik chybí", `${result.switches.length}`);
+  check(
+    result.switches.map((s) => s.characterId).sort().join(",") === "Feral-switch,Fury-switch",
+    "switchnou ti s nejvyšším RIO v cílovém specu",
+    result.switches.map((s) => s.characterId).join(", ")
+  );
+  check(
+    result.switches.every((s) => s.toRole === "TANK" && s.from.specRole === "DPS"),
+    "switch z DPS na tanka"
+  );
+  check(
+    result.warnings.some((w) => w.includes("Switch specu")),
+    "varování vypisuje switche",
+    result.warnings.join(" | ")
+  );
+  check(
+    result.variants.every((variant) => variant.substitutes.length === 0),
+    "nikdo nezbyde na lavičce"
+  );
+  checkStructure(result, players, "switch na tanka");
+
+  const switchedMembers = result.variants[0].teams
+    .flatMap((team) => team.members)
+    .filter((member) => member.switchedFrom);
+  check(
+    switchedMembers.length === 2 &&
+      switchedMembers.every((m) => m.roleInTeam === "TANK" && m.switchedFrom?.specRole === "DPS"),
+    "switchnutí hráči jsou v týmech jako tanci"
+  );
+  const feral = switchedMembers.find((m) => m.characterId === "Feral-switch");
+  check(
+    feral?.wowSpec === "Guardian" &&
+      feral.rioScore === 2100 &&
+      feral.switchedFrom?.wowSpec === "Feral" &&
+      feral.switchedFrom.rioScore === 2500,
+    "switchnutý hráč má spec a RIO ze switche, původní zůstává",
+    JSON.stringify(feral)
+  );
+}
+
+section("10. Switch jen když je potřeba");
+{
+  const players = buildPool({ tanks: 6, healers: 6, dps: 21 }, 22);
+  players[20] = player("DPS-switch", "Druid", "Balance", 2000, [["Guardian", 2500]]);
+  const plan = planRoleSwitches(players);
+  check(plan.switches.length === 0, "když role nechybí, nikdo nepřepíná");
+  check(plan.teamCount === 6, "počet týmů se nemění", `${plan.teamCount}`);
+}
+
+section("11. Chybí tank i healer - hráč s víc specy se přesune");
+{
+  // 20 hráčů = 4 týmy, ale jen 3 tanci a 3 healeři. Druid umí tanka i heal
+  // (tanka s vyšším RIO), warrior jen tanka. Druid jde první na tanka, warrior
+  // ho pak musí přesunout na heal - jinak by healer chyběl.
+  const players = buildPool({ tanks: 3, healers: 3, dps: 12 }, 23);
+  players.push(
+    player("Druid-flex", "Druid", "Feral", 2500, [["Guardian", 2300], ["Restoration", 2000]]),
+    player("Warrior-tank", "Warrior", "Arms", 2200, [["Protection", 1800]])
+  );
+
+  const plan = planRoleSwitches(players);
+  check(plan.teamCount === 4, "4 týmy", `${plan.teamCount}`);
+  const byId = new Map(plan.switches.map((s) => [s.characterId, s]));
+  check(byId.get("Druid-flex")?.toSpec === "Restoration", "druid jde na heal", byId.get("Druid-flex")?.toSpec);
+  check(byId.get("Warrior-tank")?.toSpec === "Protection", "warrior jde na tanka", byId.get("Warrior-tank")?.toSpec);
+
+  const result = runShuffle(players, { seed: 4 });
+  checkStructure(result, players, "tank i healer");
+}
+
+section("12. Switch nesmí vyrobit díru v jiné roli");
+{
+  // 10 hráčů = 2 týmy, ale jen 1 tank. Healer by tanka uměl s vyšším RIO, jenže
+  // healeři jsou přesně 2 - jeho switch by díru jen přesunul. Switchne DPS.
+  const players: ShufflePlayer[] = [
+    player("Tank", "Warrior", "Protection", 2000),
+    player("Healer-flex", "Druid", "Restoration", 2000, [["Guardian", 2800]]),
+    player("Healer", "Priest", "Holy", 2000),
+    ...Array.from({ length: 6 }, (_, i) => player(`DPS-${i}`, "Mage", "Fire", 2000 + i)),
+    player("DPS-flex", "Paladin", "Retribution", 2000, [["Protection", 1500]]),
+  ];
+
+  const plan = planRoleSwitches(players);
+  check(plan.teamCount === 2, "2 týmy", `${plan.teamCount}`);
+  check(
+    plan.switches.length === 1 && plan.switches[0].characterId === "DPS-flex",
+    "switchne DPS, ne healer",
+    plan.switches.map((s) => s.characterId).join(", ")
+  );
+}
+
+section("13. Když na plný počet nestačí, aspoň víc týmů než bez switche");
+{
+  // 25 hráčů, 2 tanci a jen jeden DPS umí tanka - 3 týmy místo 2.
+  const players = buildPool({ tanks: 2, healers: 5, dps: 17 }, 24);
+  players.push(player("Bear", "Druid", "Feral", 2000, [["Guardian", 1700]]));
+
+  const plan = planRoleSwitches(players);
+  check(plan.teamCountBefore === 2, "bez switche 2 týmy", `${plan.teamCountBefore}`);
+  check(plan.teamCount === 3, "se switchem 3 týmy", `${plan.teamCount}`);
+
+  const result = runShuffle(players, { seed: 9 });
+  check(
+    result.warnings.some((w) => w.includes("i po switchích specu")),
+    "varování řekne, že role chybí i po switchi",
+    result.warnings.join(" | ")
+  );
+  checkStructure(result, players, "částečný switch");
+}
+
+section("14. Neplatný switch se ignoruje");
+{
+  const players = buildPool({ tanks: 1, healers: 2, dps: 6 }, 25);
+  players.push(
+    // Mage žádného tanka nemá a Devourer je pořád DPS - ani jedno nepomůže.
+    player("Mage-fake", "Mage", "Fire", 2000, [["Guardian", 3000]]),
+    player("DH-same-role", "Demon Hunter", "Havoc", 2000, [["Devourer", 2500]])
+  );
+
+  const plan = planRoleSwitches(players);
+  check(plan.switches.length === 0, "nikdo nepřepíná", plan.switches.map((s) => s.characterId).join(", "));
+  check(plan.teamCount === 1, "zůstane 1 tým", `${plan.teamCount}`);
 }
 
 // ---------- Souhrn ----------

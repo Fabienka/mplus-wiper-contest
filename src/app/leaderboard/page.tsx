@@ -98,7 +98,7 @@ export default async function LeaderboardPage() {
       team.members.map((m) => ({
         characterName: m.character.characterName,
         className: m.character.class,
-        wowSpec: m.character.wowSpec,
+        wowSpec: m.wowSpec ?? m.character.wowSpec,
         roleInTeam: m.roleInTeam,
       })),
     ])

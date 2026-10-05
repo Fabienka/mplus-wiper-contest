@@ -33,6 +33,8 @@ export interface RosterMember {
   id: string;
   characterId: string;
   roleInTeam: SpecRole;
+  /** Spec ze switche, když hráč kvůli týmu přepnul. Jinak hlavní spec postavy. */
+  wowSpec: string | null;
   character: {
     characterName: string;
     class: string | null;
@@ -84,11 +86,14 @@ export function RosterCard({
                 )}
               </td>
               <td className="muted" data-label="Class / spec">
-                {member.character.wowSpec
-                  ? `${member.character.class} - ${member.character.wowSpec}`
+                {(member.wowSpec ?? member.character.wowSpec)
+                  ? `${member.character.class} - ${member.wowSpec ?? member.character.wowSpec}`
                   : member.character.class ?? "-"}
               </td>
-              <td data-label="Role">{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
+              <td data-label="Role">
+                {SPEC_ROLE_LABELS[member.roleInTeam]}
+                {member.wowSpec && <span className="meta"> (switch)</span>}
+              </td>
               <td data-label="Zadaných časů">
                 {availabilities.filter((a) => a.characterId === member.characterId).length}
               </td>

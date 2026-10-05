@@ -6,10 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { SPEC_ROLE_LABELS, formatDateTime } from "@/lib/labels";
 import { LAST_VERIFIED } from "@/lib/wow-specs";
-import type {
-  ShuffleMember,
-  StoredRuleViolations,
-  StoredTeamAssignments,
+import {
+  planRoleSwitches,
+  toShufflePlayer,
+  type ShuffleMember,
+  type StoredRuleViolations,
+  type StoredTeamAssignments,
 } from "@/lib/shuffle";
 import { applyVariant, runShuffleForSeason } from "./actions";
 import { ActionNotice } from "../../action-notice";
@@ -22,14 +24,27 @@ export const metadata = {
 };
 
 function MemberRow({ member }: { member: ShuffleMember }) {
+  const switched = member.switchedFrom;
+
   return (
     <tr>
-      <td>{SPEC_ROLE_LABELS[member.roleInTeam]}</td>
+      <td>
+        {SPEC_ROLE_LABELS[member.roleInTeam]}
+        {switched && (
+          <div className="meta">switch z {SPEC_ROLE_LABELS[switched.specRole]}</div>
+        )}
+      </td>
       <td>
         <CharacterName name={member.characterName} wowClass={member.className} />
       </td>
       <td className="muted">
         {member.wowSpec ? `${member.className} - ${member.wowSpec}` : member.className ?? "-"}
+        {switched && (
+          <div className="meta">
+            hlavní spec {switched.wowSpec ?? "neznámý"}, RIO{" "}
+            {Math.round(switched.rioScore)}
+          </div>
+        )}
       </td>
       <td>{member.dpsBucket ?? "-"}</td>
       <td>{Math.round(member.rioScore)}</td>
@@ -55,7 +70,7 @@ export default async function ShufflePage({
   const [approved, latestRun, existingMemberships] = await Promise.all([
     prisma.seasonRegistration.findMany({
       where: { seasonId: season.id, status: "APPROVED" },
-      include: { character: { select: { specRole: true } } },
+      include: { character: { include: { switchSpecs: true } } },
     }),
     prisma.shuffleRun.findFirst({
       where: { seasonId: season.id },
@@ -71,12 +86,10 @@ export default async function ShufflePage({
   const tanks = approved.filter((r) => r.character.specRole === "TANK").length;
   const healers = approved.filter((r) => r.character.specRole === "HEALER").length;
   const dps = approved.filter((r) => r.character.specRole === "DPS").length;
-  const possibleTeams = Math.min(
-    Math.floor(approved.length / 5),
-    tanks,
-    healers,
-    Math.floor(dps / 3)
-  );
+  // Stejný výpočet jako v shuffle, i se switchi - jinak by tu vyšlo méně
+  // týmů, než pak shuffle opravdu navrhne.
+  const plan = planRoleSwitches(approved.map((r) => toShufflePlayer(r.character)));
+  const possibleTeams = plan.teamCount;
 
   return (
     <>
@@ -106,15 +119,26 @@ export default async function ShufflePage({
         </div>
         <div className="stat">
           <div className="stat-value">{possibleTeams}</div>
-          <div className="stat-label">Vyjde týmů</div>
+          <div className="stat-label">
+            Vyjde týmů
+            {plan.switches.length > 0 && ` (bez switche ${plan.teamCountBefore})`}
+          </div>
         </div>
+        {plan.switches.length > 0 && (
+          <div className="stat">
+            <div className="stat-value">{plan.switches.length}</div>
+            <div className="stat-label">Switchne roli</div>
+          </div>
+        )}
       </div>
 
       <div className="card">
         <h2>Spustit shuffle</h2>
         <p className="card-lead">
           Rozdělí schválené hráče do týmů po 5 a navrhne 3 varianty. Nic se tím
-          nemění - týmy vzniknou až potvrzením vybrané varianty. Tabulka speců
+          nemění - týmy vzniknou až potvrzením vybrané varianty. Když některá
+          role chybí, doplní ji hráči, kteří v profilu nabídli switch specu
+          (přednost má vyšší RIO ve switch specu). Tabulka speců
           (ranged/melee, battle rez, bloodlust) byla naposledy ověřená{" "}
           {LAST_VERIFIED}.
         </p>

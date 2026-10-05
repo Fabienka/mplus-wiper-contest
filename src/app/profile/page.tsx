@@ -219,7 +219,15 @@ export default async function ProfilePage({
                     <dt>Tým</dt>
                     <dd>{membership.team.name}</dd>
                     <dt>Role v týmu</dt>
-                    <dd>{SPEC_ROLE_LABELS[membership.roleInTeam]}</dd>
+                    <dd>
+                      {SPEC_ROLE_LABELS[membership.roleInTeam]}
+                      {membership.wowSpec && (
+                        <span className="meta">
+                          {" "}
+                          - switch na {membership.wowSpec}, jak jsi nabídl/a
+                        </span>
+                      )}
+                    </dd>
                   </dl>
                   <Link className="btn btn-accent" href="/team">
                     Kalendář a termíny týmu

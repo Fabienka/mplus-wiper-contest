@@ -276,6 +276,9 @@ model TeamMembership {
   characterId String
   character   Character         @relation(fields: [characterId], references: [id])
   roleInTeam  SpecRole
+  /// Spec, se kterým hráč v týmu hraje, když kvůli týmu switchnul (viz
+  /// CharacterSwitchSpec). Prázdné = hlavní spec postavy.
+  wowSpec     String?
   status      MembershipStatus  @default(ACTIVE)
   joinedAt    DateTime          @default(now())
   removedAt   DateTime?

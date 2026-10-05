@@ -9,6 +9,7 @@ do týmů, domlouvání termínů, evidence odehraných běhů a jejich bodován
    a moderátor potvrdí zaplacené **zápisné** (platí se ve hře).
 2. Po uzavření registrace spustí admin **shuffle** - algoritmus rozdělí hráče do
    týmů po pěti (1 tank, 1 healer, 3 DPS) a nabídne tři varianty na výběr.
+   Chybějící tanky nebo healery doplní hráči, kteří nabídli **switch specu**.
 3. Členové týmu si zadají, **kdy mají čas**; z překryvů se navrhne termín, který
    moderátor schválí.
 4. V termínu má tým zhruba dvě hodiny na odehrání klíčů. Výsledek nahraje
@@ -35,7 +36,8 @@ Před nasazením si projdi [Nasazení na server](#nasazení-na-server), hlavně
   zápisného moderátorem
 - **Switch specu** - hráč v registraci zaškrtne, že je ochotný přepnout spec,
   v `/profile` vybere na které a RIO po specech se načte z Raider.io; admin
-  to vidí na detailu hráče i přihlášky
+  to vidí na detailu hráče i přihlášky a shuffle podle toho doplní chybějící
+  role
 - Správa sezóny a dungeonů včetně stažení časových limitů z Raider.io
 - **Shuffle** (`src/lib/shuffle.ts`) - tři varianty rozdělení s vysvětlením
   porušených pravidel, ruční úprava týmů a smazání rozdělení
@@ -229,6 +231,7 @@ npm run dev:test              # appka proti testovací DB
 npm run prisma:migrate:test   # migrace testovací DB
 npm run prisma:studio:test    # prohlížení testovacích dat
 npm run seed:players:test     # vygeneruje 33 schválených hráčů na vyzkoušení shuffle
+                              # (asi třetina nabízí switch; SEED_TANKS=3 ukáže, jak doplní tanky)
 npm run db:test:reset         # smaže a znovu založí testovací DB
 ```
 
@@ -584,6 +587,13 @@ na to je potřeba reálné zařízení nebo Playwright s WebKitem.
   Dvě odchylky od původního zadání jsou okomentované přímo v kódu: počet týmů omezuje i
   nejvzácnější role (ne jen `floor(hráčů/5)`) a váhy pravidel se odvozují z počtu týmů,
   aby se vyšší pravidlo nikdy neobětovalo kvůli součtu porušení nižšího.
+- **Switch specu v shuffle** (`planRoleSwitches`): než se začnou skládat týmy, doplní role,
+  které chybí do `floor(hráčů/5)` týmů, hráči z role s nadbytkem, kteří v profilu nabídli spec
+  chybějící role. Přednost má vyšší RIO ve switch specu, switchne jen tolik hráčů, kolik je
+  potřeba, a žádná role kvůli tomu nespadne pod potřebu. Když na plný počet týmů nestačí,
+  zkusí o tým méně. Switchnutý hráč jde do týmu se switch specem (počítá se podle něj
+  melee/ranged, brez i lust) a `TeamMembership.wowSpec` si ho pamatuje; prázdné pole znamená
+  hlavní spec postavy. Ruční změna role na `/admin/teams` nastaví switch spec stejně.
 - **Ruční úprava týmů** (`/admin/teams`) hlídá stejná pravidla jako shuffle - obojí volá
   `describeSharedViolations` v `src/lib/shuffle.ts`, aby se hodnocení nerozešlo. Rozbité složení
   týmu se schválně nezakazuje (admin může potřebovat mezikrok), jen se označí. Nekontroluje se

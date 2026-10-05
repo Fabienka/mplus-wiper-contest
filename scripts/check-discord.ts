@@ -121,7 +121,10 @@ console.log("5. Rozdělení do týmů");
           { characterName: "Nebojsa", roleInTeam: "DPS" },
         ],
       },
-      { name: "Tým 2", members: [{ characterName: "Druhy", roleInTeam: "TANK" }] },
+      {
+        name: "Tým 2",
+        members: [{ characterName: "Druhy", roleInTeam: "TANK", switchSpec: "Guardian" }],
+      },
     ],
     substitutes: [{ characterName: "Nahradnik", roleInTeam: "DPS" }],
   };
@@ -133,6 +136,16 @@ console.log("5. Rozdělení do týmů");
   check(
     embed.fields?.[0].value.startsWith("Tank: Tankik") ?? false,
     "role u jména",
+    embed.fields?.[0].value
+  );
+  check(
+    embed.fields?.[1].value === "Tank: Druhy (switch na Guardian)",
+    "switchnutý hráč má u jména spec, na který switchne",
+    embed.fields?.[1].value
+  );
+  check(
+    !(embed.fields?.[0].value.includes("switch") ?? true),
+    "bez switche žádná poznámka",
     embed.fields?.[0].value
   );
   check(embed.description?.includes("**2** týmy") ?? false, "počet týmů se skloňuje", embed.description);

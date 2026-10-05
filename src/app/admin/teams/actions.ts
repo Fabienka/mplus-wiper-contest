@@ -15,6 +15,7 @@ import { manualResultOutcome, parseManualResultForm } from "@/lib/manual-result-
 import { OVER_TIME_LIMIT_REASON } from "@/lib/time-budget";
 import { readDateTimeField } from "@/lib/manual-result-form";
 import { timeRangeError } from "@/lib/datetime-input";
+import { bestSwitchSpec } from "@/lib/shuffle";
 
 function revalidateTeams() {
   revalidatePath("/admin");
@@ -57,6 +58,9 @@ function parseDestination(raw: string, teamIds: Set<string>): Destination | null
  * Uloží ruční úpravy - přesuny mezi týmy, náhradníky a vyřazenými, změny role
  * v týmu a přejmenování týmů.
  *
+ * Při změně role se hráči nastaví spec, který na tu roli nabídl ke switchi
+ * (s nejvyšším RIO). Návrat do hlavní role ho vrátí na hlavní spec.
+ *
  * Rozbité složení týmu (jiné než 1 tank + 1 healer + 3 DPS) se schválně
  * nezakazuje - admin může potřebovat mezikrok. Stránka takový tým označí.
  *
@@ -70,7 +74,17 @@ export async function updateTeams(formData: FormData) {
     prisma.team.findMany({ where: { seasonId } }),
     prisma.teamMembership.findMany({
       where: { seasonId },
-      include: { character: { select: { characterName: true } } },
+      include: {
+        character: {
+          select: {
+            characterName: true,
+            class: true,
+            specRole: true,
+            canSwitchSpec: true,
+            switchSpecs: true,
+          },
+        },
+      },
     }),
   ]);
 
@@ -115,6 +129,19 @@ export async function updateTeams(formData: FormData) {
 
       if (unchanged) continue;
 
+      const { character } = membership;
+      const wowSpec =
+        roleInTeam === membership.roleInTeam
+          ? membership.wowSpec
+          : bestSwitchSpec(
+              {
+                className: character.class,
+                specRole: character.specRole,
+                switchSpecs: character.canSwitchSpec ? character.switchSpecs : [],
+              },
+              roleInTeam
+            )?.specName ?? null;
+
       // removedAt drží jen vyřazený hráč - při návratu do hry se zase maže.
       const removedAt =
         destination.status === "REMOVED"
@@ -127,6 +154,7 @@ export async function updateTeams(formData: FormData) {
           teamId: destination.teamId,
           status: destination.status,
           roleInTeam,
+          wowSpec,
           removedAt,
         },
       });
@@ -141,12 +169,14 @@ export async function updateTeams(formData: FormData) {
           team: membership.teamId ? teamNames.get(membership.teamId) : null,
           status: membership.status,
           roleInTeam: membership.roleInTeam,
+          wowSpec: membership.wowSpec,
         },
         newValue: {
           characterName: membership.character.characterName,
           team: destination.teamId ? teamNames.get(destination.teamId) : null,
           status: destination.status,
           roleInTeam,
+          wowSpec,
         },
       });
     }

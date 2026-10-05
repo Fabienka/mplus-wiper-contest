@@ -1,5 +1,5 @@
 import type { SpecRole } from "@prisma/client";
-import { plural } from "./labels";
+import { SPEC_ROLE_LABELS, plural } from "./labels";
 import { findSpec, type WowSpec } from "./wow-specs";
 
 /**
@@ -9,11 +9,28 @@ import { findSpec, type WowSpec } from "./wow-specs";
  * každého zlepší lokálním prohledáváním, ohodnotí podle prioritizovaných
  * pravidel a vrátí 3 nejlepší vzájemně odlišné varianty adminovi na výběr.
  *
+ * Když některá role chybí, doplní ji předem hráči, kteří nabídli switch specu
+ * (viz planRoleSwitches) - jinak by jich víc skončilo mezi náhradníky.
+ *
  * Modul je čistá funkce bez závislosti na databázi, aby šel testovat samostatně
  * (viz scripts/check-shuffle.ts).
  */
 
 export type DpsBucket = "A" | "B" | "C";
+
+/** Spec, na který je hráč ochotný switchnout (CharacterSwitchSpec). */
+export interface SwitchSpecOption {
+  specName: string;
+  specRole: SpecRole;
+  rioScore: number | null;
+}
+
+/** Původní role a spec hráče, který jde do týmu switchnutý. */
+export interface SwitchedFrom {
+  specRole: SpecRole;
+  wowSpec: string | null;
+  rioScore: number;
+}
 
 export interface ShufflePlayer {
   characterId: string;
@@ -22,6 +39,9 @@ export interface ShufflePlayer {
   wowSpec: string | null;
   specRole: SpecRole;
   rioScore: number;
+  switchSpecs?: SwitchSpecOption[];
+  /** Vyplní planRoleSwitches - specRole, wowSpec a rioScore jsou pak ze switche. */
+  switchedFrom?: SwitchedFrom;
 }
 
 export interface ShuffleMember {
@@ -30,9 +50,23 @@ export interface ShuffleMember {
   /** Snapshot v době shuffle - postava se může později přejmenovat/přespecovat. */
   characterName: string;
   className: string | null;
+  /** U switchnutého hráče spec, na který switchne. */
   wowSpec: string | null;
   rioScore: number;
   dpsBucket: DpsBucket | null;
+  /** Hráč jde do týmu switchnutý. Návrhy z doby před switchem pole nemají. */
+  switchedFrom?: SwitchedFrom | null;
+}
+
+/** Jeden switch, kterým shuffle doplnil chybějící roli. */
+export interface RoleSwitch {
+  characterId: string;
+  characterName: string;
+  className: string | null;
+  from: SwitchedFrom;
+  toRole: SpecRole;
+  toSpec: string;
+  rioScore: number | null;
 }
 
 export interface ShuffleTeam {
@@ -77,6 +111,8 @@ export interface ShuffleResult {
   teamCount: number;
   variants: ShuffleVariant[];
   warnings: string[];
+  switches: RoleSwitch[];
+  /** Počty rolí už po switchích. */
   pool: {
     total: number;
     tanks: number;
@@ -552,6 +588,7 @@ function toMember(player: PoolPlayer, roleInTeam: SpecRole): ShuffleMember {
     wowSpec: player.wowSpec,
     rioScore: player.rioScore,
     dpsBucket: player.bucket,
+    switchedFrom: player.switchedFrom ?? null,
   };
 }
 
@@ -600,6 +637,250 @@ function toVariant(
   return { variantNumber, score, breakdown, teams, substitutes };
 }
 
+// ---------- Switch specu ----------
+
+/** Hráč pro shuffle z postavy, jak ji drží databáze. */
+export function toShufflePlayer(character: {
+  id: string;
+  characterName: string;
+  class: string | null;
+  wowSpec: string | null;
+  specRole: SpecRole;
+  rioScore: number | null;
+  canSwitchSpec: boolean;
+  switchSpecs: SwitchSpecOption[];
+}): ShufflePlayer {
+  return {
+    characterId: character.id,
+    characterName: character.characterName,
+    className: character.class,
+    wowSpec: character.wowSpec,
+    specRole: character.specRole,
+    // RIO se používá jen na rozdělení do košů; chybějící skóre spadne naspod.
+    rioScore: character.rioScore ?? 0,
+    switchSpecs: character.canSwitchSpec
+      ? character.switchSpecs.map(({ specName, specRole, rioScore }) => ({
+          specName,
+          specRole,
+          rioScore,
+        }))
+      : [],
+  };
+}
+
+const ROLES: SpecRole[] = ["TANK", "HEALER", "DPS"];
+
+function countRoles(players: { specRole: SpecRole }[]): Record<SpecRole, number> {
+  const counts: Record<SpecRole, number> = { TANK: 0, HEALER: 0, DPS: 0 };
+  for (const player of players) counts[player.specRole]++;
+  return counts;
+}
+
+/**
+ * Kolik kompletních týmů jde z hráčů složit. Zadání počítá jen floor(hráčů / 5),
+ * to ale nezohledňuje role - při 30 hráčích a 4 healerech by šesti týmům
+ * chyběli healeři. Počet proto omezuje i nejvzácnější role.
+ */
+function teamCountFor(players: { specRole: SpecRole }[]): number {
+  const counts = countRoles(players);
+  return Math.min(
+    Math.floor(players.length / 5),
+    counts.TANK,
+    counts.HEALER,
+    Math.floor(counts.DPS / 3)
+  );
+}
+
+/**
+ * Nejlepší spec, na který hráč umí switchnout do dané role - podle RIO v tom
+ * specu. Null, když na tu roli nic nenabídl nebo je to jeho hlavní role.
+ * Spec, který k classe nepatří nebo má jinou roli, se nepočítá.
+ */
+export function bestSwitchSpec(
+  player: {
+    className: string | null;
+    specRole: SpecRole;
+    switchSpecs?: SwitchSpecOption[];
+  },
+  role: SpecRole
+): SwitchSpecOption | null {
+  if (role === player.specRole) return null;
+
+  let best: SwitchSpecOption | null = null;
+
+  for (const option of player.switchSpecs ?? []) {
+    if (findSpec(player.className, option.specName)?.role !== role) continue;
+    if (!best || (option.rioScore ?? -1) > (best.rioScore ?? -1)) best = option;
+  }
+
+  return best;
+}
+
+interface SwitchEdge {
+  target: SpecRole;
+  option: SwitchSpecOption;
+}
+
+/**
+ * Hráči, kteří switchem pokryjí role chybějící do daného počtu týmů. Null,
+ * když je pokrýt nejde.
+ *
+ * Hráči se berou jen z rolí, kterých je nadbytek, a jen tolik, aby jejich
+ * role sama nespadla pod potřebu. Pořadí je podle RIO v cílovém specu - každý
+ * další se přidá, jen když se tím nevyřadí nikdo dřív vybraný. Dřív vybraného
+ * ale smí přesunout na jinou chybějící roli: když chybí tank i healer, druid
+ * s Guardianem i Restem uvolní tanka warriorovi, který umí jen Protection.
+ */
+function findSwitches(
+  players: ShufflePlayer[],
+  teamCount: number
+): Map<ShufflePlayer, SwitchEdge> | null {
+  const counts = countRoles(players);
+  const need: Record<SpecRole, number> = {
+    TANK: teamCount,
+    HEALER: teamCount,
+    DPS: 3 * teamCount,
+  };
+  const deficit = {} as Record<SpecRole, number>;
+  const surplus = {} as Record<SpecRole, number>;
+
+  for (const role of ROLES) {
+    deficit[role] = Math.max(0, need[role] - counts[role]);
+    surplus[role] = Math.max(0, counts[role] - need[role]);
+  }
+
+  const missing = ROLES.reduce((sum, role) => sum + deficit[role], 0);
+  const rio = (edge: SwitchEdge) => edge.option.rioScore ?? -1;
+
+  const candidates = players
+    .filter((player) => surplus[player.specRole] > 0)
+    .map((player) => ({
+      player,
+      edges: ROLES.filter((role) => deficit[role] > 0)
+        .map((target) => ({ target, option: bestSwitchSpec(player, target) }))
+        .filter((edge): edge is SwitchEdge => edge.option !== null)
+        .sort((a, b) => rio(b) - rio(a)),
+    }))
+    .filter((candidate) => candidate.edges.length > 0)
+    .sort(
+      (a, b) =>
+        rio(b.edges[0]) - rio(a.edges[0]) ||
+        a.player.characterId.localeCompare(b.player.characterId)
+    );
+
+  const edgesOf = new Map(candidates.map((c) => [c.player, c.edges]));
+  const assigned = new Map<ShufflePlayer, SwitchEdge>();
+  const slots: Record<SpecRole, ShufflePlayer[]> = { TANK: [], HEALER: [], DPS: [] };
+
+  // Párování s přesouváním (Kuhnův algoritmus): hráč obsadí volné místo
+  // v některé ze svých rolí, nebo ho uvolní tím, že obsazujícího přesune jinam.
+  const place = (player: ShufflePlayer, visited: Set<SpecRole>): boolean => {
+    for (const edge of edgesOf.get(player)!) {
+      if (visited.has(edge.target)) continue;
+      visited.add(edge.target);
+
+      const slot = slots[edge.target];
+
+      if (slot.length < deficit[edge.target]) {
+        slot.push(player);
+        assigned.set(player, edge);
+        return true;
+      }
+
+      for (let i = 0; i < slot.length; i++) {
+        if (place(slot[i], visited)) {
+          slot[i] = player;
+          assigned.set(player, edge);
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  const taken: Record<SpecRole, number> = { TANK: 0, HEALER: 0, DPS: 0 };
+
+  for (const { player } of candidates) {
+    if (assigned.size === missing) break;
+    if (taken[player.specRole] >= surplus[player.specRole]) continue;
+    if (place(player, new Set())) taken[player.specRole]++;
+  }
+
+  return assigned.size === missing ? assigned : null;
+}
+
+export interface RoleSwitchPlan {
+  /** Hráči po switchích - switchnutí mají roli, spec a RIO ze switche. */
+  players: ShufflePlayer[];
+  switches: RoleSwitch[];
+  teamCountBefore: number;
+  teamCount: number;
+}
+
+/**
+ * Doplní chybějící role switchem specu.
+ *
+ * Při třech tancích vzniknou jen tři týmy, i kdyby hráčů bylo na pět. Když ale
+ * některý DPS nabídl, že umí tanka, může chybějící místo zaplnit. Zkouší se
+ * nejvyšší počet týmů, jaký dovolí počet hráčů, a postupně nižší, dokud se
+ * chybějící role nedají pokrýt. Switchne se jen tolik hráčů, kolik je potřeba.
+ */
+export function planRoleSwitches(players: ShufflePlayer[]): RoleSwitchPlan {
+  const teamCountBefore = teamCountFor(players);
+  const byTotal = Math.floor(players.length / 5);
+
+  for (let teamCount = byTotal; teamCount > teamCountBefore; teamCount--) {
+    const chosen = findSwitches(players, teamCount);
+    if (!chosen) continue;
+
+    const switches: RoleSwitch[] = [];
+
+    const switched = players.map((player): ShufflePlayer => {
+      const edge = chosen.get(player);
+      if (!edge) return player;
+
+      const from: SwitchedFrom = {
+        specRole: player.specRole,
+        wowSpec: player.wowSpec,
+        rioScore: player.rioScore,
+      };
+
+      switches.push({
+        characterId: player.characterId,
+        characterName: player.characterName,
+        className: player.className,
+        from,
+        toRole: edge.target,
+        toSpec: edge.option.specName,
+        rioScore: edge.option.rioScore,
+      });
+
+      return {
+        ...player,
+        specRole: edge.target,
+        wowSpec: edge.option.specName,
+        // Do koše DPS patří podle RIO ve specu, který bude hrát.
+        rioScore: edge.option.rioScore ?? player.rioScore,
+        switchedFrom: from,
+      };
+    });
+
+    return { players: switched, switches, teamCountBefore, teamCount };
+  }
+
+  return { players, switches: [], teamCountBefore, teamCount: teamCountBefore };
+}
+
+/** "Feral (DPS) → Guardian (Tank), RIO 2122" - pro varování a výpisy. */
+export function describeSwitch(change: RoleSwitch): string {
+  const from = change.from.wowSpec
+    ? `${change.from.wowSpec} (${SPEC_ROLE_LABELS[change.from.specRole]})`
+    : SPEC_ROLE_LABELS[change.from.specRole];
+  const rio = change.rioScore === null ? "RIO nenačteno" : `RIO ${Math.round(change.rioScore)}`;
+  return `${change.characterName}: ${from} → ${change.toSpec} (${SPEC_ROLE_LABELS[change.toRole]}), ${rio}`;
+}
+
 // ---------- Hlavní vstupní bod ----------
 
 export interface ShuffleOptions {
@@ -623,7 +904,9 @@ export function runShuffle(
   const rng = createRng(seed);
   const warnings: string[] = [];
 
-  const pool: PoolPlayer[] = players.map((player) => ({
+  const plan = planRoleSwitches(players);
+
+  const pool: PoolPlayer[] = plan.players.map((player) => ({
     ...player,
     bucket: null,
     spec: findSpec(player.className, player.wowSpec),
@@ -635,12 +918,19 @@ export function runShuffle(
 
   const buckets = splitDpsIntoBuckets(dps);
 
-  // Zadání počítá počet týmů jako floor(hráčů / 5). To ale nezohledňuje složení
-  // rolí - při 30 hráčích, z toho jen 4 healerech, by šesti týmům chyběli
-  // healeři a tvrdé pravidlo (1 tank + 1 healer + 3 DPS) by nešlo splnit.
-  // Počet týmů proto omezuje i nejvzácnější role; důvod se hlásí adminovi.
+  // Počet týmů omezuje i nejvzácnější role (viz teamCountFor) - po switchích,
+  // které ji doplnily, co to šlo. Důvod omezení se hlásí adminovi.
   const byTotal = Math.floor(pool.length / 5);
-  const teamCount = Math.min(byTotal, tanks.length, healers.length, Math.floor(dps.length / 3));
+  const teamCount = plan.teamCount;
+
+  if (plan.switches.length > 0) {
+    const count = plan.switches.length;
+    warnings.push(
+      `Switch specu: ${count} ${plural(count, "hráč přepne", "hráči přepnou", "hráčů přepne")} roli, aby vyšlo ${teamCount} ${plural(teamCount, "tým", "týmy", "týmů")} místo ${plan.teamCountBefore}. ${plan.switches
+        .map(describeSwitch)
+        .join("; ")}.`
+    );
+  }
 
   if (teamCount < byTotal) {
     const limits: string[] = [];
@@ -648,7 +938,9 @@ export function runShuffle(
     if (healers.length === teamCount) limits.push(`healerů (${healers.length})`);
     if (Math.floor(dps.length / 3) === teamCount) limits.push(`DPS (${dps.length})`);
     warnings.push(
-      `Podle počtu hráčů (${pool.length}) by vyšlo ${byTotal} týmů, ale složení rolí dovoluje jen ${teamCount}. Omezuje počet ${limits.join(" a ")}.`
+      `Podle počtu hráčů (${pool.length}) by vyšlo ${byTotal} týmů, ale složení rolí dovoluje jen ${teamCount}. Omezuje počet ${limits.join(" a ")}${
+        plan.switches.length > 0 ? " i po switchích specu" : ""
+      }.`
     );
   }
 
@@ -688,7 +980,7 @@ export function runShuffle(
     warnings.push(
       "Z aktuálně schválených hráčů nejde složit ani jeden kompletní tým (potřeba aspoň 1 tank, 1 healer a 3 DPS)."
     );
-    return { seed, teamCount: 0, variants: [], warnings, pool: poolSummary };
+    return { seed, teamCount: 0, variants: [], warnings, switches: [], pool: poolSummary };
   }
 
   const pools: Pools = {
@@ -731,5 +1023,5 @@ export function runShuffle(
     toVariant(entry.candidate, index + 1, teamCount, weights)
   );
 
-  return { seed, teamCount, variants, warnings, pool: poolSummary };
+  return { seed, teamCount, variants, warnings, switches: plan.switches, pool: poolSummary };
 }

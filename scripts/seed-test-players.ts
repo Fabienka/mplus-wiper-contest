@@ -25,6 +25,12 @@ const COUNTS = {
   dps: Number(process.env.SEED_DPS ?? 21),
 };
 
+/**
+ * Jaký podíl hráčů nabídne switch specu - na specy své classy v jiné roli.
+ * Shuffle je použije, když některá role chybí: zkus třeba SEED_TANKS=3.
+ */
+const SWITCH_SHARE = Number(process.env.SEED_SWITCH_SHARE ?? 0.3);
+
 function assertTestDatabase() {
   const url = process.env.DATABASE_URL ?? "";
   const database = url.split("/").pop()?.split("?")[0] ?? "";
@@ -83,6 +89,7 @@ async function main() {
 
   const passwordHash = await bcrypt.hash("test1234", 10);
   let created = 0;
+  let switchers = 0;
 
   const addPlayer = async (role: "TANK" | "HEALER" | "DPS", index: number) => {
     const options = WOW_SPECS.filter((spec) => spec.role === role);
@@ -109,6 +116,28 @@ async function main() {
       },
     });
 
+    const switchTo = WOW_SPECS.filter(
+      (other) => other.className === spec.className && other.role !== role
+    );
+
+    if (switchTo.length > 0 && rng() < SWITCH_SHARE) {
+      await prisma.character.update({
+        where: { id: character.id },
+        data: {
+          canSwitchSpec: true,
+          switchSpecs: {
+            create: switchTo.map((other) => ({
+              specName: other.specName,
+              specRole: other.role,
+              rioScore: Math.round(rng() * 1600 + 800),
+              rioSyncedAt: new Date(),
+            })),
+          },
+        },
+      });
+      switchers++;
+    }
+
     await prisma.seasonRegistration.create({
       data: {
         seasonId: season.id,
@@ -128,7 +157,8 @@ async function main() {
 
   console.log(
     `Databáze ${database}: založeno ${created} schválených hráčů ` +
-      `(${COUNTS.tanks} tanků, ${COUNTS.healers} healerů, ${COUNTS.dps} DPS) v sezóně "${season.name}".`
+      `(${COUNTS.tanks} tanků, ${COUNTS.healers} healerů, ${COUNTS.dps} DPS) v sezóně "${season.name}", ` +
+      `z toho ${switchers} nabízí switch specu.`
   );
 }
 

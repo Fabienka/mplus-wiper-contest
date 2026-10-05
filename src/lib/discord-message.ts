@@ -29,7 +29,12 @@ export interface ShuffleResultPayload {
   seasonName: string;
   teams: {
     name: string;
-    members: { characterName: string; roleInTeam: SpecRole }[];
+    members: {
+      characterName: string;
+      roleInTeam: SpecRole;
+      /** Spec, na který hráč kvůli týmu switchne. Starší zprávy ho nemají. */
+      switchSpec?: string | null;
+    }[];
   }[];
   substitutes: { characterName: string; roleInTeam: SpecRole }[];
 }
@@ -194,7 +199,13 @@ function shuffleResultEmbed(
     name: truncate(escapeMarkdown(team.name), LIMIT_TITLE),
     value: truncate(
       team.members
-        .map((m) => `${specLabel(m.roleInTeam)}: ${escapeMarkdown(m.characterName)}`)
+        .map(
+          (m) =>
+            `${specLabel(m.roleInTeam)}: ${escapeMarkdown(m.characterName)}` +
+            // Bez poznámky by hráč, který se hlásil jako DPS, nemusel
+            // postřehnout, že má jít za tanka.
+            (m.switchSpec ? ` (switch na ${escapeMarkdown(m.switchSpec)})` : "")
+        )
         .join("\n") || "-",
       LIMIT_FIELD_VALUE
     ),

@@ -24,7 +24,12 @@ interface Row {
   membershipId: string;
   characterName: string;
   className: string | null;
+  /** Spec, se kterým v týmu hraje - u switchnutého ten ze switche. */
   wowSpec: string | null;
+  /** Hlavní spec, když hráč v týmu hraje switchnutý. */
+  mainSpec: string | null;
+  /** Na co umí switchnout - pro ruční úpravy, když týmu chybí role. */
+  switchOffer: string | null;
   rioScore: number | null;
   roleInTeam: SpecRole;
   destination: string;
@@ -46,6 +51,10 @@ function MemberRows({
           </td>
           <td className="muted">
             {row.wowSpec ? `${row.className} - ${row.wowSpec}` : row.className ?? "-"}
+            {row.mainSpec !== null && (
+              <div className="meta">switch, hlavní spec {row.mainSpec || "neznámý"}</div>
+            )}
+            {row.switchOffer && <div className="meta">umí switch: {row.switchOffer}</div>}
           </td>
           <td>{row.rioScore === null ? "-" : Math.round(row.rioScore)}</td>
           <td>
@@ -126,7 +135,7 @@ export default async function TeamsPage({
     }),
     prisma.teamMembership.findMany({
       where: { seasonId: season.id },
-      include: { character: true },
+      include: { character: { include: { switchSpecs: true } } },
     }),
     prisma.seasonRegistration.findMany({
       where: { seasonId: season.id, status: "APPROVED" },
@@ -144,7 +153,14 @@ export default async function TeamsPage({
     membershipId: membership.id,
     characterName: membership.character.characterName,
     className: membership.character.class,
-    wowSpec: membership.character.wowSpec,
+    wowSpec: membership.wowSpec ?? membership.character.wowSpec,
+    mainSpec: membership.wowSpec ? membership.character.wowSpec ?? "" : null,
+    switchOffer:
+      membership.wowSpec || !membership.character.canSwitchSpec
+        ? null
+        : membership.character.switchSpecs
+            .map((spec) => `${spec.specName} (${SPEC_ROLE_LABELS[spec.specRole]})`)
+            .join(", ") || null,
     rioScore: membership.character.rioScore,
     roleInTeam: membership.roleInTeam,
     destination:

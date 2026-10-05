@@ -9,6 +9,7 @@ import { enqueueDiscordEvent, sendDiscordEvent } from "@/lib/discord";
 import type { ShuffleResultPayload } from "@/lib/discord-message";
 import {
   runShuffle,
+  toShufflePlayer,
   type ShufflePlayer,
   type StoredRuleViolations,
   type StoredTeamAssignments,
@@ -34,22 +35,16 @@ export async function runShuffleForSeason(formData: FormData) {
 
   const registrations = await prisma.seasonRegistration.findMany({
     where: { seasonId, status: "APPROVED" },
-    include: { character: true },
+    include: { character: { include: { switchSpecs: true } } },
   });
 
   if (registrations.length === 0) {
     fail("Sezóna nemá žádné schválené registrace, není z čeho skládat týmy.");
   }
 
-  const players: ShufflePlayer[] = registrations.map((registration) => ({
-    characterId: registration.character.id,
-    characterName: registration.character.characterName,
-    className: registration.character.class,
-    wowSpec: registration.character.wowSpec,
-    specRole: registration.character.specRole,
-    // RIO se používá jen na rozdělení do košů; chybějící skóre spadne naspod.
-    rioScore: registration.character.rioScore ?? 0,
-  }));
+  const players: ShufflePlayer[] = registrations.map((registration) =>
+    toShufflePlayer(registration.character)
+  );
 
   const result = runShuffle(players);
 
@@ -102,6 +97,11 @@ export async function runShuffleForSeason(formData: FormData) {
         seed: result.seed,
         teamCount: result.teamCount,
         players: players.length,
+        switches: result.switches.map((s) => ({
+          characterName: s.characterName,
+          from: s.from.wowSpec,
+          to: s.toSpec,
+        })),
         variants: result.variants.map((v) => ({
           variantNumber: v.variantNumber,
           score: v.score,
@@ -189,6 +189,7 @@ export async function applyVariant(formData: FormData) {
         members: team.members.map((m) => ({
           characterName: m.characterName,
           roleInTeam: m.roleInTeam,
+          switchSpec: m.switchedFrom ? m.wowSpec : null,
         })),
       });
 
@@ -199,6 +200,8 @@ export async function applyVariant(formData: FormData) {
             teamId: created.id,
             characterId: member.characterId,
             roleInTeam: member.roleInTeam,
+            // Hlavní spec se nekopíruje - drží ho postava. Tady jen switch.
+            wowSpec: member.switchedFrom ? member.wowSpec : null,
             status: "ACTIVE",
           },
         });
