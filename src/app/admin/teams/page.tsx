@@ -8,7 +8,14 @@ import { can } from "@/lib/permissions";
 import { getCurrentSeason } from "@/lib/season";
 import { SPEC_ROLE_LABELS, formatDateTime, plural } from "@/lib/labels";
 import { describeTeamComposition } from "@/lib/shuffle";
-import { addAsSubstitute, deleteAllTeams, resetTeamReroll, updateTeams } from "./actions";
+import {
+  addAsSubstitute,
+  createTeam,
+  deleteAllTeams,
+  deleteEmptyTeam,
+  resetTeamReroll,
+  updateTeams,
+} from "./actions";
 import { ActionNotice } from "../../action-notice";
 import { CharacterName } from "../../character-name";
 
@@ -111,7 +118,7 @@ function MemberTableHead() {
 export default async function TeamsPage({
   searchParams,
 }: {
-  searchParams: { error?: string; saved?: string; deleted?: string };
+  searchParams: { error?: string; saved?: string; deleted?: string; created?: string };
 }) {
   const [season, user] = await Promise.all([getCurrentSeason(), getCurrentUser()]);
 
@@ -202,7 +209,9 @@ export default async function TeamsPage({
         success={
           searchParams.deleted
             ? "Týmy smazané. Nové rozdělení jde vytvořit na stránce Shuffle."
-            : searchParams.saved && "Změny v týmech uložené."
+            : searchParams.created
+              ? `Přidaný prázdný tým „${searchParams.created}“. Hráče do něj přesuneš ve sloupci Zařazení a uložíš.`
+              : searchParams.saved && "Změny v týmech uložené."
         }
       />
 
@@ -256,7 +265,24 @@ export default async function TeamsPage({
                   </div>
 
                   {rows.length === 0 ? (
-                    <p className="empty-state">Tým je prázdný.</p>
+                    <div className="empty-state">
+                      <p style={{ margin: "0 0 0.75rem" }}>Tým je prázdný.</p>
+                      {/* Formulář je mimo velký formulář úprav (form=...),
+                          vnořený formulář HTML nedovolí. */}
+                      {canDelete && (
+                        <SubmitButton
+                          form="delete-empty-team"
+                          formAction={deleteEmptyTeam.bind(null, team.id)}
+                          className="btn btn-danger"
+                          pendingLabel="Mažu..."
+                          confirmTitle={`Smazat ${team.name}?`}
+                          confirm="Prázdný tým zmizí. Hráče to nijak neovlivní."
+                          confirmLabel="Smazat tým"
+                        >
+                          Smazat prázdný tým
+                        </SubmitButton>
+                      )}
+                    </div>
                   ) : (
                     <table className="data">
                       <MemberTableHead />
@@ -325,6 +351,28 @@ export default async function TeamsPage({
               </span>
             </div>
           </form>
+
+          {/* Mazání prázdného týmu má vlastní formulář, aby submit nezahodil
+              rozpracované přesuny ve velkém formuláři. */}
+          <form id="delete-empty-team" />
+
+          {teams.length > 0 && (
+            <div className="card">
+              <h2>Přidat tým</h2>
+              <p className="card-lead">
+                Prázdný tým navíc - třeba když se po rozdělení domluví switch
+                a z náhradníků jde složit další tým. Hráče do něj přesuneš ve
+                sloupci Zařazení, roli jim nastavíš ve sloupci Role v týmu.
+                Neuložené přesuny výše se přidáním týmu zahodí.
+              </p>
+              <form action={createTeam}>
+                <input type="hidden" name="seasonId" value={season.id} />
+                <SubmitButton className="btn" pendingLabel="Přidávám...">
+                  Přidat prázdný tým
+                </SubmitButton>
+              </form>
+            </div>
+          )}
 
           {/* Mimo velký formulář úprav - zrušení rerollu je samostatná akce
               a vnořený formulář HTML nedovolí. */}

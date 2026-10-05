@@ -1,10 +1,11 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { Notice } from "../../notice";
 import { NoSeason } from "../no-season";
 import { SubmitButton } from "../../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
-import { SPEC_ROLE_LABELS, formatDateTime } from "@/lib/labels";
+import { SPEC_ROLE_LABELS, formatDateTime, plural } from "@/lib/labels";
 import { LAST_VERIFIED } from "@/lib/wow-specs";
 import {
   planRoleSwitches,
@@ -91,6 +92,12 @@ export default async function ShufflePage({
   const plan = planRoleSwitches(approved.map((r) => toShufflePlayer(r.character)));
   const possibleTeams = plan.teamCount;
 
+  // Zaškrtnuté "můžu switchnout" bez vybraného specu shuffle nevidí - admin
+  // se to musí dozvědět před spuštěním, ne až z menšího počtu týmů.
+  const switchWithoutSpec = approved.filter(
+    (r) => r.character.canSwitchSpec && r.character.switchSpecs.length === 0
+  );
+
   return (
     <>
       <h1>Shuffle</h1>
@@ -131,6 +138,30 @@ export default async function ShufflePage({
           </div>
         )}
       </div>
+
+      {switchWithoutSpec.length > 0 && (
+        <Notice
+          kind="info"
+          title={`${switchWithoutSpec.length} ${plural(
+            switchWithoutSpec.length,
+            "hráč nabídl switch, ale nemá",
+            "hráči nabídli switch, ale nemají",
+            "hráčů nabídlo switch, ale nemá"
+          )} vybraný spec`}
+        >
+          Shuffle s nimi nepočítá. Spec jim doplň na detailu hráče (třeba podle
+          domluvy na Discordu), nebo ať si ho doplní sami v profilu:{" "}
+          {switchWithoutSpec.map((r, index) => (
+            <Fragment key={r.id}>
+              {index > 0 && ", "}
+              <Link className="link" href={`/admin/users/${r.character.userId}#switch`}>
+                {r.character.characterName}
+              </Link>
+            </Fragment>
+          ))}
+          .
+        </Notice>
+      )}
 
       <div className="card">
         <h2>Spustit shuffle</h2>

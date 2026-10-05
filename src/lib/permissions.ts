@@ -44,8 +44,16 @@ export const PERMISSIONS = {
    * role v týmu, název týmu. Nic z toho nemaže data.
    */
   manageTeams: ["ADMIN", "MODERATOR"],
-  /** Smazání celého rozdělení sezóny. Nevratné, proto jen admin. */
+  /**
+   * Smazání celého rozdělení sezóny, případně jednoho prázdného týmu.
+   * Nevratné, proto jen admin.
+   */
   deleteTeams: ["ADMIN"],
+  /**
+   * Nastavení switch specu za hráče - když se switch domluvil třeba na
+   * Discordu. Mění vstup shuffle, proto jako shuffle jen admin.
+   */
+  manageSwitchSpecs: ["ADMIN"],
   /**
    * Zrušení zapsaného rerollu klíče (třeba kvůli překlepu) - tým si ho pak
    * může zapsat znovu. Maže záznam, proto jen admin.

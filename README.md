@@ -319,6 +319,7 @@ Otevírá se do nové karty, aby odchod ze stránky nesmazal rozepsanou registra
 | Schválit termín zápasu | ano | ano | ne |
 | Zadat dostupnost a navrhnout termín za tým | ano | ano | ano (svůj tým) |
 | Vydat odkaz na reset hesla | ano (komukoli) | ano (jen uživateli) | ne |
+| Nastavit switch specu | ano (komukoli) | ne | ano (sobě v profilu) |
 | Sezóna, shuffle, týmy, uživatelé | ano | ne | ne |
 
 Oprávnění jsou na jednom místě v `src/lib/permissions.ts` a ověřují se ve třech
@@ -594,10 +595,14 @@ na to je potřeba reálné zařízení nebo Playwright s WebKitem.
   zkusí o tým méně. Switchnutý hráč jde do týmu se switch specem (počítá se podle něj
   melee/ranged, brez i lust) a `TeamMembership.wowSpec` si ho pamatuje; prázdné pole znamená
   hlavní spec postavy. Ruční změna role na `/admin/teams` nastaví switch spec stejně.
+  Switch za hráče může nastavit admin na detailu hráče (třeba po domluvě na Discordu) a stránka
+  Shuffle předem upozorní na hráče, kteří switch zaškrtli, ale nevybrali spec - ty shuffle nevidí.
 - **Ruční úprava týmů** (`/admin/teams`) hlídá stejná pravidla jako shuffle - obojí volá
   `describeSharedViolations` v `src/lib/shuffle.ts`, aby se hodnocení nerozešlo. Rozbité složení
   týmu se schválně nezakazuje (admin může potřebovat mezikrok), jen se označí. Nekontroluje se
-  pokrytí košů - koše jsou pomůcka losování a po rozdělení se nedrží.
+  pokrytí košů - koše jsou pomůcka losování a po rozdělení se nedrží. K existujícímu rozdělení
+  jde přidat prázdný tým a poskládat ho z náhradníků; prázdný tým bez zápasů, rerollu
+  a poznámek admin zase smaže.
 - **Smazání rozdělení** vrátí použitý `ShuffleRun` zpět na `PROPOSED`, takže jde použít jiná
   varianta. Neprojde, pokud na týmech visí zápasy - to se kontroluje dopředu, aby admin dostal
   srozumitelnou hlášku místo chyby cizího klíče.

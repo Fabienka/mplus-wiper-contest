@@ -5,8 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser, writeAuditLog } from "@/lib/admin";
 import { validateNewPassword } from "@/lib/password-rules";
-import { fetchSpecScores, RaiderioLookupError } from "@/lib/raiderio";
-import { switchableSpecs } from "@/lib/wow-specs";
+import { saveSwitchSpecs, type SwitchSpecsState } from "@/lib/switch-specs";
 
 export interface ChangePasswordState {
   status: "idle" | "ok" | "error";
@@ -80,19 +79,11 @@ export async function changePassword(
   return { status: "ok", message: "Heslo je změněné." };
 }
 
-export interface SwitchSpecsState {
-  status: "idle" | "ok" | "warning" | "error";
-  message: string;
-}
-
 /**
- * Uloží, jestli a na které specy je hráč ochotný switchnout.
- *
- * RIO skóre vybraných speců se při každém uložení načte z Raider.io znovu -
- * uložení tak slouží i jako obnovení. Když Raider.io neodpoví, výběr se
- * uloží stejně a u speců zůstane dřív načtené skóre.
+ * Uloží, jestli a na které specy je hráč ochotný switchnout - vlastní
+ * postava přihlášeného hráče. Pravidla a načtení RIO drží saveSwitchSpecs.
  */
-export async function saveSwitchSpecs(
+export async function saveOwnSwitchSpecs(
   _previous: SwitchSpecsState,
   formData: FormData
 ): Promise<SwitchSpecsState> {
@@ -104,95 +95,20 @@ export async function saveSwitchSpecs(
 
   const character = await prisma.character.findUnique({
     where: { userId: current.id },
-    include: { switchSpecs: true },
+    select: { id: true },
   });
 
   if (!character) {
     return { status: "error", message: "K účtu není přiřazená žádná postava." };
   }
 
-  const canSwitchSpec = formData.get("canSwitchSpec") === "on";
-  const requested = new Set(
-    canSwitchSpec ? formData.getAll("switchSpecs").map(String) : []
-  );
-  const specs = switchableSpecs(character.class, character.wowSpec).filter(
-    (spec) => requested.has(spec.specName)
-  );
-
-  if (specs.length !== requested.size) {
-    return {
-      status: "error",
-      message: "Vybraný spec k postavě nepatří. Načti stránku znovu a zkus to ještě jednou.",
-    };
-  }
-
-  let scores: Record<string, number> | null = null;
-  let lookupError: string | null = null;
-
-  if (specs.length > 0) {
-    try {
-      scores = await fetchSpecScores(character.raiderioUrl);
-    } catch (err) {
-      if (!(err instanceof RaiderioLookupError)) throw err;
-      lookupError = err.message;
-    }
-  }
-
-  const previous = new Map(
-    character.switchSpecs.map((spec) => [spec.specName, spec])
-  );
-  const now = new Date();
-
-  await prisma.$transaction(async (tx) => {
-    await tx.character.update({
-      where: { id: character.id },
-      data: { canSwitchSpec },
-    });
-
-    await tx.characterSwitchSpec.deleteMany({
-      where: { characterId: character.id },
-    });
-
-    await tx.characterSwitchSpec.createMany({
-      data: specs.map((spec) => ({
-        characterId: character.id,
-        specName: spec.specName,
-        specRole: spec.role,
-        rioScore: scores
-          ? scores[spec.specName] ?? null
-          : previous.get(spec.specName)?.rioScore ?? null,
-        rioSyncedAt: scores ? now : previous.get(spec.specName)?.rioSyncedAt ?? null,
-      })),
-    });
-
-    await writeAuditLog(tx, {
-      actorId: current.id,
-      actionType: "SWITCH_SPECS_UPDATED",
-      entityType: "Character",
-      entityId: character.id,
-      oldValue: {
-        canSwitchSpec: character.canSwitchSpec,
-        specs: character.switchSpecs.map((spec) => spec.specName),
-      },
-      newValue: { canSwitchSpec, specs: specs.map((spec) => spec.specName) },
-    });
+  const state = await saveSwitchSpecs({
+    characterId: character.id,
+    actorId: current.id,
+    formData,
+    self: true,
   });
 
   revalidatePath("/profile");
-
-  if (lookupError) {
-    return {
-      status: "warning",
-      message: `Uloženo, ale RIO se z Raider.io nepodařilo načíst: ${lookupError}`,
-    };
-  }
-
-  return {
-    status: "ok",
-    message: !canSwitchSpec
-      ? "Uloženo - se switchem specu nepočítáme."
-      : specs.length === 0
-        ? "Uloženo. Zatím nemáš vybraný žádný spec."
-        : "Uloženo, RIO je načtené z Raider.io.",
-  };
+  return state;
 }

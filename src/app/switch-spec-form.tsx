@@ -2,22 +2,13 @@
 
 import { useState } from "react";
 import { useFormState, useFormStatus } from "react-dom";
-import type { SpecRole } from "@prisma/client";
-import { Notice } from "../notice";
+import { Notice } from "./notice";
 import { SPEC_ROLE_LABELS } from "@/lib/labels";
-import { saveSwitchSpecs, type SwitchSpecsState } from "./actions";
+import type { SwitchSpecChoice, SwitchSpecsState } from "@/lib/switch-specs";
 
 // Soubor s "use server" smí exportovat jen asynchronní funkce, takže výchozí
 // stav formuláře je tady.
 const IDLE: SwitchSpecsState = { status: "idle", message: "" };
-
-export interface SwitchSpecOption {
-  specName: string;
-  role: SpecRole;
-  selected: boolean;
-  /** Naposledy načtené RIO. Null = spec není vybraný nebo se RIO nenačetlo. */
-  rioScore: number | null;
-}
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -29,20 +20,27 @@ function SubmitButton() {
   );
 }
 
+/**
+ * Formulář switche specu. Používá ho hráč v profilu i admin na detailu hráče
+ * - liší se jen akcí a tím, jestli texty mluví k hráči, nebo o něm.
+ */
 export function SwitchSpecForm({
+  action,
   canSwitchSpec,
-  options,
+  choices,
+  forPlayer,
 }: {
+  action: (state: SwitchSpecsState, formData: FormData) => Promise<SwitchSpecsState>;
   canSwitchSpec: boolean;
-  options: SwitchSpecOption[];
+  choices: SwitchSpecChoice[];
+  /** Vyplňuje hráč sám (true), nebo za něj admin. */
+  forPlayer: boolean;
 }) {
-  const [state, formAction] = useFormState<SwitchSpecsState, FormData>(
-    saveSwitchSpecs,
-    IDLE
-  );
+  const [state, formAction] = useFormState(action, IDLE);
   // Výběr speců má smysl jen se zaškrtnutým switchem - bez něj by seznam
   // vypadal, že se ukládá, i když ho server zahodí.
   const [enabled, setEnabled] = useState(canSwitchSpec);
+  const hintId = forPlayer ? "switch-spec-hint" : "switch-spec-hint-staff";
 
   return (
     <form action={formAction}>
@@ -53,35 +51,40 @@ export function SwitchSpecForm({
             name="canSwitchSpec"
             checked={enabled}
             onChange={(e) => setEnabled(e.target.checked)}
-            aria-describedby="switch-spec-hint"
+            aria-describedby={hintId}
           />
-          <span>Můžu switchnout spec, pokud bude potřeba</span>
+          <span>
+            {forPlayer
+              ? "Můžu switchnout spec, pokud bude potřeba"
+              : "Hráč může switchnout spec, pokud bude potřeba"}
+          </span>
         </label>
-        <span className="field-hint" id="switch-spec-hint">
-          Třeba z DPS na tanka nebo z tanka na healera, když týmu bude chybět
-          role. Admin to uvidí při skládání týmů.
+        <span className="field-hint" id={hintId}>
+          {forPlayer
+            ? "Třeba z DPS na tanka nebo z tanka na healera, když týmu bude chybět role. Když role chybí, shuffle tě na ni může přehodit."
+            : "Pro switch domluvený jinde, třeba na Discordu. Hráč změnu uvidí v profilu a shuffle s ní počítá. Do audit logu se zapíše, kdo ji udělal."}
         </span>
       </div>
 
       {enabled && (
         <fieldset className="field-group">
-          <legend>Na co můžu switchnout</legend>
+          <legend>{forPlayer ? "Na co můžu switchnout" : "Na co může switchnout"}</legend>
 
-          {options.map((option) => (
-            <div className="field field-check" key={option.specName}>
+          {choices.map((choice) => (
+            <div className="field field-check" key={choice.specName}>
               <label>
                 <input
                   type="checkbox"
                   name="switchSpecs"
-                  value={option.specName}
-                  defaultChecked={option.selected}
+                  value={choice.specName}
+                  defaultChecked={choice.selected}
                 />
                 <span>
-                  {option.specName}{" "}
+                  {choice.specName}{" "}
                   <span className="meta">
-                    - {SPEC_ROLE_LABELS[option.role]}
-                    {option.rioScore !== null &&
-                      `, RIO ${Math.round(option.rioScore)}`}
+                    - {SPEC_ROLE_LABELS[choice.role]}
+                    {choice.rioScore !== null &&
+                      `, RIO ${Math.round(choice.rioScore)}`}
                   </span>
                 </span>
               </label>
@@ -90,7 +93,7 @@ export function SwitchSpecForm({
 
           <p className="field-hint">
             RIO vybraných speců se načte z Raider.io při uložení. Dalším
-            uložením ho aktualizuješ.
+            uložením se aktualizuje.
           </p>
         </fieldset>
       )}

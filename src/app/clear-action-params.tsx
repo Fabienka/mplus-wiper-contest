@@ -11,6 +11,7 @@ const RESULT_PARAMS = [
   "error",
   "saved",
   "deleted",
+  "created",
   "applied",
   "synced",
   "missing",

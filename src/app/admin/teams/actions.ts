@@ -187,6 +187,92 @@ export async function updateTeams(formData: FormData) {
 }
 
 /**
+ * Přidá prázdný tým. Hráči se do něj přesouvají ve sloupci Zařazení - typicky
+ * když se po rozdělení domluví switch a z náhradníků jde složit další tým.
+ *
+ * Jen k existujícímu rozdělení. Před shuffle by tým navíc zůstal viset vedle
+ * týmů, které založí potvrzená varianta.
+ */
+export async function createTeam(formData: FormData) {
+  const admin = await requirePermission("manageTeams");
+  const seasonId = String(formData.get("seasonId"));
+
+  const teams = await prisma.team.findMany({
+    where: { seasonId },
+    select: { name: true },
+  });
+
+  if (teams.length === 0) {
+    fail("Sezóna ještě nemá rozdělené týmy - vzniknou potvrzením varianty shuffle.");
+  }
+
+  // "Tým N" podle počtu, ale bez kolize s názvem, který už někdo má
+  // (třeba po přejmenování nebo smazání prázdného týmu).
+  const names = new Set(teams.map((team) => team.name));
+  let number = teams.length + 1;
+  while (names.has(`Tým ${number}`)) number++;
+  const name = `Tým ${number}`;
+
+  await prisma.$transaction(async (tx) => {
+    const team = await tx.team.create({ data: { seasonId, name } });
+
+    await writeAuditLog(tx, {
+      actorId: admin.id,
+      actionType: "TEAM_CREATED",
+      entityType: "Team",
+      entityId: team.id,
+      newValue: { name },
+    });
+  });
+
+  revalidateTeams();
+  redirect("/admin/teams?created=" + encodeURIComponent(name));
+}
+
+/**
+ * Smaže prázdný tým - třeba přidaný omylem. Tým s hráči, zápasy, rerollem
+ * nebo poznámkami se nesmaže: to už je historie, o kterou by se přišlo.
+ */
+export async function deleteEmptyTeam(teamId: string) {
+  const admin = await requirePermission("deleteTeams");
+
+  const team = await prisma.team.findUnique({
+    where: { id: teamId },
+    include: {
+      reroll: { select: { id: true } },
+      _count: { select: { members: true, matches: true, notes: true } },
+    },
+  });
+
+  if (!team) {
+    fail("Tým už neexistuje.");
+  }
+
+  if (team._count.members > 0) {
+    fail(`V týmu "${team.name}" jsou hráči. Nejdřív je přesuň jinam a ulož změny.`);
+  }
+
+  if (team._count.matches > 0 || team._count.notes > 0 || team.reroll) {
+    fail(`Tým "${team.name}" má zápasy, poznámky nebo reroll, takže ho smazat nejde.`);
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.team.delete({ where: { id: team.id } });
+
+    await writeAuditLog(tx, {
+      actorId: admin.id,
+      actionType: "TEAM_DELETED",
+      entityType: "Team",
+      entityId: team.id,
+      oldValue: { name: team.name },
+    });
+  });
+
+  revalidateTeams();
+  redirect("/admin/teams?saved=1");
+}
+
+/**
  * Zařadí schváleného hráče, který ještě nemá členství - typicky někoho
  * schváleného až po spuštění shuffle. Přidává se mezi náhradníky, odkud ho
  * jde přesunout do týmu.

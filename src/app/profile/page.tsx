@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/admin";
 import { can } from "@/lib/permissions";
-import { switchableSpecs } from "@/lib/wow-specs";
+import { switchSpecChoices } from "@/lib/switch-specs";
 import { altCharacterFromAnswers } from "@/lib/registration-answers";
 import {
   REGISTRATION_STATUS_BADGES,
@@ -14,7 +14,8 @@ import {
 } from "@/lib/labels";
 import { Notice } from "../notice";
 import { ChangePasswordForm } from "./password-form";
-import { SwitchSpecForm, type SwitchSpecOption } from "./switch-spec-form";
+import { saveOwnSwitchSpecs } from "./actions";
+import { SwitchSpecForm } from "../switch-spec-form";
 import { CharacterName } from "../character-name";
 import { EntryFeeLine } from "../entry-fee";
 
@@ -57,18 +58,7 @@ export default async function ProfilePage({
   const registration = character?.registrations[0] ?? null;
   const membership = character?.teamMemberships[0] ?? null;
 
-  const savedSwitchSpecs = new Map(
-    (character?.switchSpecs ?? []).map((spec) => [spec.specName, spec])
-  );
-  const switchOptions: SwitchSpecOption[] = switchableSpecs(
-    character?.class,
-    character?.wowSpec
-  ).map((spec) => ({
-    specName: spec.specName,
-    role: spec.role,
-    selected: savedSwitchSpecs.has(spec.specName),
-    rioScore: savedSwitchSpecs.get(spec.specName)?.rioScore ?? null,
-  }));
+  const switchChoices = character ? switchSpecChoices(character) : [];
 
   return (
     <main className="site-main" id="obsah">
@@ -130,15 +120,17 @@ export default async function ProfilePage({
 
             <div className="card">
               <h2>Switch specu</h2>
-              {switchOptions.length === 0 ? (
+              {switchChoices.length === 0 ? (
                 <p className="empty-state">
                   Classu postavy se nepodařilo načíst z Raider.io, takže není
                   z čeho vybírat. Napiš adminovi.
                 </p>
               ) : (
                 <SwitchSpecForm
+                  action={saveOwnSwitchSpecs}
                   canSwitchSpec={character.canSwitchSpec}
-                  options={switchOptions}
+                  choices={switchChoices}
+                  forPlayer
                 />
               )}
             </div>

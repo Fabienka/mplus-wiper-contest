@@ -14,6 +14,13 @@
     zprávě na Discordu má u jména „switch na …“.
   - Na stránce Týmy je u hráčů poznámka, na co umí switchnout. Když admin
     hráči ručně změní roli, nastaví se mu spec, který na ni nabídl.
+- **Admin může nastavit switch za hráče** na detailu hráče - třeba když se
+  switch domluvil na Discordu nebo ho hráč vyplnil špatně. Hráč změnu uvidí
+  v profilu a shuffle s ní počítá.
+- Stránka Shuffle předem upozorní na hráče, kteří zaškrtli switch, ale
+  nevybrali spec. Shuffle s nimi nepočítá, dokud spec nebude vybraný.
+- Na stránce Týmy jde **přidat prázdný tým** a poskládat ho z náhradníků.
+  Prázdný tým přidaný omylem admin zase smaže.
 
 ## 30. 9. 2026
 

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/admin";
+import { can } from "@/lib/permissions";
+import { switchSpecChoices } from "@/lib/switch-specs";
 import {
   MATCH_STATUS_BADGES,
   MATCH_STATUS_LABELS,
@@ -16,6 +18,8 @@ import { isAwaitingVerification } from "@/lib/manual-result";
 import { altCharacterFromAnswers } from "@/lib/registration-answers";
 import { CharacterName } from "../../../character-name";
 import { SwitchSpecs } from "../../../switch-specs";
+import { SwitchSpecForm } from "../../../switch-spec-form";
+import { saveSwitchSpecsForUser } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -116,6 +120,7 @@ export default async function UserDetailPage({
   const registrations = character?.registrations ?? [];
   // Alt je odpověď z přihlášky, ne údaj postavy - platí ta z poslední sezóny.
   const altCharacter = altCharacterFromAnswers(registrations[0]?.formAnswers);
+  const switchChoices = character ? switchSpecChoices(character) : [];
   const paidCount = registrations.filter((r) => r.entryFeePaidAt).length;
 
   return (
@@ -223,6 +228,25 @@ export default async function UserDetailPage({
           </dl>
         )}
       </div>
+
+      {character && can(currentUser?.role, "manageSwitchSpecs") && (
+        // Kotva - odkazuje sem upozornění na stránce Shuffle.
+        <div className="card" id="switch">
+          <h2>Upravit switch specu</h2>
+          {switchChoices.length === 0 ? (
+            <p className="empty-state">
+              Postava nemá z Raider.io načtenou classu, takže není z čeho vybírat.
+            </p>
+          ) : (
+            <SwitchSpecForm
+              action={saveSwitchSpecsForUser.bind(null, user.id)}
+              canSwitchSpec={character.canSwitchSpec}
+              choices={switchChoices}
+              forPlayer={false}
+            />
+          )}
+        </div>
+      )}
 
       <div className="card">
         <h2>Zařazení v týmu</h2>
