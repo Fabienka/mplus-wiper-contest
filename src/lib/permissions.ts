@@ -51,7 +51,8 @@ export const PERMISSIONS = {
   deleteTeams: ["ADMIN"],
   /**
    * Nastavení switch specu za hráče - když se switch domluvil třeba na
-   * Discordu. Mění vstup shuffle, proto jako shuffle jen admin.
+   * Discordu - a oprava hlavního specu (a s ním role), když ho hráč vyplnil
+   * špatně. Mění vstup shuffle, proto jako shuffle jen admin.
    */
   manageSwitchSpecs: ["ADMIN"],
   /**

@@ -320,6 +320,7 @@ Otevírá se do nové karty, aby odchod ze stránky nesmazal rozepsanou registra
 | Zadat dostupnost a navrhnout termín za tým | ano | ano | ano (svůj tým) |
 | Vydat odkaz na reset hesla | ano (komukoli) | ano (jen uživateli) | ne |
 | Nastavit switch specu | ano (komukoli) | ne | ano (sobě v profilu) |
+| Opravit hlavní spec a roli postavy | ano | ne | ne |
 | Sezóna, shuffle, týmy, uživatelé | ano | ne | ne |
 
 Oprávnění jsou na jednom místě v `src/lib/permissions.ts` a ověřují se ve třech
@@ -597,6 +598,11 @@ na to je potřeba reálné zařízení nebo Playwright s WebKitem.
   hlavní spec postavy. Ruční změna role na `/admin/teams` nastaví switch spec stejně.
   Switch za hráče může nastavit admin na detailu hráče (třeba po domluvě na Discordu) a stránka
   Shuffle předem upozorní na hráče, kteří switch zaškrtli, ale nevybrali spec - ty shuffle nevidí.
+- **Hlavní spec a role**: shuffle bere roli z `Character.specRole`, spec (`wowSpec`) jen na
+  melee/ranged, brez a lust. Registrace proto odmítne spec z Raider.io jiné role, než na jakou
+  se hráč hlásí (`specRoleMismatch` v `src/lib/wow-specs.ts`), a hráč ho musí vybrat ručně.
+  Postavy uložené dřív opraví admin na detailu hráče - vybere hlavní spec a role se nastaví
+  podle něj. Stránka Shuffle na takové hráče upozorní.
 - **Ruční úprava týmů** (`/admin/teams`) hlídá stejná pravidla jako shuffle - obojí volá
   `describeSharedViolations` v `src/lib/shuffle.ts`, aby se hodnocení nerozešlo. Rozbité složení
   týmu se schválně nezakazuje (admin může potřebovat mezikrok), jen se označí. Nekontroluje se

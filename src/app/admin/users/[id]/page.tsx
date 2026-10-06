@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/admin";
 import { can } from "@/lib/permissions";
 import { switchSpecChoices } from "@/lib/switch-specs";
+import { specRoleMismatch, specsForClass } from "@/lib/wow-specs";
 import {
   MATCH_STATUS_BADGES,
   MATCH_STATUS_LABELS,
@@ -19,7 +20,9 @@ import { altCharacterFromAnswers } from "@/lib/registration-answers";
 import { CharacterName } from "../../../character-name";
 import { SwitchSpecs } from "../../../switch-specs";
 import { SwitchSpecForm } from "../../../switch-spec-form";
-import { saveSwitchSpecsForUser } from "../actions";
+import { Notice } from "../../../notice";
+import { saveMainSpecForUser, saveSwitchSpecsForUser } from "../actions";
+import { MainSpecForm } from "./main-spec-form";
 
 export const dynamic = "force-dynamic";
 
@@ -121,6 +124,13 @@ export default async function UserDetailPage({
   // Alt je odpověď z přihlášky, ne údaj postavy - platí ta z poslední sezóny.
   const altCharacter = altCharacterFromAnswers(registrations[0]?.formAnswers);
   const switchChoices = character ? switchSpecChoices(character) : [];
+  const mainSpecChoices = specsForClass(character?.class).map((spec) => ({
+    specName: spec.specName,
+    role: spec.role,
+  }));
+  const roleMismatch = character
+    ? specRoleMismatch(character.class, character.wowSpec, character.specRole)
+    : null;
   const paidCount = registrations.filter((r) => r.entryFeePaidAt).length;
 
   return (
@@ -194,7 +204,14 @@ export default async function UserDetailPage({
                 : character.class ?? "-"}
             </dd>
             <dt>Role</dt>
-            <dd>{SPEC_ROLE_LABELS[character.specRole]}</dd>
+            <dd>
+              {SPEC_ROLE_LABELS[character.specRole]}
+              {roleMismatch && (
+                <span className="badge badge-rejected" style={{ marginLeft: "0.4rem" }}>
+                  {character.wowSpec} je {SPEC_ROLE_LABELS[roleMismatch.role]}
+                </span>
+              )}
+            </dd>
             <dt>Switch specu</dt>
             <dd>
               <SwitchSpecs
@@ -229,23 +246,51 @@ export default async function UserDetailPage({
         )}
       </div>
 
+      {/* Kotvy #main-spec a #switch - odkazují sem upozornění na stránce Shuffle. */}
       {character && can(currentUser?.role, "manageSwitchSpecs") && (
-        // Kotva - odkazuje sem upozornění na stránce Shuffle.
-        <div className="card" id="switch">
-          <h2>Upravit switch specu</h2>
-          {switchChoices.length === 0 ? (
-            <p className="empty-state">
-              Postava nemá z Raider.io načtenou classu, takže není z čeho vybírat.
-            </p>
-          ) : (
-            <SwitchSpecForm
-              action={saveSwitchSpecsForUser.bind(null, user.id)}
-              canSwitchSpec={character.canSwitchSpec}
-              choices={switchChoices}
-              forPlayer={false}
-            />
-          )}
-        </div>
+        <>
+          <div className="card" id="main-spec">
+            <h2>Upravit hlavní spec</h2>
+            {mainSpecChoices.length === 0 ? (
+              <p className="empty-state">
+                Postava nemá z Raider.io načtenou classu, takže není z čeho vybírat.
+              </p>
+            ) : (
+              <>
+                {roleMismatch && (
+                  <Notice
+                    kind="info"
+                    title={`${character.wowSpec} je ${SPEC_ROLE_LABELS[roleMismatch.role]}, ale hráč je vedený jako ${SPEC_ROLE_LABELS[character.specRole]}`}
+                  >
+                    Shuffle ho bere jako {SPEC_ROLE_LABELS[character.specRole]}. Vyber
+                    spec, se kterým bude opravdu hrát - role se nastaví podle něj.
+                  </Notice>
+                )}
+                <MainSpecForm
+                  action={saveMainSpecForUser.bind(null, user.id)}
+                  currentSpec={character.wowSpec}
+                  choices={mainSpecChoices}
+                />
+              </>
+            )}
+          </div>
+
+          <div className="card" id="switch">
+            <h2>Upravit switch specu</h2>
+            {switchChoices.length === 0 ? (
+              <p className="empty-state">
+                Postava nemá z Raider.io načtenou classu, takže není z čeho vybírat.
+              </p>
+            ) : (
+              <SwitchSpecForm
+                action={saveSwitchSpecsForUser.bind(null, user.id)}
+                canSwitchSpec={character.canSwitchSpec}
+                choices={switchChoices}
+                forPlayer={false}
+              />
+            )}
+          </div>
+        </>
       )}
 
       <div className="card">

@@ -3,7 +3,8 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { fetchCharacterFromRaiderio, RaiderioLookupError } from "@/lib/raiderio";
-import { findSpec } from "@/lib/wow-specs";
+import { findSpec, specRoleMismatch } from "@/lib/wow-specs";
+import { SPEC_ROLE_LABELS } from "@/lib/labels";
 import {
   checkRegistrationAllowed,
   recordRegistrationAttempt,
@@ -119,6 +120,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: `Spec "${wowSpec}" je ${spec.role}, ale registrace je na roli ${specRole}.`,
+        },
+        { status: 400 }
+      );
+    }
+  } else {
+    // Spec z Raider.io je ten, se kterým byla postava naposledy viděná - DPS
+    // hráč s tankovacím specem by se uložil jako "Protection, role DPS" a
+    // shuffle by ho bral jako DPS. Radši ať hráč spec vybere sám.
+    const mismatch = specRoleMismatch(
+      raiderioData.class,
+      raiderioData.wowSpec,
+      specRole
+    );
+
+    if (mismatch) {
+      return NextResponse.json(
+        {
+          error: `Raider.io tě naposledy vidělo jako ${mismatch.specName} (${SPEC_ROLE_LABELS[mismatch.role]}), ale hlásíš se jako ${SPEC_ROLE_LABELS[specRole]}. V poli Specializace vyber spec, se kterým budeš hrát.`,
         },
         { status: 400 }
       );

@@ -1,5 +1,22 @@
 # Changelog
 
+## 6. 10. 2026
+
+### Opravy
+
+- **Spec z Raider.io už nepřebije roli z přihlášky.** Kdo v registraci nechal
+  spec na Raider.io a to ho naposledy vidělo s tankovacím specem, uložil se
+  třeba jako „Protection, role DPS“ a shuffle ho bral jako DPS. Registrace
+  teď takový nesoulad odmítne a poprosí hráče, ať spec vybere sám.
+
+### Novinky
+
+- **Admin opraví hlavní spec hráče** na detailu hráče. Vybere spec z hráčovy
+  classy a role se nastaví podle něj, takže z DPS jde udělat tanka. Když měl
+  hráč ten spec vybraný ke switchi, ze switche zmizí.
+- Stránka Shuffle i detail hráče upozorní na hráče, jejichž spec patří
+  k jiné roli, než na jakou se přihlásili.
+
 ## 5. 10. 2026
 
 ### Novinky

@@ -7,6 +7,9 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser, requirePermission, writeAuditLog } from "@/lib/admin";
 import { can } from "@/lib/permissions";
 import { saveSwitchSpecs, type SwitchSpecsState } from "@/lib/switch-specs";
+import { specsForClass } from "@/lib/wow-specs";
+import { SPEC_ROLE_LABELS } from "@/lib/labels";
+import { getCurrentSeason } from "@/lib/season";
 
 const ROLES: UserRole[] = ["ADMIN", "MODERATOR", "USER"];
 
@@ -109,4 +112,131 @@ export async function saveSwitchSpecsForUser(
   revalidatePath("/admin/shuffle");
   revalidatePath("/admin/teams");
   return state;
+}
+
+export interface MainSpecState {
+  status: "idle" | "ok" | "warning" | "error";
+  message: string;
+}
+
+/**
+ * Oprava hlavního specu postavy - typicky když hráč v registraci nechal spec
+ * na Raider.io a to ho naposledy vidělo s jiným specem, než na jaký se hlásil.
+ * Role se nastaví podle specu, aby se nemohly znovu rozejít - shuffle bere
+ * roli, spec jen na ranged/melee, brez a lust.
+ *
+ * Členství v týmech se nemění: rozdělení je už hotové a o roli v týmu
+ * rozhoduje stránka Týmy. Když roli v týmu změna rozbije, admin dostane
+ * upozornění.
+ */
+export async function saveMainSpecForUser(
+  userId: string,
+  _previous: MainSpecState,
+  formData: FormData
+): Promise<MainSpecState> {
+  const admin = await getCurrentUser();
+
+  if (!admin || !can(admin.role, "manageSwitchSpecs")) {
+    return { status: "error", message: "Na úpravu specu nemáš oprávnění." };
+  }
+
+  const season = await getCurrentSeason();
+  const character = await prisma.character.findUnique({
+    where: { userId },
+    include: {
+      switchSpecs: true,
+      // Starší sezóny jsou odehrané, na ty se už nesahá.
+      teamMemberships: {
+        where: {
+          seasonId: season?.id ?? "",
+          status: { not: "REMOVED" },
+          wowSpec: null,
+        },
+        include: { team: { select: { name: true } } },
+      },
+    },
+  });
+
+  if (!character) {
+    return { status: "error", message: "Uživatel nemá založenou postavu." };
+  }
+
+  const specName = String(formData.get("mainSpec") ?? "");
+  const spec = specsForClass(character.class).find((s) => s.specName === specName);
+
+  if (!spec) {
+    return {
+      status: "error",
+      message: "Vybraný spec k postavě nepatří. Načti stránku znovu a zkus to ještě jednou.",
+    };
+  }
+
+  if (spec.specName === character.wowSpec && spec.role === character.specRole) {
+    return { status: "ok", message: "Beze změny - postava už ten spec má." };
+  }
+
+  // Hlavní spec se ve switchi nenabízí - když ho hráč měl vybraný ke switchi,
+  // ze switche zmizí, jinak by ho shuffle nabízel jako přepnutí sám na sebe.
+  const droppedSwitch = character.switchSpecs.find(
+    (s) => s.specName === spec.specName
+  );
+
+  await prisma.$transaction(async (tx) => {
+    await tx.character.update({
+      where: { id: character.id },
+      data: { wowSpec: spec.specName, specRole: spec.role },
+    });
+
+    if (droppedSwitch) {
+      await tx.characterSwitchSpec.delete({ where: { id: droppedSwitch.id } });
+    }
+
+    await writeAuditLog(tx, {
+      actorId: admin.id,
+      actionType: "MAIN_SPEC_UPDATED",
+      entityType: "Character",
+      entityId: character.id,
+      oldValue: { wowSpec: character.wowSpec, specRole: character.specRole },
+      newValue: {
+        wowSpec: spec.specName,
+        specRole: spec.role,
+        droppedSwitchSpec: droppedSwitch?.specName ?? null,
+      },
+    });
+  });
+
+  revalidatePath(`/admin/users/${userId}`);
+  revalidatePath("/admin/shuffle");
+  revalidatePath("/admin/teams");
+  revalidatePath("/admin/registrations");
+
+  const saved = `Uloženo: ${spec.specName}, role ${SPEC_ROLE_LABELS[spec.role]}.`;
+
+  // Hráč hrající v týmu hlavní spec (wowSpec null) má teď v týmu jinou roli,
+  // než jakou hlavní spec hraje.
+  const brokenTeams = character.teamMemberships.filter(
+    (m) => m.roleInTeam !== spec.role
+  );
+
+  if (brokenTeams.length > 0) {
+    const where = brokenTeams
+      .map((m) =>
+        m.status === "SUBSTITUTE"
+          ? `mezi náhradníky jako ${SPEC_ROLE_LABELS[m.roleInTeam]}`
+          : `v týmu ${m.team?.name ?? "bez názvu"} jako ${SPEC_ROLE_LABELS[m.roleInTeam]}`
+      )
+      .join(", ");
+
+    return {
+      status: "warning",
+      message: `${saved} Hráč je ale zařazený ${where} - roli mu uprav na stránce Týmy.`,
+    };
+  }
+
+  return {
+    status: "ok",
+    message: droppedSwitch
+      ? `${saved} ${spec.specName} zmizel ze switch speců, je to teď hlavní spec.`
+      : saved,
+  };
 }

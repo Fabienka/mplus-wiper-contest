@@ -6,7 +6,7 @@ import { SubmitButton } from "../../submit-button";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSeason } from "@/lib/season";
 import { SPEC_ROLE_LABELS, formatDateTime, plural } from "@/lib/labels";
-import { LAST_VERIFIED } from "@/lib/wow-specs";
+import { LAST_VERIFIED, specRoleMismatch } from "@/lib/wow-specs";
 import {
   planRoleSwitches,
   toShufflePlayer,
@@ -98,6 +98,17 @@ export default async function ShufflePage({
     (r) => r.character.canSwitchSpec && r.character.switchSpecs.length === 0
   );
 
+  // Spec z Raider.io jiné role, než na jakou se hráč přihlásil (třeba
+  // Protection jako DPS) - shuffle ho dá do role z přihlášky.
+  const roleMismatches = approved.flatMap((r) => {
+    const spec = specRoleMismatch(
+      r.character.class,
+      r.character.wowSpec,
+      r.character.specRole
+    );
+    return spec ? [{ registration: r, spec }] : [];
+  });
+
   return (
     <>
       <h1>Shuffle</h1>
@@ -157,6 +168,31 @@ export default async function ShufflePage({
               <Link className="link" href={`/admin/users/${r.character.userId}#switch`}>
                 {r.character.characterName}
               </Link>
+            </Fragment>
+          ))}
+          .
+        </Notice>
+      )}
+
+      {roleMismatches.length > 0 && (
+        <Notice
+          kind="info"
+          title={`${roleMismatches.length} ${plural(
+            roleMismatches.length,
+            "hráč má",
+            "hráči mají",
+            "hráčů má"
+          )} spec jiné role, než na jakou se přihlásili`}
+        >
+          Shuffle je bere v roli z přihlášky. Hlavní spec (a s ním roli) jim
+          oprav na detailu hráče:{" "}
+          {roleMismatches.map(({ registration: r, spec }, index) => (
+            <Fragment key={r.id}>
+              {index > 0 && ", "}
+              <Link className="link" href={`/admin/users/${r.character.userId}#main-spec`}>
+                {r.character.characterName}
+              </Link>{" "}
+              ({spec.specName} jako {SPEC_ROLE_LABELS[r.character.specRole]})
             </Fragment>
           ))}
           .

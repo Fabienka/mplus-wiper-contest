@@ -4,12 +4,18 @@
  *   npm run check:wow-specs
  *
  * Raider.io vrací RIO po specech jako spec_0 až spec_3 v pořadí, v jakém je
- * má classa ve hře. Data ve 3. části jsou opsaná z opravdových odpovědí API
+ * má classa ve hře. Data ve 4. části jsou opsaná z opravdových odpovědí API
  * (září 2026) - kdyby někdo v tabulce specy přeřadil podle abecedy, RIO by se
  * přiřadilo jinému specu a tahle kontrola to chytí.
  */
 
-import { WOW_CLASSES, findSpec, specsForClass, switchableSpecs } from "../src/lib/wow-specs";
+import {
+  WOW_CLASSES,
+  findSpec,
+  specRoleMismatch,
+  specsForClass,
+  switchableSpecs,
+} from "../src/lib/wow-specs";
 import { fetchSpecScores } from "../src/lib/raiderio";
 
 let failures = 0;
@@ -82,7 +88,19 @@ console.log("2. Specy na switch");
   );
 }
 
-console.log("3. RIO po specech z Raider.io");
+console.log("3. Spec jiné role, než na jakou se hráč hlásí");
+{
+  check(
+    specRoleMismatch("Warrior", "Protection", "DPS")?.role === "TANK",
+    "Protection Warrior jako DPS je nesoulad"
+  );
+  check(specRoleMismatch("Warrior", "Protection", "TANK") === null, "Protection jako tank sedí");
+  check(specRoleMismatch("Warrior", "Arms", "DPS") === null, "Arms jako DPS sedí");
+  check(specRoleMismatch("Warrior", null, "DPS") === null, "bez specu se nesoulad nehlásí");
+  check(specRoleMismatch("Warrior", "Neznámý", "DPS") === null, "neznámý spec se nehlásí");
+}
+
+console.log("4. RIO po specech z Raider.io");
 
 async function scoresFor(className: string, scores: Record<string, number>) {
   const realFetch = globalThis.fetch;

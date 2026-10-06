@@ -142,6 +142,21 @@ export function specsForRole(role: SpecRole): WowSpec[] {
   );
 }
 
+/**
+ * Hlavní spec postavy, když patří k jiné roli, než na jakou se hráč hlásí -
+ * třeba Protection Warrior vedený jako DPS. Shuffle bere roli, spec slouží jen
+ * na ranged/melee, brez a lust, takže takový hráč skončí v jiné roli, než
+ * jakou opravdu hraje. Neznámý spec za nesoulad nepovažuje.
+ */
+export function specRoleMismatch(
+  className: string | null | undefined,
+  specName: string | null | undefined,
+  specRole: SpecRole
+): WowSpec | null {
+  const spec = findSpec(className, specName);
+  return spec && spec.role !== specRole ? spec : null;
+}
+
 /** Názvy speců dané classy - pro našeptávač v registračním formuláři. */
 export function specsForClass(className: string | null | undefined): WowSpec[] {
   if (!className) return [];
